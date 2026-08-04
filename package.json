@@ -1,0 +1,53 @@
+{
+  "name": "go-enterprise-desktop",
+  "productName": "GO Enterprise",
+  "version": "8.1.0",
+  "description": "GO Enterprise — gestão operacional Selbetti Correios MG (app desktop)",
+  "main": "main.js",
+  "author": "Selbetti",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:dir": "electron-builder --win --dir"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0"
+  },
+  "build": {
+    "appId": "br.com.selbetti.goenterprise",
+    "productName": "GO Enterprise",
+    "copyright": "Selbetti",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "GO-Enterprise-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GO Enterprise"
+    }
+  }
+}
