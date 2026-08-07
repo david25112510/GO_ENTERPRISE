@@ -891,7 +891,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
         <div class="tablewrap"><table><thead><tr><th>Data/Hora</th><th>Descrição</th><th></th></tr></thead><tbody id="historyTable"></tbody></table></div>
       </div>
 
-      <div class="panel"><h2>💾 Arquivo .godb</h2>
+      <div class="panel browser-only" id="godbPanel"><h2>💾 Arquivo .godb</h2>
         <p class="muted" id="fileStatusText">Conecte o arquivo gestao_operacional.godb para manter tudo sincronizado entre sessões.</p>
         <div class="toolbar"><button class="btn primary" onclick="openGodb()">Conectar / abrir .godb</button>
         <button class="btn" onclick="createGodb()">Criar novo .godb</button></div>
@@ -1461,12 +1461,20 @@ async function resetAll(){if(confirm('Isso apagará todos os dados salvos neste 
 function exportCSV(kind){const data=kind==='sla'?Object.values(db.sla):[];if(!data.length)return alert('Sem dados.');const keys=Object.keys(data[0]),csv=[keys.join(';'),...data.map(r=>keys.map(k=>'"'+String(r[k]??'').replaceAll('"','""')+'"').join(';'))].join('\n');download(kind+'.csv','﻿'+csv,'text/csv')}
 
 function updateDbStatus(){
-  const connected=!!godbHandle;
-  $('dbDot').classList.toggle('off',!connected||!!lastLocalSaveError);
-  $('dbStatusText').textContent=lastLocalSaveError?('Aviso: falha ao salvar localmente ('+lastLocalSaveError+')'+(connected?' — o arquivo .godb continua sendo salvo normalmente.':''))
-    :connected?'Arquivo .godb conectado':'Somente neste navegador (.godb não conectado)';
+  if(window.goDesktop){
+    // dentro do app desktop, quem manda é a pasta compartilhada — não o .godb legado do navegador
+    const folder=window.__desktopSettings&&window.__desktopSettings.sharedFolder;
+    $('dbDot').classList.toggle('off',!folder||!!lastLocalSaveError);
+    $('dbStatusText').textContent=lastLocalSaveError?('Aviso: falha ao salvar localmente ('+lastLocalSaveError+')'+(folder?' — a pasta compartilhada continua sendo salva normalmente.':''))
+      :folder?'Pasta compartilhada conectada':'Nenhuma pasta compartilhada configurada';
+  }else{
+    const connected=!!godbHandle;
+    $('dbDot').classList.toggle('off',!connected||!!lastLocalSaveError);
+    $('dbStatusText').textContent=lastLocalSaveError?('Aviso: falha ao salvar localmente ('+lastLocalSaveError+')'+(connected?' — o arquivo .godb continua sendo salvo normalmente.':''))
+      :connected?'Arquivo .godb conectado':'Somente neste navegador (.godb não conectado)';
+  }
   $('recCount').textContent=fmtNum(recordCount());
-  const t=$('fileStatusText');if(t)t.textContent=connected?'Conectado e sincronizando automaticamente.':'Conecte o arquivo gestao_operacional.godb para manter tudo sincronizado entre sessões.';
+  const t=$('fileStatusText');if(t)t.textContent=godbHandle?'Conectado e sincronizando automaticamente.':'Conecte o arquivo gestao_operacional.godb para manter tudo sincronizado entre sessões.';
 }
 
 /* ===================== 5. SEGURANÇA / PIN ===================== */
@@ -1630,11 +1638,17 @@ async function submitTvLogin(){
 async function afterUnlock(){
   $('pinGate').style.display='none';$('appRoot').style.display='grid';
   if(!currentRole)currentRole='gestor';
-  godbLastSave=+(localStorage.getItem('go_last_godb_save')||0)||null;
-  godbHandle=await recallHandle();
-  if(godbHandle){
-    try{const p=await godbHandle.queryPermission({mode:'readwrite'});if(p==='granted')await loadFromHandle(false)}
-    catch(e){godbHandle=null}
+  // o arquivo .godb (File System Access API) é um mecanismo legado, só faz sentido rodando direto
+  // num navegador. Dentro do app desktop, a pasta compartilhada (window.goDesktop) é a única fonte
+  // de verdade — nunca recarrega um handle .godb antigo aqui, senão ele sobrescreve silenciosamente
+  // os dados que acabaram de ser lidos da pasta compartilhada em boot().
+  if(!window.goDesktop){
+    godbLastSave=+(localStorage.getItem('go_last_godb_save')||0)||null;
+    godbHandle=await recallHandle();
+    if(godbHandle){
+      try{const p=await godbHandle.queryPermission({mode:'readwrite'});if(p==='granted')await loadFromHandle(false)}
+      catch(e){godbHandle=null}
+    }
   }
   render();applyRoleUI();updateDbStatus();updateMoneyToggleUI();
   if(kioskMode)enterKioskMode();
@@ -3483,6 +3497,7 @@ async function initDesktopIntegration(){
   try{window.__desktopSettings=await window.goDesktop.getSettings()}
   catch(e){window.__desktopSettings=null}
   document.querySelectorAll('.desktop-only').forEach(el=>el.style.display='block');
+  document.querySelectorAll('.browser-only').forEach(el=>el.style.display='none'); // mecanismo legado (.godb via navegador): não faz sentido dentro do app desktop
   const verEl=$('desktopAppVersion');
   if(verEl){try{verEl.textContent='v'+(await window.goDesktop.getAppVersion())}catch(e){}}
   renderDesktopSyncStatus();
