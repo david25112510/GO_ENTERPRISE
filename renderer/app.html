@@ -75,10 +75,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 @media (max-width:1100px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
-  box-shadow:var(--shadow);border-top:4px solid var(--selbetti)}
-.card .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
-.card .v{font-size:24px;font-weight:800;margin-top:8px;color:var(--ink)}
-.card .s{margin-top:6px;font-size:12px;color:#8a98a7}
+  box-shadow:var(--shadow);border-top:4px solid var(--selbetti);overflow:hidden}
+.card .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;overflow-wrap:break-word}
+.card .v{font-size:24px;font-weight:800;margin-top:8px;color:var(--ink);overflow-wrap:break-word;word-break:break-word}
+.card .s{margin-top:6px;font-size:12px;color:#8a98a7;overflow-wrap:break-word}
 .card.accent-amber{border-top-color:var(--amber)}
 .card.accent-teal{border-top-color:var(--selbetti)}
 .card.accent-red{border-top-color:var(--red)}
@@ -233,7 +233,8 @@ body.role-tv .view:not(#dashboardTv):not(#noticias){display:none!important}
 @media (max-width:900px){.dash-sla-row,.dash-ritmo-row{grid-template-columns:1fr}}
 .dash-gauge{background:rgba(8,28,20,.62);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);border-radius:14px;
   padding:24px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-.dash-gauge .big-pct{font-size:44px;font-weight:800;color:#fff;margin-top:8px;text-shadow:0 0 24px rgba(111,230,160,.4)}
+.dash-gauge .big-pct{font-size:44px;font-weight:800;color:#fff;margin-top:8px;text-shadow:0 0 24px rgba(111,230,160,.4);
+  overflow-wrap:break-word;word-break:break-word;line-height:1.05}
 .dash-gauge .label{color:#9fd6bb;font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
 .dash-alerts .alert-box{background:rgba(8,28,20,.62);border-color:rgba(143,227,184,.2);color:#eaf6ef}
 .dash-alerts .alert-box.bad{background:rgba(212,60,60,.22);border-color:rgba(212,60,60,.45)}
@@ -242,7 +243,8 @@ body.role-tv .view:not(#dashboardTv):not(#noticias){display:none!important}
 .dash-alerts .alert-box small{color:#c7ddd0}
 .dash-ritmo-box{background:rgba(4,14,10,.88);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
   border-radius:14px;padding:24px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-.dash-ritmo-box .big-pct{font-size:56px;font-weight:800;color:#fff;text-shadow:0 0 24px rgba(111,230,160,.4)}
+.dash-ritmo-box .big-pct{font-size:42px;font-weight:800;color:#fff;text-shadow:0 0 24px rgba(111,230,160,.4);
+  overflow-wrap:break-word;word-break:break-word;line-height:1.05}
 .dash-ritmo-box .label{color:#c9ecdc;font-size:13px;margin-top:4px}
 .dash-ritmo-bar{height:10px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:16px}
 .dash-ritmo-bar-fill{height:100%;border-radius:999px;transition:width .6s ease}
@@ -308,8 +310,8 @@ body.kiosk-mode .dash-cards .card .s{font-size:14px}
 body.kiosk-mode .dash-var{font-size:13px}
 body.kiosk-mode .dash-kiosk-clock #kioskClock{font-size:42px}
 body.kiosk-mode .dash-kiosk-title{font-size:15px}
-body.kiosk-mode .dash-ritmo-box .big-pct{font-size:78px}
-body.kiosk-mode .dash-gauge .big-pct{font-size:62px}
+body.kiosk-mode .dash-ritmo-box .big-pct{font-size:50px}
+body.kiosk-mode .dash-gauge .big-pct{font-size:50px}
 body.kiosk-mode .dash-birthdays h3,body.kiosk-mode .dash-gauge .label,body.kiosk-mode .dash-ritmo-box .label{font-size:15px}
 body.kiosk-mode .dash-bday-item b,body.kiosk-mode .dash-alerts .alert-box b{font-size:17px}
 body.kiosk-mode .dash-bday-item small{font-size:14px}
