@@ -897,7 +897,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
   <div><label>Turno<select id="rShift"><option>MANHÃ</option><option>TARDE</option><option>NOITE</option></select></label></div>
   <div><label>Data de admissão<input id="rAdmission" type="date"></label></div>
   <div><label>Data de nascimento<input id="rBirthDate" type="date"></label></div>
-  <div><label>Salário<input id="rSalary" type="number" step="0.01"></label></div>
+  <div class="gestor-only"><label>Salário<input id="rSalary" type="number" step="0.01"></label></div>
   <div><label>Situação<select id="rStatus"><option>Ativo</option><option>Inativo</option></select></label></div>
   </div>
   <datalist id="costCenterList"></datalist>
@@ -2936,7 +2936,7 @@ function renderEmployeeProfile(){
   $('profileInfoGrid').innerHTML=`
     <div class="profile-info-item"><div class="k">Matrícula</div><div class="v">${escHtml(e.reg||'—')}</div></div>
     <div class="profile-info-item"><div class="k">Data de admissão</div><div class="v">${e.admission?e.admission.split('-').reverse().join('/'):'—'}</div></div>
-    <div class="profile-info-item"><div class="k">Salário</div><div class="v">${fmtBRL(e.salary)}</div></div>
+    ${currentRole==='operador'?'':`<div class="profile-info-item"><div class="k">Salário</div><div class="v">${fmtBRL(e.salary)}</div></div>`}
     <div class="profile-info-item"><div class="k">Centro de custo</div><div class="v">${escHtml(e.costCenter||'—')}</div></div>
     <div class="profile-info-item"><div class="k">Turno</div><div class="v">${escHtml(e.shift||'—')}</div></div>
     <div class="profile-info-item"><div class="k">Situação</div><div class="v">${escHtml(e.status||'—')}</div></div>`;
@@ -2991,13 +2991,14 @@ function renderProfileTimesheets(e){
     </div>
     ${p.rubricas.length?`<div class="metricline"><span><b>Rubricas do período — pagas normalmente</b></span><span></span></div>
       ${p.rubricas.map(r=>`<div class="metricline"><span>${escHtml(r.description)}${r.code?' ('+escHtml(r.code)+')':''}</span><strong>${String(Math.floor(r.minutes/60)).padStart(2,'0')}:${String(r.minutes%60).padStart(2,'0')}</strong></div>`).join('')}`:''}
+    ${currentRole==='operador'?'':`
     <h3 style="margin:16px 0 6px">Resumo de pagamento (estimado)</h3>
     <p class="muted" style="font-size:11px;margin-top:-4px">Estimativa com base no saldo já fechado pelo sistema de ponto nesta competência (ledger contínuo entre importações). Divisor: ${p.scheduledDays} dia(s) programado(s) × ${(p.dailyMinutes/60).toFixed(2).replace('.',',')}h/dia = ${p.divisorHoras.toFixed(2).replace('.',',')}h. Valor da hora: ${fmtBRL(p.hourlyRate)}. O banco de horas é apenas o saldo corrente apurado pelo ponto (crédito ou débito acumulado, só vira pagamento/desconto efetivo quando fechado pela regra dos 180 dias). Já as horas intra/interjornada são sempre pagas com adicional de 65% (1,65×) no próprio período. Faltas são descontadas à parte.</p>
     <div class="metricline"><span>Salário base</span><strong>${fmtBRL(p.salarioBase)}</strong></div>
     <div class="metricline"><span>Banco de horas — saldo (${fmtSaldoHM(p.saldoAtual)})</span><strong style="color:${tileColor(p.saldoAtual)}">${fmtBRL(p.bancoValor)}</strong></div>
     <div class="metricline"><span>Horas intra/interjornada — a pagar (65%)</span><strong style="color:var(--selbetti-dark)">${fmtBRL(p.extras65Valor)}</strong></div>
     <div class="metricline"><span>Faltas a descontar</span><strong style="color:var(--red)">${fmtBRL(-p.faltaValor)}</strong></div>
-    <div class="metricline" style="font-size:16px;border-top:2px solid var(--line2);padding-top:10px;margin-top:6px"><span><b>Total estimado a receber</b></span><strong>${fmtBRL(p.total)}</strong></div>
+    <div class="metricline" style="font-size:16px;border-top:2px solid var(--line2);padding-top:10px;margin-top:6px"><span><b>Total estimado a receber</b></span><strong>${fmtBRL(p.total)}</strong></div>`}
     <details style="margin-top:14px"><summary style="cursor:pointer;font-weight:600;font-size:13px">Ver tabela diária (${marcados} dia(s) com marcação de ${ts.rows.length})</summary>
       <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Data</th><th>Dia</th><th>Marcações</th><th>Trab</th><th>Exec</th><th>Aut</th><th>Atraso</th><th>Falta</th><th>Ad.Not</th></tr></thead>
       <tbody>${ts.rows.map(r=>`<tr><td>${r.date}</td><td>${r.sem}</td><td>${escHtml(r.marcacoes)}</td><td>${escHtml(r.trab)}</td><td>${escHtml(r.exec)}</td><td>${escHtml(r.aut)}</td><td>${escHtml(r.atraso)}</td><td>${escHtml(r.falta)}</td><td>${escHtml(r.adNot)}</td></tr>`).join('')}</tbody></table></div>
