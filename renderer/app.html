@@ -224,18 +224,41 @@ body.role-tv .view:not(#dashboardTv):not(#noticias){display:none!important}
 .dash-var.ok{color:#6fe6a0}
 .dash-var.bad{color:#ff9d9d}
 .dash-var.mut{color:#a9c4b7}
-.dash-chart-wrap{background:rgba(8,28,20,.5);border:1px solid rgba(143,227,184,.16);border-radius:12px;padding:10px}
+.dash-chart-wrap{background:rgba(8,28,20,.5);border:1px solid rgba(143,227,184,.16);border-radius:12px;padding:18px 22px 34px}
 .dash-bars{min-height:220px}
 .dash-bars .bar{background:linear-gradient(180deg,#8ff5b8,#0e9a55);box-shadow:0 0 14px rgba(111,230,160,.35)}
 .dash-bars .bar .value{color:#eaf6ef}
 .dash-bars .bar small{color:#9fd6bb}
+.dash-linechart{position:relative;width:100%;height:230px}
+.dash-linechart svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+.dash-linechart-line{fill:none;stroke:#8ff5b8;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;
+  filter:drop-shadow(0 0 6px rgba(111,230,160,.55))}
+.dash-linechart-goalline{stroke:rgba(255,255,255,.32);stroke-width:1.2;stroke-dasharray:5 5}
+.dash-linechart-goallabel{position:absolute;right:2px;font-size:11px;color:#c9ecdc;transform:translateY(-140%)}
+.dash-linechart-dot{position:absolute;width:9px;height:9px;border-radius:50%;background:#eafff2;border:2px solid #0e9a55;
+  box-shadow:0 0 8px rgba(111,230,160,.6);transform:translate(-50%,-50%)}
+.dash-linechart-dot.today{background:#ffd76a;border-color:#c98f00;width:13px;height:13px;box-shadow:0 0 12px rgba(255,215,106,.7)}
+.dash-linechart-val{position:absolute;transform:translate(-50%,-135%);font-size:12px;font-weight:700;color:#eafff2;
+  white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.dash-linechart-day{position:absolute;bottom:-22px;transform:translateX(-50%);font-size:11px;color:#9fd6bb;white-space:nowrap}
+body.kiosk-mode .dash-linechart{height:300px}
+body.kiosk-mode .dash-linechart-val{font-size:16px}
+body.kiosk-mode .dash-linechart-day{font-size:14px;bottom:-26px}
+body.kiosk-mode .dash-linechart-goallabel{font-size:13px}
 .dash-sla-row,.dash-ritmo-row{display:grid;grid-template-columns:300px 1fr;gap:26px;align-items:start}
 @media (max-width:900px){.dash-sla-row,.dash-ritmo-row{grid-template-columns:1fr}}
 .dash-gauge{background:rgba(8,28,20,.62);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);border-radius:14px;
   padding:24px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-.dash-gauge .big-pct{font-size:44px;font-weight:800;color:#fff;margin-top:8px;text-shadow:0 0 24px rgba(111,230,160,.4);
+.dash-gauge .big-pct{font-size:26px;font-weight:800;color:#fff;text-shadow:0 0 24px rgba(111,230,160,.4);
   overflow-wrap:break-word;word-break:break-word;line-height:1.05}
 .dash-gauge .label{color:#9fd6bb;font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+.dash-gauge-ring-wrap{position:relative;width:170px;height:170px;margin:0 auto}
+.dash-gauge-ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.dash-gauge-ring-bg{fill:none;stroke:rgba(255,255,255,.12);stroke-width:10}
+.dash-gauge-ring-fg{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.dash-gauge-ring-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center}
+body.kiosk-mode .dash-gauge-ring-wrap{width:200px;height:200px}
+body.kiosk-mode .dash-gauge .big-pct{font-size:34px}
 .dash-alerts .alert-box{background:rgba(8,28,20,.62);border-color:rgba(143,227,184,.2);color:#eaf6ef}
 .dash-alerts .alert-box.bad{background:rgba(212,60,60,.22);border-color:rgba(212,60,60,.45)}
 .dash-alerts .alert-box.warn{background:rgba(230,180,40,.18);border-color:rgba(230,180,40,.45)}
@@ -273,13 +296,16 @@ body.role-tv .view:not(#dashboardTv):not(#noticias){display:none!important}
 .dash-rank-col{background:rgba(8,28,20,.62);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
   border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .dash-rank-col h3{margin:0 0 12px;color:#eafff2;font-size:15px}
-.dash-rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);
-  font-size:14px}
+.dash-rank-item{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px}
 .dash-rank-item:last-child{border-bottom:none}
+.dash-rank-item .row{display:flex;align-items:center;gap:10px}
 .dash-rank-item .medal{font-size:18px;min-width:26px;text-align:center}
 .dash-rank-item .d{flex:1;color:#eaf6ef}
 .dash-rank-item .val{font-weight:800;color:#6fe6a0}
 .dash-rank-item .val.low{color:#ffb37a}
+.dash-rank-bar-track{height:5px;border-radius:999px;background:rgba(255,255,255,.1);margin-top:7px;overflow:hidden}
+.dash-rank-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#0e9a55,#8ff5b8)}
+.dash-rank-bar-fill.low{background:linear-gradient(90deg,#c98f00,#ffb37a)}
 .dash-news-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (max-width:1100px){.dash-news-grid{grid-template-columns:1fr}}
 .dash-news-card{background:rgba(4,14,10,.88);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
@@ -311,7 +337,6 @@ body.kiosk-mode .dash-var{font-size:13px}
 body.kiosk-mode .dash-kiosk-clock #kioskClock{font-size:42px}
 body.kiosk-mode .dash-kiosk-title{font-size:15px}
 body.kiosk-mode .dash-ritmo-box .big-pct{font-size:50px}
-body.kiosk-mode .dash-gauge .big-pct{font-size:50px}
 body.kiosk-mode .dash-birthdays h3,body.kiosk-mode .dash-gauge .label,body.kiosk-mode .dash-ritmo-box .label{font-size:15px}
 body.kiosk-mode .dash-bday-item b,body.kiosk-mode .dash-alerts .alert-box b{font-size:17px}
 body.kiosk-mode .dash-bday-item small{font-size:14px}
@@ -808,7 +833,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
         <div class="dash-slide active" id="dashSlide0">
           <h2 class="dash-slide-title">Produção</h2>
           <div class="dash-cards" id="dashProdCards"></div>
-          <div class="dash-chart-wrap"><div class="bars dash-bars" id="dashProdChart"></div></div>
+          <div class="dash-chart-wrap"><div class="dash-linechart" id="dashProdChart"></div></div>
         </div>
         <div class="dash-slide" id="dashSlide1">
           <h2 class="dash-slide-title">SLA &amp; Avisos</h2>
@@ -2774,6 +2799,70 @@ function monthBirthdays(){
     .sort((a,b)=>a.bDay-b.bDay)
     .map(e=>({...e,today:e.bDay===day}));
 }
+/* curva suave (Catmull-Rom -> Bézier) por um conjunto de pontos {x,y} em espaço 0-100 */
+function smoothPath(pts){
+  if(!pts.length)return'';
+  if(pts.length===1)return`M${pts[0].x},${pts[0].y}`;
+  let d=`M${pts[0].x},${pts[0].y}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+    const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6;
+    const c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;
+    d+=` C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2.x.toFixed(2)},${p2.y.toFixed(2)}`;
+  }
+  return d;
+}
+/* gráfico de linha suave com área em gradiente para a evolução diária de impressões do Dashboard TV,
+   com linha de meta diária de referência e destaque para o dia de hoje. */
+function renderProdLineChart(entries,dailyGoal,currentISO){
+  const wrap=$('dashProdChart');if(!wrap)return;
+  if(!entries.length){wrap.innerHTML='<p class="muted" style="color:#9fd6bb">Sem produção registrada ainda.</p>';return}
+  const n=entries.length;
+  const maxV=Math.max(1,dailyGoal||0,...entries.map(p=>p.prints));
+  const padTop=16,padBottom=6;
+  const pts=entries.map((p,i)=>({
+    x:n>1?i/(n-1)*100:50,
+    y:padTop+(100-padTop-padBottom)*(1-p.prints/maxV),
+    v:p.prints
+  }));
+  const linePath=smoothPath(pts);
+  const areaPath=`${linePath} L${pts[n-1].x},100 L${pts[0].x},100 Z`;
+  const goalY=dailyGoal?padTop+(100-padTop-padBottom)*(1-Math.min(1,dailyGoal/maxV)):null;
+  const maxIdx=pts.reduce((best,p,i)=>p.v>pts[best].v?i:best,0);
+  const svg=`<svg viewBox="0 0 100 100" preserveAspectRatio="none">
+    <defs><linearGradient id="prodGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8ff5b8" stop-opacity=".5"/>
+      <stop offset="100%" stop-color="#8ff5b8" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${goalY!=null?`<line x1="0" y1="${goalY}" x2="100" y2="${goalY}" class="dash-linechart-goalline" vector-effect="non-scaling-stroke"/>`:''}
+    <path d="${areaPath}" fill="url(#prodGrad)" stroke="none"/>
+    <path d="${linePath}" class="dash-linechart-line" fill="none" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+  const overlay=pts.map((p,i)=>{
+    const isToday=entries[i].date===currentISO,isMax=i===maxIdx;
+    const showVal=isToday||isMax||i===0||i===n-1;
+    return`<div class="dash-linechart-dot${isToday?' today':''}" style="left:${p.x}%;top:${p.y}%"></div>
+      ${showVal?`<div class="dash-linechart-val" style="left:${p.x}%;top:${p.y}%">${fmtNum(p.v)}</div>`:''}
+      <div class="dash-linechart-day" style="left:${p.x}%">${entries[i].date.slice(8,10)}/${entries[i].date.slice(5,7)}</div>`;
+  }).join('');
+  const goalLabel=goalY!=null?`<div class="dash-linechart-goallabel" style="top:${goalY}%">Meta diária ${fmtNum(dailyGoal)}</div>`:'';
+  wrap.innerHTML=svg+overlay+goalLabel;
+}
+/* anel de progresso circular (donut gauge) para percentuais — usado no SLA da TV */
+function renderRadialGauge(value,goodColor,badColor,isOk){
+  const r=48,c=2*Math.PI*r;
+  const clamped=Math.max(0,Math.min(100,value));
+  const offset=c*(1-clamped/100);
+  const color=isOk?goodColor:badColor;
+  return`<div class="dash-gauge-ring-wrap">
+    <svg viewBox="0 0 120 120">
+      <circle class="dash-gauge-ring-bg" cx="60" cy="60" r="${r}"/>
+      <circle class="dash-gauge-ring-fg" cx="60" cy="60" r="${r}" stroke="${color}"
+        stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"/>
+    </svg>
+    <div class="dash-gauge-ring-center"><div class="big-pct" style="color:${color}">${pct(value)}</div></div>
+  </div>`;
+}
 function renderDashboardTv(){
   if(!$('dashboardTv'))return;
   const prods=dailyProduction();
@@ -2800,8 +2889,7 @@ function renderDashboardTv(){
     <div class="card accent-indigo"><div class="k">Acumulado no mês</div><div class="v">${fmtNum(totalP)}</div><div class="s">${monthLabel(month)} · ${fmtNum(totalO)} objetos<br>${varBadge(cmpPrint)}</div></div>`;
 
   const chartEntries=monthRows.slice(-14);
-  const maxP=Math.max(1,...chartEntries.map(p=>p.prints));
-  $('dashProdChart').innerHTML=chartEntries.map(p=>`<div class="bar" style="height:${Math.max(2,p.prints/maxP*100)}%"><span class="value">${fmtNum(p.prints)}</span><small>${p.date.slice(8,10)}/${p.date.slice(5,7)}</small></div>`).join('')||'<p class="muted" style="color:#9fd6bb">Sem produção registrada ainda.</p>';
+  renderProdLineChart(chartEntries,db.config.dailyPrintGoal||750000,currentISO);
 
   const slaArr=Object.values(db.sla).filter(x=>String(x.deliveryDate||'').startsWith(month));
   const pIn=slaArr.filter(x=>/DENTRO/i.test(x.sla)).length,pOut=slaArr.filter(x=>/FORA/i.test(x.sla)).length;
@@ -2810,8 +2898,8 @@ function renderDashboardTv(){
   const prevIn=prevSlaArr.filter(x=>/DENTRO/i.test(x.sla)).length,prevOut=prevSlaArr.filter(x=>/FORA/i.test(x.sla)).length;
   const prevRate=(prevIn+prevOut)?prevIn/(prevIn+prevOut)*100:0;
   const cmpSla=variation(Math.round(pRate*100),Math.round(prevRate*100));
-  $('dashSlaGauge').innerHTML=`<div class="big-pct" style="color:${slaOk?'#6fe6a0':'#ff9d9d'}">${pct(pRate)}</div>
-    <div class="label">SLA do mês · meta ${pct(db.config.slaGoal)}</div>
+  $('dashSlaGauge').innerHTML=`${renderRadialGauge(pRate,'#6fe6a0','#ff9d9d',slaOk)}
+    <div class="label" style="margin-top:12px">SLA do mês · meta ${pct(db.config.slaGoal)}</div>
     <div class="label" style="margin-top:10px">${fmtNum(pIn)} dentro do prazo · ${fmtNum(pOut)} fora do prazo</div>
     <div style="margin-top:14px">${varBadge(cmpSla)}</div>`;
 
@@ -2834,10 +2922,16 @@ function renderDashboardTv(){
   const slaDays=Object.entries(slaByDate).map(([date,v])=>({date,rate:(v.in+v.out)?v.in/(v.in+v.out)*100:0,total:v.in+v.out})).filter(d=>d.total>=3);
   const bestSlaDays=[...slaDays].sort((a,b)=>b.rate-a.rate).slice(0,3);
   const medal=i=>['🥇','🥈','🥉'][i]||`${i+1}º`;
-  const rankRow=(icon,label,value,cls)=>`<div class="dash-rank-item"><span class="medal">${icon}</span><span class="d">${label}</span><span class="val${cls?(' '+cls):''}">${value}</span></div>`;
-  $('dashRankBestProd').innerHTML=bestDays.length?bestDays.map((d,i)=>rankRow(medal(i),d.date.split('-').reverse().join('/'),fmtNum(d.prints))).join(''):'<p class="muted" style="color:#9fd6bb">Sem dados suficientes ainda.</p>';
-  $('dashRankWorstProd').innerHTML=worstDays.length?worstDays.map((d,i)=>rankRow(`${i+1}º`,d.date.split('-').reverse().join('/'),fmtNum(d.prints),'low')).join(''):'<p class="muted" style="color:#9fd6bb">Sem dados suficientes ainda.</p>';
-  $('dashRankBestSla').innerHTML=bestSlaDays.length?bestSlaDays.map((d,i)=>rankRow(medal(i),d.date.split('-').reverse().join('/'),pct(d.rate))).join(''):'<p class="muted" style="color:#9fd6bb">Sem OS classificadas o suficiente ainda.</p>';
+  const rankRow=(icon,label,value,barPct,cls)=>`<div class="dash-rank-item">
+    <div class="row"><span class="medal">${icon}</span><span class="d">${label}</span><span class="val${cls?(' '+cls):''}">${value}</span></div>
+    <div class="dash-rank-bar-track"><div class="dash-rank-bar-fill${cls?' low':''}" style="width:${Math.max(4,barPct)}%"></div></div>
+  </div>`;
+  const bestMax=Math.max(1,...bestDays.map(d=>d.prints));
+  $('dashRankBestProd').innerHTML=bestDays.length?bestDays.map((d,i)=>rankRow(medal(i),d.date.split('-').reverse().join('/'),fmtNum(d.prints),d.prints/bestMax*100)).join(''):'<p class="muted" style="color:#9fd6bb">Sem dados suficientes ainda.</p>';
+  const worstMax=Math.max(1,...worstDays.map(d=>d.prints));
+  $('dashRankWorstProd').innerHTML=worstDays.length?worstDays.map((d,i)=>rankRow(`${i+1}º`,d.date.split('-').reverse().join('/'),fmtNum(d.prints),d.prints/worstMax*100,'low')).join(''):'<p class="muted" style="color:#9fd6bb">Sem dados suficientes ainda.</p>';
+  const slaMax=Math.max(1,...bestSlaDays.map(d=>d.rate));
+  $('dashRankBestSla').innerHTML=bestSlaDays.length?bestSlaDays.map((d,i)=>rankRow(medal(i),d.date.split('-').reverse().join('/'),pct(d.rate),d.rate/slaMax*100)).join(''):'<p class="muted" style="color:#9fd6bb">Sem OS classificadas o suficiente ainda.</p>';
 
   const expectedPrint=elapsedDays*(db.config.dailyPrintGoal||750000);
   const pace=expectedPrint?totalP/expectedPrint*100:0,remainingDays=Math.max(0,daysInMonth-elapsedDays),onTrack=pace>=100;
