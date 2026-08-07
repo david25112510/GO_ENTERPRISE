@@ -225,6 +225,12 @@ body.role-tv .view:not(#dashboardTv):not(#noticias){display:none!important}
 .dash-var.ok{color:#6fe6a0}
 .dash-var.bad{color:#ff9d9d}
 .dash-var.mut{color:#a9c4b7}
+.dash-widget-head{display:flex;align-items:center;gap:8px;padding:0 0 12px;margin:0 0 16px;
+  border-bottom:2px solid rgba(0,168,89,.45);font-weight:800;font-size:12px;letter-spacing:.05em;
+  text-transform:uppercase;color:#8fe3b8}
+body.kiosk-mode .dash-widget-head{font-size:15px;padding-bottom:14px;margin-bottom:18px}
+.dash-alerts-widget{background:rgba(8,28,20,.62);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
+  border-radius:14px;padding:24px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .dash-chart-wrap{background:rgba(8,28,20,.5);border:1px solid rgba(143,227,184,.16);border-radius:12px;padding:18px 22px 34px}
 .dash-bars{min-height:220px}
 .dash-bars .bar{background:linear-gradient(180deg,#8ff5b8,#0e9a55);box-shadow:0 0 14px rgba(111,230,160,.35)}
@@ -281,7 +287,9 @@ body.kiosk-mode .dash-gauge .big-pct{font-size:34px}
 .dash-ritmo-box .pulse-item small{display:block;color:#c9ecdc;font-size:12px;margin-top:2px}
 .dash-birthdays{background:rgba(4,14,10,.88);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
   border-radius:14px;padding:24px;min-height:180px;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-.dash-birthdays h3{margin:0 0 14px;color:#eafff2;position:relative;z-index:1}
+.dash-birthdays h3{margin:0 0 16px;padding:0 0 12px;color:#8fe3b8;position:relative;z-index:1;
+  font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-bottom:2px solid rgba(0,168,89,.45)}
+body.kiosk-mode .dash-birthdays h3{font-size:15px;padding-bottom:14px;margin-bottom:18px}
 .dash-bday-item{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);
   position:relative;z-index:1}
 .dash-bday-item .day{background:var(--selbetti);color:#fff;font-weight:800;border-radius:8px;padding:6px 10px;font-size:14px;
@@ -296,7 +304,8 @@ body.kiosk-mode .dash-gauge .big-pct{font-size:34px}
 @media (max-width:1100px){.dash-rank-grid{grid-template-columns:1fr}}
 .dash-rank-col{background:rgba(8,28,20,.62);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
   border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-.dash-rank-col h3{margin:0 0 12px;color:#eafff2;font-size:15px}
+.dash-rank-col h3{margin:0 0 14px;padding:0 0 10px;color:#8fe3b8;font-size:12px;font-weight:800;
+  letter-spacing:.05em;text-transform:uppercase;border-bottom:2px solid rgba(0,168,89,.45)}
 .dash-rank-item{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px}
 .dash-rank-item:last-child{border-bottom:none}
 .dash-rank-item .row{display:flex;align-items:center;gap:10px}
@@ -310,7 +319,7 @@ body.kiosk-mode .dash-gauge .big-pct{font-size:34px}
 .dash-news-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (max-width:1100px){.dash-news-grid{grid-template-columns:1fr}}
 .dash-news-card{background:rgba(4,14,10,.88);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
-  border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;flex-direction:column}
+  border-top:3px solid #00a859;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;flex-direction:column}
 .dash-news-card img{width:100%;height:120px;object-fit:cover;display:block}
 .dash-news-card .body{padding:16px 18px}
 .dash-news-card h3{margin:0 0 6px;color:#eafff2;font-size:16px}
@@ -834,13 +843,16 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
         <div class="dash-slide active" id="dashSlide0">
           <h2 class="dash-slide-title">Produção</h2>
           <div class="dash-cards" id="dashProdCards"></div>
-          <div class="dash-chart-wrap"><div class="dash-linechart" id="dashProdChart"></div></div>
+          <div class="dash-chart-wrap">
+            <div class="dash-widget-head">📈 Evolução diária de impressões</div>
+            <div class="dash-linechart" id="dashProdChart"></div>
+          </div>
         </div>
         <div class="dash-slide" id="dashSlide1">
           <h2 class="dash-slide-title">SLA &amp; Avisos</h2>
           <div class="dash-sla-row">
-            <div class="dash-gauge" id="dashSlaGauge"></div>
-            <div class="dash-alerts" id="dashAlertsList"></div>
+            <div class="dash-gauge"><div class="dash-widget-head">🎯 SLA do mês</div><div id="dashSlaGauge"></div></div>
+            <div class="dash-alerts-widget"><div class="dash-widget-head">🔔 Avisos</div><div class="dash-alerts" id="dashAlertsList"></div></div>
           </div>
         </div>
         <div class="dash-slide" id="dashSlide2">
@@ -854,7 +866,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
         <div class="dash-slide" id="dashSlide3">
           <h2 class="dash-slide-title">Ritmo da Operação</h2>
           <div class="dash-ritmo-row">
-            <div class="dash-ritmo-box" id="dashRitmoBox"></div>
+            <div class="dash-ritmo-box"><div class="dash-widget-head">⏱️ Ritmo frente à meta</div><div id="dashRitmoBox"></div></div>
             <div class="dash-birthdays"><h3>🎂 Aniversariantes do mês</h3><div id="dashBirthdayList"></div>
               <img class="dash-mascot-img" alt="Mascote Selbetti">
             </div>
