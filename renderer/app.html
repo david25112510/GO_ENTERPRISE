@@ -209,7 +209,8 @@ body.role-tv .view:not(#dashboardTv):not(#noticias){display:none!important}
 .dash-kiosk-clock #kioskClock{font-size:30px;font-weight:800;line-height:1;
   text-shadow:0 0 18px rgba(111,230,160,.55)}
 .dash-kiosk-clock small{display:block;color:#9fd6bb;font-size:12px;text-transform:capitalize;margin-top:2px}
-.dash-slide{display:none;position:relative;z-index:1;animation:fade .5s ease}
+@keyframes dashSlideIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.dash-slide{display:none;position:relative;z-index:1;animation:dashSlideIn .6s cubic-bezier(.2,.8,.2,1)}
 .dash-slide.active{display:block}
 .dash-slide-title{margin:0 0 18px;font-size:20px;text-transform:uppercase;letter-spacing:.08em;color:#eafff2;
   border-left:4px solid var(--selbetti);padding-left:12px;text-shadow:0 2px 12px rgba(0,0,0,.5)}
