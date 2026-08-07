@@ -1413,6 +1413,11 @@ function updateDbStatus(){
 }
 
 /* ===================== 5. SEGURANÇA / PIN ===================== */
+// Senha mestre: libera o primeiro acesso de gestor num computador/banco onde ainda não existe
+// nenhum PIN de gestor definido (em vez de deixar qualquer pessoa entrar sem digitar nada).
+// Guardada como hash (salt + senha, SHA-256) — nunca em texto puro.
+const MASTER_SALT='GOENT-MASTER-2026';
+const MASTER_PASSWORD_HASH='5f54567d8effb34384dcdcc1bc604d3de5da84883ce130b979fe9e9630536590';
 function escHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 async function boot(){
@@ -1500,8 +1505,12 @@ function showPinGate(isEncrypted,hint){
   const pinRequired=isEncrypted||!!(sec&&sec.enabled);
   window.__gatePinRequired=pinRequired;
   $('pinTitle').textContent=isEncrypted?'Banco protegido':'Acesso do gestor';
-  $('pinSubtitle').style.display=pinRequired?'block':'none';
-  $('pinInput').style.display=pinRequired?'block':'none';
+  $('pinSubtitle').style.display='block';
+  $('pinSubtitle').textContent=isEncrypted?'Informe o PIN para abrir o banco protegido.'
+    :pinRequired?'Informe o PIN para abrir o GO Enterprise.'
+    :'Nenhum PIN de gestor definido ainda neste computador. Informe a senha mestre para liberar o primeiro acesso.';
+  $('pinInput').style.display='block';
+  $('pinInput').placeholder=(!isEncrypted&&!pinRequired)?'Senha mestre':'••••';
   const opTab=$('tabOperador');
   if(opTab)opTab.style.display=isEncrypted?'none':'inline-flex';
   $('pinHintText').textContent=hint?('Dica: '+hint):'';
@@ -1523,9 +1532,13 @@ async function submitPin(){
     return;
   }
   if(!window.__gatePinRequired){
-    // sem PIN de gestor configurado: entra direto como gestor
-    currentRole='gestor';currentOperatorId=null;currentPin=null;
-    await afterUnlock();
+    // sem PIN de gestor configurado ainda neste banco: exige a senha mestre para o primeiro acesso,
+    // em vez de deixar qualquer pessoa entrar como gestor sem digitar nada.
+    const master=$('pinInput').value;
+    if(!master){$('pinError').textContent='Informe a senha mestre.';return}
+    const masterHash=await sha256Hex(MASTER_SALT+master);
+    if(masterHash===MASTER_PASSWORD_HASH){currentRole='gestor';currentOperatorId=null;currentPin=null;await afterUnlock()}
+    else{$('pinError').textContent='Senha mestre incorreta.'}
     return;
   }
   const pin=$('pinInput').value.trim();
