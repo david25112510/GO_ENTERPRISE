@@ -178,10 +178,12 @@ body:not(.role-operador) .nav button[data-role="operador"]{display:none!importan
 body.role-operador #home,body.role-operador #financeiro,body.role-operador #fornecedores,body.role-operador #admin{display:none!important}
 body.role-operador .finance-only{display:none!important}
 body.role-operador .gestor-only{display:none!important}
+body.role-tv .view:not(#dashboardTv):not(#noticias){display:none!important}
 .session-badge{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:4px 10px;
   border-radius:999px;display:inline-block;margin-top:8px}
 .session-badge.gestor{background:rgba(0,168,89,.18);color:#8fe3b8}
 .session-badge.operador{background:rgba(238,136,68,.20);color:#f3b781}
+.session-badge.tv{background:rgba(90,140,238,.20);color:#a8c2f7}
 
 /* ---- Integração com o app desktop (Electron): painéis só aparecem quando window.goDesktop existe ---- */
 .desktop-only{display:none}
@@ -276,6 +278,18 @@ body.role-operador .gestor-only{display:none!important}
 .dash-rank-item .d{flex:1;color:#eaf6ef}
 .dash-rank-item .val{font-weight:800;color:#6fe6a0}
 .dash-rank-item .val.low{color:#ffb37a}
+.dash-news-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:1100px){.dash-news-grid{grid-template-columns:1fr}}
+.dash-news-card{background:rgba(4,14,10,.88);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
+  border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;flex-direction:column}
+.dash-news-card img{width:100%;height:120px;object-fit:cover;display:block}
+.dash-news-card .body{padding:16px 18px}
+.dash-news-card h3{margin:0 0 6px;color:#eafff2;font-size:16px}
+.dash-news-card p{margin:0;color:#dcefe4;font-size:13px;line-height:1.5;
+  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+body.kiosk-mode .dash-news-card h3{font-size:19px}
+body.kiosk-mode .dash-news-card p{font-size:15px;-webkit-line-clamp:5}
+body.kiosk-mode .dash-news-card img{height:150px}
 
 /* modo TV (kiosk): aberto em aba própria via #dashboard — tela cheia, sem menu, tipografia ampliada */
 body.kiosk-mode .side{display:none!important}
@@ -525,6 +539,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
     <div class="role-tabs" id="roleTabs">
       <button type="button" class="role-tab active" id="tabGestor" onclick="setGateRole('gestor')">Gestor</button>
       <button type="button" class="role-tab" id="tabOperador" onclick="setGateRole('operador')">Operador</button>
+      <button type="button" class="role-tab" id="tabTv" onclick="setGateRole('tv')" style="display:none">TV</button>
     </div>
     <div class="gate-pane" id="gateGestor">
       <b id="pinTitle">Acesso do gestor</b>
@@ -540,6 +555,13 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
       <input id="operadorRegInput" type="text" inputmode="numeric" placeholder="Matrícula">
       <div class="err" id="operadorError"></div>
       <button class="btn primary" style="width:100%;margin-top:10px" onclick="submitOperadorLogin()">Entrar</button>
+    </div>
+    <div class="gate-pane" id="gateTv" style="display:none">
+      <b>Acesso da TV</b>
+      <p class="muted" style="margin:6px 0 0">Informe o PIN da TV para abrir só o painel do Dashboard TV e o módulo de notícias.</p>
+      <input id="tvPinInput" type="password" inputmode="numeric" maxlength="8" placeholder="••••">
+      <div class="err" id="tvError"></div>
+      <button class="btn primary" style="width:100%;margin-top:10px" onclick="submitTvLogin()">Entrar</button>
     </div>
   </div>
 </div>
@@ -566,6 +588,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
       <button data-view="rh">👥 <span>Colaboradores</span></button>
       <button data-view="manuais">📘 <span>Manuais</span></button>
       <button data-view="dashboardTv" data-role="gestor">📺 <span>Dashboard TV</span></button>
+      <button data-view="noticias" data-role="gestor">📰 <span>Notícias</span></button>
       <button data-view="fornecedores" data-role="gestor">🏢 <span>Fornecedores</span></button>
       <button data-view="admin" data-role="gestor">⚙️ <span>Administração</span></button>
     </nav>
@@ -809,6 +832,19 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
             </div>
           </div>
         </div>
+        <div class="dash-slide" id="dashSlide4">
+          <h2 class="dash-slide-title">Notícias</h2>
+          <div class="dash-news-grid" id="dashNewsGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NOTÍCIAS -->
+    <section class="view" id="noticias">
+      <div class="top"><div><h1>Notícias</h1><p>Avisos e comunicados exibidos na tela do Dashboard TV.</p></div></div>
+      <div class="panel"><div class="toolbar"><button class="btn primary" onclick="openNewsModal()">+ Nova notícia</button></div>
+        <h2>Notícias cadastradas</h2>
+        <div class="manual-grid" id="newsGrid"></div>
       </div>
     </section>
 
@@ -838,6 +874,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
       <div class="panel"><h2>🔒 Segurança</h2>
         <p class="muted">Trava de acesso por PIN ao abrir o aplicativo. A criptografia do arquivo .godb é opcional e avançada — leia o aviso antes de ativar.</p>
         <div class="toolbar"><button class="btn" onclick="openModal('pinChangeModal')">Definir/alterar PIN</button>
+        <button class="btn" onclick="openModal('tvPinChangeModal')">Definir/alterar PIN da TV</button>
         <button class="btn" id="encToggleBtn" onclick="toggleEncryption()">Ativar criptografia do arquivo</button></div>
         <div id="securityStatus" class="muted" style="font-size:12px"></div>
       </div>
@@ -939,6 +976,16 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
   <input type="hidden" id="vReg"><input type="hidden" id="vRole">
 </div><div class="actions"><button class="btn ghost" onclick="closeModal('vacationModal')">Cancelar</button><button class="btn primary" onclick="addVacation()">Salvar</button></div></div></div>
 
+<div class="modal" id="newsModal"><div class="box"><h3 id="newsModalTitle">Nova notícia</h3><div class="form wide">
+  <div><label>Título<input id="newsTitle" maxlength="80"></label></div>
+  <div><label>Texto<textarea id="newsText" style="min-height:90px"></textarea></label></div>
+  <div class="photo-upload" style="margin-top:4px">
+    <img class="photo-preview" id="newsImagePreview" alt="Imagem" style="border-radius:10px;width:110px;height:80px;object-fit:cover;display:none">
+    <label class="btn file" style="font-size:12px">🖼️ Imagem (opcional)<input type="file" accept="image/*" onchange="handleNewsImage(this)"></label>
+    <button class="btn ghost" id="newsImageClearBtn" style="font-size:12px;display:none" onclick="clearNewsImage()">Remover imagem</button>
+  </div>
+</div><div class="actions"><button class="btn ghost" onclick="closeModal('newsModal')">Cancelar</button><button class="btn primary" onclick="saveNewsItem()">Salvar</button></div></div></div>
+
 <div class="modal" id="supModal"><div class="box"><h3>Novo fornecedor</h3><div class="form">
   <div><label>Nome<input id="sName"></label></div>
   <div><label>Tipo<select id="sType"><option>Fixo</option><option>Avulso</option></select></label></div>
@@ -1031,6 +1078,15 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
     <div><label>Dica (opcional, visível na tela de bloqueio)<input id="pinHintInput"></label></div>
   </div>
   <div class="actions"><button class="btn ghost" onclick="closeModal('pinChangeModal')">Cancelar</button><button class="btn primary" onclick="setNewPin()">Salvar PIN</button></div>
+</div></div>
+
+<div class="modal" id="tvPinChangeModal"><div class="box"><h3>Definir / alterar PIN da TV</h3>
+  <p class="muted" style="font-size:12px">Quem entrar com este PIN só vê o Dashboard TV e o módulo de Notícias — sem acesso a financeiro, RH ou qualquer outra tela.</p>
+  <div class="form wide">
+    <div><label>Novo PIN da TV (4 a 8 dígitos)<input id="newTvPin1" type="password" maxlength="8"></label></div>
+    <div><label>Confirmar PIN<input id="newTvPin2" type="password" maxlength="8"></label></div>
+  </div>
+  <div class="actions"><button class="btn ghost" onclick="closeModal('tvPinChangeModal')">Cancelar</button><button class="btn primary" onclick="setNewTvPin()">Salvar PIN da TV</button></div>
 </div></div>
 
 <script>
@@ -1208,9 +1264,9 @@ function seedManuals(){
   ];
 }
 let db={
-  production:[],sla:{},finance:[],expenses:[],losses:[],employees:[],absences:[],vacations:[],suppliers:[],imports:[],history:[],activities:[],timesheets:[],manuals:seedManuals(),
+  production:[],sla:{},finance:[],expenses:[],losses:[],employees:[],absences:[],vacations:[],suppliers:[],imports:[],history:[],activities:[],timesheets:[],manuals:seedManuals(),news:[],
   config:{printValue:.053,paperWeight:4.7,slaGoal:95,payrollTax:70,dailyPrintGoal:580000,dailyObjectGoal:260000,
-    security:{enabled:false,pinHash:'',salt:'',iterations:150000,encryptionEnabled:false,hint:''}}
+    security:{enabled:false,pinHash:'',salt:'',iterations:150000,encryptionEnabled:false,hint:'',tvEnabled:false,tvPinHash:'',tvSalt:'',tvHint:''}}
 };
 /* perda de papel — modelo por competência (réplica do Relatório de Pesagem): cada registro agrupa as
    pesagens (peso aferido) lançadas no mês e as resmas pagas informadas no fechamento. Migra automaticamente
@@ -1288,6 +1344,7 @@ function normalizeDb(x){
     activities:Array.isArray(source.activities)?source.activities:[],
     timesheets:Array.isArray(source.timesheets)?source.timesheets:[],
     manuals:Array.isArray(source.manuals)?source.manuals.map(normalizeManual):(db.manuals||[]).map(normalizeManual), // arquivos salvos antes deste recurso não têm "manuals": preenche com os equipamentos padrão
+    news:Array.isArray(source.news)?source.news:[],
     config:{...db.config,...(source.config||{}),security:{...db.config.security,...((source.config||{}).security||{})}}
   };
 }
@@ -1488,14 +1545,15 @@ async function completeSharedFolderSetup(){
   }
 }
 function setGateRole(role){
-  const gestorPin=role==='gestor';
-  $('tabGestor').classList.toggle('active',gestorPin);
-  $('tabOperador').classList.toggle('active',!gestorPin);
-  $('gateGestor').style.display=gestorPin?'block':'none';
-  $('gateOperador').style.display=gestorPin?'none':'block';
-  $('pinError').textContent='';$('operadorError').textContent='';
+  $('tabGestor').classList.toggle('active',role==='gestor');
+  $('tabOperador').classList.toggle('active',role==='operador');
+  $('tabTv').classList.toggle('active',role==='tv');
+  $('gateGestor').style.display=role==='gestor'?'block':'none';
+  $('gateOperador').style.display=role==='operador'?'block':'none';
+  $('gateTv').style.display=role==='tv'?'block':'none';
+  $('pinError').textContent='';$('operadorError').textContent='';$('tvError').textContent='';
   setTimeout(()=>{
-    const el=gestorPin?$('pinInput'):$('operadorRegInput');
+    const el=role==='gestor'?$('pinInput'):role==='operador'?$('operadorRegInput'):$('tvPinInput');
     if(el&&el.style.display!=='none')el.focus();
   },50);
 }
@@ -1513,12 +1571,16 @@ function showPinGate(isEncrypted,hint){
   $('pinInput').placeholder=(!isEncrypted&&!pinRequired)?'Senha mestre':'••••';
   const opTab=$('tabOperador');
   if(opTab)opTab.style.display=isEncrypted?'none':'inline-flex';
+  const tvTab=$('tabTv');
+  if(tvTab)tvTab.style.display=(!isEncrypted&&sec&&sec.tvEnabled)?'inline-flex':'none';
   $('pinHintText').textContent=hint?('Dica: '+hint):'';
   $('pinInput').value='';$('pinError').textContent='';
   $('operadorRegInput').value='';$('operadorError').textContent='';
+  $('tvPinInput').value='';$('tvError').textContent='';
   setGateRole('gestor');
   $('pinInput').onkeydown=e=>{if(e.key==='Enter')submitPin()};
   $('operadorRegInput').onkeydown=e=>{if(e.key==='Enter')submitOperadorLogin()};
+  $('tvPinInput').onkeydown=e=>{if(e.key==='Enter')submitTvLogin()};
 }
 async function submitPin(){
   if(window.__pendingEnvelope){
@@ -1557,6 +1619,14 @@ function submitOperadorLogin(){
   currentRole='operador';currentOperatorId=match.id;currentPin=null;
   afterUnlock();
 }
+async function submitTvLogin(){
+  const pin=$('tvPinInput').value.trim();
+  if(!pin){$('tvError').textContent='Informe o PIN da TV.';return}
+  const sec=db.config.security;
+  const hash=await sha256Hex(sec.tvSalt+pin);
+  if(sec.tvEnabled&&hash===sec.tvPinHash){currentRole='tv';currentOperatorId=null;currentPin=null;await afterUnlock()}
+  else{$('tvError').textContent='PIN incorreto.'}
+}
 async function afterUnlock(){
   $('pinGate').style.display='none';$('appRoot').style.display='grid';
   if(!currentRole)currentRole='gestor';
@@ -1569,15 +1639,24 @@ async function afterUnlock(){
   render();applyRoleUI();updateDbStatus();updateMoneyToggleUI();
   if(kioskMode)enterKioskMode();
 }
+const NAV_VIEWS_BY_ROLE={
+  operador:['operadorHome','producao','manuais'],
+  tv:['dashboardTv','noticias'],
+  gestor:['home','producao','financeiro','rh','manuais','dashboardTv','fornecedores','admin','noticias']
+};
 function applyRoleUI(){
-  const isOp=currentRole==='operador';
+  const isOp=currentRole==='operador',isTv=currentRole==='tv';
   document.body.classList.toggle('role-operador',isOp);
+  document.body.classList.toggle('role-tv',isTv);
   const badge=$('sessionBadge');
   if(badge){
     if(isOp){
       const e=db.employees.find(x=>x.id===currentOperatorId);
       badge.style.display='inline-block';badge.className='session-badge operador';
       badge.textContent=e?('Operador · '+e.name.split(' ')[0]):'Operador';
+    }else if(isTv){
+      badge.style.display='inline-block';badge.className='session-badge tv';
+      badge.textContent='TV';
     }else{
       badge.style.display='inline-block';badge.className='session-badge gestor';
       badge.textContent='Gestor';
@@ -1585,10 +1664,14 @@ function applyRoleUI(){
   }
   const rhBtn=document.querySelector('.nav button[data-view="rh"]');
   if(rhBtn)rhBtn.innerHTML=isOp?'👤 <span>Meu Perfil</span>':'👥 <span>Colaboradores</span>';
-  if(isOp){
+  const allowed=NAV_VIEWS_BY_ROLE[currentRole]||NAV_VIEWS_BY_ROLE.gestor;
+  document.querySelectorAll('.nav button[data-view]').forEach(b=>{
+    b.style.display=allowed.includes(b.dataset.view)?'':'none';
+  });
+  if(isOp||isTv){
     document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
-    switchView('operadorHome');
+    switchView(isOp?'operadorHome':'dashboardTv');
   }
 }
 function lockApp(){currentPin=null;currentRole=null;currentOperatorId=null;location.reload()}
@@ -1614,6 +1697,18 @@ async function setNewPin(){
   closeModal('pinChangeModal');alert('PIN salvo. Ele será solicitado na próxima vez que o aplicativo for aberto.');
   renderAdminSecurity();
 }
+async function setNewTvPin(){
+  const p1=val('newTvPin1'),p2=val('newTvPin2');
+  if(p1.length<4){alert('O PIN da TV deve ter ao menos 4 dígitos.');return}
+  if(p1!==p2){alert('Os PINs não coincidem.');return}
+  const tvSalt=b64(crypto.getRandomValues(new Uint8Array(16)));
+  const tvPinHash=await sha256Hex(tvSalt+p1);
+  db.config.security={...db.config.security,tvEnabled:true,tvPinHash,tvSalt};
+  await save(true);
+  $('newTvPin1').value='';$('newTvPin2').value='';
+  closeModal('tvPinChangeModal');alert('PIN da TV salvo. Já aparece uma aba "TV" na tela de acesso.');
+  renderAdminSecurity();
+}
 async function toggleEncryption(){
   const sec=db.config.security;
   if(!sec.enabled){alert('Defina um PIN primeiro em "Definir/alterar PIN".');return}
@@ -1630,7 +1725,7 @@ async function toggleEncryption(){
 }
 function renderAdminSecurity(){
   const sec=db.config.security;
-  $('securityStatus').innerHTML=`PIN: <b>${sec.enabled?'ativo':'não definido'}</b> · Criptografia do arquivo: <b>${sec.encryptionEnabled?'ativada':'desativada'}</b>`;
+  $('securityStatus').innerHTML=`PIN: <b>${sec.enabled?'ativo':'não definido'}</b> · PIN da TV: <b>${sec.tvEnabled?'ativo':'não definido'}</b> · Criptografia do arquivo: <b>${sec.encryptionEnabled?'ativada':'desativada'}</b>`;
   $('encToggleBtn').textContent=sec.encryptionEnabled?'Desativar criptografia do arquivo':'Ativar criptografia do arquivo';
 }
 
@@ -1772,6 +1867,57 @@ function addSupplier(){
   closeModal('supModal');['sName','sContract'].forEach(i=>$(i).value='');save();
 }
 function deleteSupplier(id){if(!confirm('Excluir este fornecedor?'))return;del('suppliers',id)}
+
+/* ---- Notícias: avisos/comunicados exibidos numa tela do rodízio do Dashboard TV ---- */
+let newsDraft=null;
+function openNewsModal(id){
+  const existing=id?(db.news||[]).find(n=>n.id===id):null;
+  newsDraft=existing?{...existing}:{id:uid(),title:'',text:'',image:'',createdAt:new Date().toISOString()};
+  $('newsModalTitle').textContent=existing?'Editar notícia':'Nova notícia';
+  $('newsTitle').value=newsDraft.title;
+  $('newsText').value=newsDraft.text;
+  const prev=$('newsImagePreview');
+  if(newsDraft.image){prev.src=newsDraft.image;prev.style.display='block';$('newsImageClearBtn').style.display='inline-flex'}
+  else{prev.style.display='none';$('newsImageClearBtn').style.display='none'}
+  openModal('newsModal');
+}
+async function handleNewsImage(input){
+  const file=input.files&&input.files[0];if(!file)return;
+  const dataUrl=await compressImageFile(file,900,.8);
+  newsDraft.image=dataUrl;
+  const prev=$('newsImagePreview');prev.src=dataUrl;prev.style.display='block';
+  $('newsImageClearBtn').style.display='inline-flex';
+  input.value='';
+}
+function clearNewsImage(){
+  newsDraft.image='';
+  $('newsImagePreview').style.display='none';
+  $('newsImageClearBtn').style.display='none';
+}
+function saveNewsItem(){
+  const title=val('newsTitle').trim();
+  if(!title)return alert('Informe o título da notícia.');
+  newsDraft.title=title;
+  newsDraft.text=val('newsText').trim();
+  newsDraft.updatedAt=new Date().toISOString();
+  db.news=db.news||[];
+  const idx=db.news.findIndex(n=>n.id===newsDraft.id);
+  if(idx>=0)db.news[idx]=newsDraft;else db.news.push(newsDraft);
+  closeModal('newsModal');
+  save();
+}
+function deleteNewsItem(id){if(!confirm('Excluir esta notícia?'))return;del('news',id)}
+function renderNoticias(){
+  const grid=$('newsGrid');if(!grid)return;
+  const list=[...(db.news||[])].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  grid.innerHTML=list.map(n=>`
+    <div class="manual-card" onclick="openNewsModal('${n.id}')">
+      ${n.image?`<img class="manual-cover" src="${n.image}" alt="${escHtml(n.title)}">`:'<div class="manual-cover manual-cover-fallback">📰</div>'}
+      <div class="manual-card-body"><b>${escHtml(n.title)}</b><small>${escHtml((n.text||'').slice(0,80))}${(n.text||'').length>80?'…':''}</small>
+        <button class="btn danger" style="align-self:flex-start;padding:4px 9px;font-size:11px;margin-top:4px" onclick="event.stopPropagation();deleteNewsItem('${n.id}')">✕ Excluir</button>
+      </div>
+    </div>`).join('')||'<p class="muted">Nenhuma notícia cadastrada ainda.</p>';
+}
 
 function refreshFinanceSuppliers(selected){
   const sel=$('fSupplier');if(!sel)return;
@@ -2452,6 +2598,7 @@ function switchView(v){
     if(v==='rh'){openEmployeeProfile(currentOperatorId);return}
     if(!['operadorHome','producao','manuais'].includes(v))v='operadorHome';
   }
+  if(currentRole==='tv'&&!['dashboardTv','noticias'].includes(v))v='dashboardTv';
   if(v==='manuais')currentManualId=null;
   activeView=v;
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
@@ -2478,6 +2625,7 @@ function render(){
   renderFornecedores();
   renderAdmin();
   renderManuais();
+  renderNoticias();
   renderDashboardTv();
   if(currentProfileId)renderEmployeeProfile();
   if(currentManualId)renderManualDetail();
@@ -2688,12 +2836,15 @@ function renderDashboardTv(){
 
   const bdays=monthBirthdays();
   $('dashBirthdayList').innerHTML=bdays.length?bdays.map(e=>`<div class="dash-bday-item"><div class="day">${String(e.bDay).padStart(2,'0')}</div><div><b>${escHtml(e.name)}${e.today?' 🎉':''}</b><small>${escHtml(e.role||'')}</small></div></div>`).join(''):'<p class="muted" style="color:#9fd6bb">Nenhum aniversário cadastrado este mês.</p>';
+
+  const news=[...(db.news||[])].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,4);
+  $('dashNewsGrid').innerHTML=news.length?news.map(n=>`<div class="dash-news-card">${n.image?`<img src="${n.image}" alt="${escHtml(n.title)}">`:''}<div class="body"><h3>${escHtml(n.title)}</h3><p>${escHtml(n.text||'')}</p></div></div>`).join(''):'<p class="muted" style="color:#9fd6bb">Nenhuma notícia cadastrada.</p>';
 }
 function openDashboardTV(){
   if(window.goDesktop&&window.goDesktop.isElectron){window.goDesktop.openTvWindow();return}
   window.open(location.href.split('#')[0]+'#dashboard','_blank');
 }
-const DASH_SLIDE_BG=['bg-producao','bg-sla','bg-ranking','bg-ritmo'];
+const DASH_SLIDE_BG=['bg-producao','bg-sla','bg-ranking','bg-ritmo','bg-producao'];
 function showKioskSlide(i){
   document.querySelectorAll('#dashboardTv .dash-slide').forEach((el,idx)=>el.classList.toggle('active',idx===i));
   const wrap=document.querySelector('#dashboardTv .dash-kiosk-wrap');

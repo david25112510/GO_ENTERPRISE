@@ -19,7 +19,7 @@ const chokidar = require('chokidar');
 // coleções tratadas como arrays de registros com "id" (mescladas item a item)
 const ARRAY_COLLECTIONS = [
   'production', 'finance', 'expenses', 'losses', 'employees', 'absences', 'vacations',
-  'suppliers', 'imports', 'history', 'activities', 'timesheets', 'manuals'
+  'suppliers', 'imports', 'history', 'activities', 'timesheets', 'manuals', 'news'
 ];
 // coleções tratadas como objeto-mapa { chave: registro } (mescladas por chave)
 const MAP_COLLECTIONS = ['sla'];
