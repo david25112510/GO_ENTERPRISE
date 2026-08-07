@@ -42,7 +42,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .side-logo{display:block;width:170px;height:auto;max-height:54px;object-fit:contain;background:#fff;
   border-radius:9px;padding:8px 10px;margin:0 auto 10px;box-shadow:0 3px 10px rgba(0,0,0,.16)}
 .brand small{display:block;color:#c7d3dd;font-size:12px;margin-top:2px}
-.nav{display:flex;flex-direction:column;gap:3px;flex:1;position:relative;z-index:1}
+.nav{display:flex;flex-direction:column;gap:3px;flex:1;min-height:0;overflow-y:auto;position:relative;z-index:1}
+.nav::-webkit-scrollbar{width:6px}
+.nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:999px}
+.nav::-webkit-scrollbar-track{background:transparent}
 .nav button{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:#c7d3dd;
   padding:12px 13px;border-radius:var(--radius-sm);cursor:pointer;transition:.18s;display:flex;gap:10px;align-items:center}
 .nav button:hover{color:#fff;background:rgba(255,255,255,.07)}
