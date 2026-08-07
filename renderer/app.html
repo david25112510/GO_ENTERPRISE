@@ -541,6 +541,16 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
   </div>
 </div>
 
+<div class="pin-gate" id="sharedFolderGate" style="display:none">
+  <div class="pin-box">
+    <img class="pin-logo" alt="Selbetti">
+    <b>Configuração obrigatória deste computador</b>
+    <p class="muted" style="margin:6px 0 0">Este computador ainda não está conectado à pasta de rede compartilhada. Escolha a mesma pasta usada pelos outros computadores para carregar os colaboradores, usuários e dados já cadastrados — o app não libera o uso antes disso.</p>
+    <button class="btn primary" id="sfGateBtn" style="width:100%;margin-top:16px" onclick="completeSharedFolderSetup()">Escolher pasta compartilhada da rede</button>
+    <div class="err" id="sfGateError"></div>
+  </div>
+</div>
+
 <div class="app" id="appRoot" style="display:none">
   <aside class="side">
     <div class="brand"><img class="side-logo" id="logoSide" alt="Selbetti"><small>GO Enterprise · Correios MG</small>
@@ -1408,6 +1418,12 @@ async function boot(){
   // sempre que possível (banco não criptografado).
   kioskMode=location.hash==='#dashboard';
   await initDesktopIntegration();
+  // rodando dentro do app desktop e ainda sem pasta compartilhada configurada neste PC: bloqueia
+  // o uso até escolher a pasta de rede, para nunca operar "sozinho" com uma base local divergente.
+  if(window.goDesktop&&!kioskMode&&!(window.__desktopSettings&&window.__desktopSettings.sharedFolder)){
+    $('sharedFolderGate').style.display='flex';
+    return;
+  }
   // dados brutos (não decifrados) para ler config.security antes do PIN.
   // fonte principal: IndexedDB (sem limite prático de tamanho). Se estiver vazio,
   // tenta migrar uma cópia antiga que tenha ficado no localStorage de versões anteriores.
@@ -1447,6 +1463,21 @@ async function boot(){
   // operador sempre se identifica pela matrícula, para que o app saiba de quem são
   // as "próprias informações" a exibir.
   showPinGate(false,(db.config.security&&db.config.security.enabled)?db.config.security.hint:'');
+}
+async function completeSharedFolderSetup(){
+  const btn=$('sfGateBtn'),err=$('sfGateError');
+  err.textContent='';
+  btn.disabled=true;btn.textContent='Abrindo seletor de pasta...';
+  try{
+    const updated=await window.goDesktop.chooseSharedFolder();
+    if(!updated||!updated.sharedFolder){btn.disabled=false;btn.textContent='Escolher pasta compartilhada da rede';return}
+    window.__desktopSettings=updated;
+    $('sharedFolderGate').style.display='none';
+    boot();
+  }catch(e){
+    err.textContent='Não foi possível definir a pasta compartilhada. Tente novamente.';
+    btn.disabled=false;btn.textContent='Escolher pasta compartilhada da rede';
+  }
 }
 function setGateRole(role){
   const gestorPin=role==='gestor';
@@ -3280,9 +3311,11 @@ document.addEventListener('keydown',e=>{
    o app continua funcionando exatamente como antes, só com IndexedDB local. */
 async function initDesktopIntegration(){
   if(!window.goDesktop)return;
+  if(window.__desktopIntegrationDone)return; // evita registrar listeners duplicados se boot() rodar de novo
+  window.__desktopIntegrationDone=true;
   try{window.__desktopSettings=await window.goDesktop.getSettings()}
   catch(e){window.__desktopSettings=null}
-  document.querySelectorAll('.desktop-only').forEach(el=>el.style.display='');
+  document.querySelectorAll('.desktop-only').forEach(el=>el.style.display='block');
   const verEl=$('desktopAppVersion');
   if(verEl){try{verEl.textContent='v'+(await window.goDesktop.getAppVersion())}catch(e){}}
   renderDesktopSyncStatus();
