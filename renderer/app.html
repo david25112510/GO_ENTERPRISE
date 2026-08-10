@@ -271,6 +271,8 @@ body.kiosk-mode .dash-gauge .big-pct{font-size:34px}
 .dash-alerts .alert-box.warn{background:rgba(230,180,40,.18);border-color:rgba(230,180,40,.45)}
 .dash-alerts .alert-box b{color:#fff}
 .dash-alerts .alert-box small{color:#c7ddd0}
+.alert-box-img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:0 0 auto}
+body.kiosk-mode .alert-box-img{width:52px;height:52px}
 .dash-ritmo-box{background:rgba(4,14,10,.88);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
   border-radius:14px;padding:24px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .dash-ritmo-box .big-pct{font-size:42px;font-weight:800;color:#fff;text-shadow:0 0 24px rgba(111,230,160,.4);
@@ -328,6 +330,10 @@ body.kiosk-mode .dash-birthdays h3{font-size:15px;padding-bottom:14px;margin-bot
 body.kiosk-mode .dash-news-card h3{font-size:19px}
 body.kiosk-mode .dash-news-card p{font-size:15px;-webkit-line-clamp:5}
 body.kiosk-mode .dash-news-card img{height:150px}
+.dash-daily-message{margin-top:24px;padding:14px 20px;background:rgba(4,14,10,.88);border:1px solid rgba(143,227,184,.22);
+  border-radius:12px;color:#c9ecdc;font-size:13px;text-align:center;font-style:italic;position:relative;z-index:1}
+body.kiosk-mode .dash-daily-message{position:fixed;left:0;right:0;bottom:0;margin:0;border-radius:0;
+  padding:14px 56px;font-size:16px;background:rgba(2,10,7,.92);border:none;border-top:1px solid rgba(143,227,184,.25);z-index:32}
 
 /* modo TV (kiosk): aberto em aba própria via #dashboard — tela cheia, sem menu, tipografia ampliada */
 body.kiosk-mode .side{display:none!important}
@@ -337,7 +343,7 @@ body.kiosk-mode .dash-preview-only{display:none}
 body.kiosk-mode .dash-kiosk-wrap{position:fixed;inset:0;border-radius:0;min-height:100vh;padding:40px 56px 30px;
   display:flex;flex-direction:column;justify-content:center;z-index:30}
 body.kiosk-mode .dash-kiosk-header{position:fixed;top:22px;left:56px;right:56px;margin:0;z-index:31}
-body.kiosk-mode .dash-slide{padding-top:74px}
+body.kiosk-mode .dash-slide{padding-top:74px;padding-bottom:44px}
 body.kiosk-mode .dash-slide-title{font-size:30px}
 body.kiosk-mode .dash-cards .card{padding:22px 20px}
 body.kiosk-mode .dash-cards .card .v{font-size:44px}
@@ -625,7 +631,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
       <button data-view="rh">👥 <span>Colaboradores</span></button>
       <button data-view="manuais">📘 <span>Manuais</span></button>
       <button data-view="dashboardTv" data-role="gestor">📺 <span>Dashboard TV</span></button>
-      <button data-view="noticias" data-role="gestor">📰 <span>Notícias</span></button>
+      <button data-view="noticias" data-role="gestor">📰 <span>Conteúdo TV</span></button>
       <button data-view="fornecedores" data-role="gestor">🏢 <span>Fornecedores</span></button>
       <button data-view="admin" data-role="gestor">⚙️ <span>Administração</span></button>
     </nav>
@@ -678,7 +684,9 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
       <div class="panel" id="opAlertsPanel"><h2>⚠️ Avisos</h2><div id="opAlertsList"></div></div>
       <div class="grid" style="grid-template-columns:1.4fr 1fr">
         <div class="panel chart-panel"><h2>Produção da equipe — evolução diária (mês atual)</h2><div class="bars" id="opHomeChart"></div></div>
-        <div class="panel"><h2>🕒 Meu banco de horas</h2><div id="opHourBank"></div></div>
+        <div class="panel"><div class="toolbar"><h2 style="margin:0">🕒 Meu banco de horas</h2>
+          <label class="btn primary file" style="font-size:12px">⬆ Importar folha de ponto (PDF)<input type="file" accept=".pdf" onchange="importTimesheetForSelf(this)"></label></div>
+          <div id="opHourBank"></div></div>
       </div>
     </section>
 
@@ -696,7 +704,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
         <div class="panel"><h2>Performance da competência</h2><div id="productionPerformance"></div></div>
       </div>
       <div class="analytics-grid" id="productionInsights"></div>
-      <div class="panel"><div class="toolbar"><label class="btn primary file">⬆ Importar planilha de produção / SLA
+      <div class="panel"><div class="toolbar"><label class="btn primary file gestor-only">⬆ Importar planilha de produção / SLA
         <input type="file" accept=".xlsx" onchange="importSLA(this.files[0])"></label>
         <button class="btn" onclick="exportCSV('sla')">Exportar base CSV</button></div>
         <div class="notice">A produção é formada automaticamente pelas Ordens de Serviço importadas. O Número da OS é a chave única: novos registros são incluídos e registros existentes são atualizados, sem duplicidade.</div>
@@ -760,6 +768,10 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
           <div><label>Competência <select id="absenceMonth" onchange="render()"></select></label>
           <button class="btn primary" onclick="prepareAbsenceModal()">+ Registrar falta</button></div></div>
         <div class="tablewrap"><table><thead><tr><th>Data</th><th>Colaborador</th><th>Cargo</th><th>Tipo</th><th>Observação</th><th></th></tr></thead><tbody id="absenceTable"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="toolbar"><div><h2 style="margin-bottom:2px">🎂 Aniversários da equipe</h2><p class="muted" style="margin:0;font-size:12px">Data de nascimento de cada colaborador — quem faz aniversário no mês aparece automaticamente no Dashboard TV.</p></div></div>
+        <div class="tablewrap"><table><thead><tr><th>Colaborador</th><th>Cargo</th><th>Data de nascimento</th></tr></thead><tbody id="birthdayTable"></tbody></table></div>
       </div>
     </section>
 
@@ -876,15 +888,27 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
           <h2 class="dash-slide-title">Notícias</h2>
           <div class="dash-news-grid" id="dashNewsGrid"></div>
         </div>
+        <div class="dash-daily-message" id="dashDailyMessage" style="display:none"></div>
       </div>
     </section>
 
     <!-- NOTÍCIAS -->
     <section class="view" id="noticias">
-      <div class="top"><div><h1>Notícias</h1><p>Avisos e comunicados exibidos na tela do Dashboard TV.</p></div></div>
+      <div class="top"><div><h1>Conteúdo da TV</h1><p>Notícias, alertas e mensagem do dia exibidos no Dashboard TV.</p></div></div>
       <div class="panel"><div class="toolbar"><button class="btn primary" onclick="openNewsModal()">+ Nova notícia</button></div>
-        <h2>Notícias cadastradas</h2>
+        <h2>📰 Notícias cadastradas</h2>
+        <p class="muted" style="font-size:12px;margin-top:-6px">Aparecem numa tela própria no rodízio do Dashboard TV.</p>
         <div class="manual-grid" id="newsGrid"></div>
+      </div>
+      <div class="panel"><div class="toolbar"><button class="btn primary" onclick="openAlertModal()">+ Novo alerta</button></div>
+        <h2>⚠️ Alertas cadastrados</h2>
+        <p class="muted" style="font-size:12px;margin-top:-6px">Aparecem junto com os avisos automáticos (férias, perdas, SLA) na tela "SLA & Avisos" da TV.</p>
+        <div class="manual-grid" id="alertsGrid"></div>
+      </div>
+      <div class="panel"><div class="toolbar"><button class="btn primary" onclick="openDailyMessageModal()">+ Nova mensagem</button></div>
+        <h2>💬 Mensagens do dia</h2>
+        <p class="muted" style="font-size:12px;margin-top:-6px">Uma mensagem diferente aparece automaticamente no rodapé da TV a cada dia, revezando entre as cadastradas aqui.</p>
+        <div class="tablewrap"><table><thead><tr><th>Mensagem</th><th></th></tr></thead><tbody id="dailyMessageTable"></tbody></table></div>
       </div>
     </section>
 
@@ -1025,6 +1049,21 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
     <button class="btn ghost" id="newsImageClearBtn" style="font-size:12px;display:none" onclick="clearNewsImage()">Remover imagem</button>
   </div>
 </div><div class="actions"><button class="btn ghost" onclick="closeModal('newsModal')">Cancelar</button><button class="btn primary" onclick="saveNewsItem()">Salvar</button></div></div></div>
+
+<div class="modal" id="alertModal"><div class="box"><h3 id="alertModalTitle">Novo alerta</h3><div class="form wide">
+  <div><label>Título<input id="alertTitle" maxlength="80"></label></div>
+  <div><label>Texto<textarea id="alertText" style="min-height:70px"></textarea></label></div>
+  <div><label>Gravidade<select id="alertSeverity"><option value="warn">Atenção (amarelo)</option><option value="bad">Crítico (vermelho)</option><option value="ok">Informativo (verde)</option></select></label></div>
+  <div class="photo-upload" style="margin-top:4px">
+    <img class="photo-preview" id="alertImagePreview" alt="Imagem" style="border-radius:10px;width:110px;height:80px;object-fit:cover;display:none">
+    <label class="btn file" style="font-size:12px">🖼️ Imagem (opcional)<input type="file" accept="image/*" onchange="handleAlertImage(this)"></label>
+    <button class="btn ghost" id="alertImageClearBtn" style="font-size:12px;display:none" onclick="clearAlertImage()">Remover imagem</button>
+  </div>
+</div><div class="actions"><button class="btn ghost" onclick="closeModal('alertModal')">Cancelar</button><button class="btn primary" onclick="saveAlertItem()">Salvar</button></div></div></div>
+
+<div class="modal" id="dailyMessageModal"><div class="box"><h3>Nova mensagem do dia</h3><div class="form wide">
+  <div><label>Mensagem<textarea id="dailyMessageText" style="min-height:70px" maxlength="200"></textarea></label></div>
+</div><div class="actions"><button class="btn ghost" onclick="closeModal('dailyMessageModal')">Cancelar</button><button class="btn primary" onclick="saveDailyMessage()">Salvar</button></div></div></div>
 
 <div class="modal" id="supModal"><div class="box"><h3>Novo fornecedor</h3><div class="form">
   <div><label>Nome<input id="sName"></label></div>
@@ -1304,7 +1343,7 @@ function seedManuals(){
   ];
 }
 let db={
-  production:[],sla:{},finance:[],expenses:[],losses:[],employees:[],absences:[],vacations:[],suppliers:[],imports:[],history:[],activities:[],timesheets:[],manuals:seedManuals(),news:[],
+  production:[],sla:{},finance:[],expenses:[],losses:[],employees:[],absences:[],vacations:[],suppliers:[],imports:[],history:[],activities:[],timesheets:[],manuals:seedManuals(),news:[],alerts:[],dailyMessages:[],
   config:{printValue:.053,paperWeight:4.7,slaGoal:95,payrollTax:70,dailyPrintGoal:580000,dailyObjectGoal:260000,
     security:{enabled:false,pinHash:'',salt:'',iterations:150000,encryptionEnabled:false,hint:'',tvEnabled:false,tvPinHash:'',tvSalt:'',tvHint:''}}
 };
@@ -1385,6 +1424,8 @@ function normalizeDb(x){
     timesheets:Array.isArray(source.timesheets)?source.timesheets:[],
     manuals:Array.isArray(source.manuals)?source.manuals.map(normalizeManual):(db.manuals||[]).map(normalizeManual), // arquivos salvos antes deste recurso não têm "manuals": preenche com os equipamentos padrão
     news:Array.isArray(source.news)?source.news:[],
+    alerts:Array.isArray(source.alerts)?source.alerts:[],
+    dailyMessages:Array.isArray(source.dailyMessages)?source.dailyMessages:[],
     config:{...db.config,...(source.config||{}),security:{...db.config.security,...((source.config||{}).security||{})}}
   };
 }
@@ -1694,7 +1735,7 @@ async function afterUnlock(){
   if(kioskMode)enterKioskMode();
 }
 const NAV_VIEWS_BY_ROLE={
-  operador:['operadorHome','producao','manuais'],
+  operador:['operadorHome','producao','manuais','dashboardTv'],
   tv:['dashboardTv','noticias'],
   gestor:['home','producao','financeiro','rh','manuais','dashboardTv','fornecedores','admin','noticias']
 };
@@ -1971,6 +2012,88 @@ function renderNoticias(){
         <button class="btn danger" style="align-self:flex-start;padding:4px 9px;font-size:11px;margin-top:4px" onclick="event.stopPropagation();deleteNewsItem('${n.id}')">✕ Excluir</button>
       </div>
     </div>`).join('')||'<p class="muted">Nenhuma notícia cadastrada ainda.</p>';
+}
+
+/* ---- Alertas customizados: avisos manuais (com imagem opcional) exibidos junto com os avisos
+   automáticos na tela "SLA & Avisos" da TV ---- */
+let alertDraft=null;
+function openAlertModal(id){
+  const existing=id?(db.alerts||[]).find(a=>a.id===id):null;
+  alertDraft=existing?{...existing}:{id:uid(),title:'',text:'',image:'',severity:'warn',createdAt:new Date().toISOString()};
+  $('alertModalTitle').textContent=existing?'Editar alerta':'Novo alerta';
+  $('alertTitle').value=alertDraft.title;
+  $('alertText').value=alertDraft.text;
+  $('alertSeverity').value=alertDraft.severity||'warn';
+  const prev=$('alertImagePreview');
+  if(alertDraft.image){prev.src=alertDraft.image;prev.style.display='block';$('alertImageClearBtn').style.display='inline-flex'}
+  else{prev.style.display='none';$('alertImageClearBtn').style.display='none'}
+  openModal('alertModal');
+}
+async function handleAlertImage(input){
+  const file=input.files&&input.files[0];if(!file)return;
+  const dataUrl=await compressImageFile(file,900,.8);
+  alertDraft.image=dataUrl;
+  const prev=$('alertImagePreview');prev.src=dataUrl;prev.style.display='block';
+  $('alertImageClearBtn').style.display='inline-flex';
+  input.value='';
+}
+function clearAlertImage(){
+  alertDraft.image='';
+  $('alertImagePreview').style.display='none';
+  $('alertImageClearBtn').style.display='none';
+}
+function saveAlertItem(){
+  const title=val('alertTitle').trim();
+  if(!title)return alert('Informe o título do alerta.');
+  alertDraft.title=title;
+  alertDraft.text=val('alertText').trim();
+  alertDraft.severity=val('alertSeverity');
+  alertDraft.updatedAt=new Date().toISOString();
+  db.alerts=db.alerts||[];
+  const idx=db.alerts.findIndex(a=>a.id===alertDraft.id);
+  if(idx>=0)db.alerts[idx]=alertDraft;else db.alerts.push(alertDraft);
+  closeModal('alertModal');
+  save();
+}
+function deleteAlertItem(id){if(!confirm('Excluir este alerta?'))return;del('alerts',id)}
+function renderAlertsGrid(){
+  const grid=$('alertsGrid');if(!grid)return;
+  const list=[...(db.alerts||[])].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  grid.innerHTML=list.map(a=>`
+    <div class="manual-card" onclick="openAlertModal('${a.id}')">
+      ${a.image?`<img class="manual-cover" src="${a.image}" alt="${escHtml(a.title)}">`:'<div class="manual-cover manual-cover-fallback">⚠️</div>'}
+      <div class="manual-card-body"><b>${escHtml(a.title)}</b><span class="pill ${a.severity==='bad'?'bad':a.severity==='ok'?'ok':'warn'}" style="align-self:flex-start">${a.severity==='bad'?'Crítico':a.severity==='ok'?'Informativo':'Atenção'}</span><small>${escHtml((a.text||'').slice(0,80))}${(a.text||'').length>80?'…':''}</small>
+        <button class="btn danger" style="align-self:flex-start;padding:4px 9px;font-size:11px;margin-top:4px" onclick="event.stopPropagation();deleteAlertItem('${a.id}')">✕ Excluir</button>
+      </div>
+    </div>`).join('')||'<p class="muted">Nenhum alerta cadastrado ainda.</p>';
+}
+
+/* ---- Mensagem do dia: frases motivacionais que revezam automaticamente no rodapé da TV ---- */
+function openDailyMessageModal(){
+  $('dailyMessageText').value='';
+  openModal('dailyMessageModal');
+}
+function saveDailyMessage(){
+  const text=val('dailyMessageText').trim();
+  if(!text)return alert('Informe a mensagem.');
+  db.dailyMessages=db.dailyMessages||[];
+  db.dailyMessages.push({id:uid(),text,createdAt:new Date().toISOString()});
+  closeModal('dailyMessageModal');
+  save();
+}
+function deleteDailyMessage(id){if(!confirm('Excluir esta mensagem?'))return;del('dailyMessages',id)}
+function renderDailyMessageTable(){
+  const tbl=$('dailyMessageTable');if(!tbl)return;
+  const list=[...(db.dailyMessages||[])].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+  tbl.innerHTML=list.map(m=>`<tr><td>${escHtml(m.text)}</td><td><button class="btn danger" style="padding:5px 9px" onclick="deleteDailyMessage('${m.id}')">✕</button></td></tr>`).join('')||'<tr><td colspan="2" class="muted">Nenhuma mensagem cadastrada ainda.</td></tr>';
+}
+/* escolhe determinsticamente uma mensagem por dia (revezando pela lista), pra sempre mostrar
+   a mesma mensagem o dia todo mas trocar sozinha no dia seguinte */
+function todaysMessage(){
+  const list=db.dailyMessages||[];
+  if(!list.length)return null;
+  const dayOfYear=Math.floor((Date.now()-new Date(new Date().getFullYear(),0,0))/86400000);
+  return list[dayOfYear%list.length];
 }
 
 function refreshFinanceSuppliers(selected){
@@ -2544,6 +2667,10 @@ function syncAbsencesFromTimesheet(e,ts){
   return {created,updated};
 }
 
+function importTimesheetForSelf(input){
+  currentProfileId=currentOperatorId; // importar a folha de ponto direto do "Meu Painel" do operador
+  importTimesheet(input);
+}
 async function importTimesheet(input){
   const file=input.files&&input.files[0];input.value='';
   if(!file||!currentProfileId)return;
@@ -2650,7 +2777,7 @@ let activeView='home';
 function switchView(v){
   if(currentRole==='operador'){
     if(v==='rh'){openEmployeeProfile(currentOperatorId);return}
-    if(!['operadorHome','producao','manuais'].includes(v))v='operadorHome';
+    if(!['operadorHome','producao','manuais','dashboardTv'].includes(v))v='operadorHome';
   }
   if(currentRole==='tv'&&!['dashboardTv','noticias'].includes(v))v='dashboardTv';
   if(v==='manuais')currentManualId=null;
@@ -2680,6 +2807,8 @@ function render(){
   renderAdmin();
   renderManuais();
   renderNoticias();
+  renderAlertsGrid();
+  renderDailyMessageTable();
   renderDashboardTv();
   if(currentProfileId)renderEmployeeProfile();
   if(currentManualId)renderManualDetail();
@@ -2924,7 +3053,8 @@ function renderDashboardTv(){
   }).join('');
   const absentHtml=absent.rate>5?`<div class="alert-box ${absent.rate>10?'bad':'warn'}"><div class="ic">📋</div><div><b>Absenteísmo acima do esperado</b><small>${pct(absent.rate)} no período apurado</small></div></div>`:'';
   const slaAlertHtml=(pIn+pOut&&pRate<db.config.slaGoal)?`<div class="alert-box warn"><div class="ic">⏱️</div><div><b>SLA do mês abaixo da meta</b><small>${pct(pRate)} realizado, meta ${pct(db.config.slaGoal)}</small></div></div>`:'';
-  $('dashAlertsList').innerHTML=(slaAlertHtml+absentHtml+alertHtml)||'<p class="muted" style="color:#9fd6bb">Sem avisos no momento. Tudo em dia! ✅</p>';
+  const customAlertHtml=(db.alerts||[]).map(a=>`<div class="alert-box ${a.severity||'warn'}">${a.image?`<img class="alert-box-img" src="${a.image}" alt="${escHtml(a.title)}">`:'<div class="ic">📢</div>'}<div><b>${escHtml(a.title)}</b><small>${escHtml(a.text||'')}</small></div></div>`).join('');
+  $('dashAlertsList').innerHTML=(slaAlertHtml+absentHtml+customAlertHtml+alertHtml)||'<p class="muted" style="color:#9fd6bb">Sem avisos no momento. Tudo em dia! ✅</p>';
 
   // ---- ranking do mês: melhores/piores dias de produção e melhor dia de SLA ----
   const withProd=[...monthRows].filter(x=>x.prints>0);
@@ -2962,6 +3092,13 @@ function renderDashboardTv(){
 
   const news=[...(db.news||[])].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,4);
   $('dashNewsGrid').innerHTML=news.length?news.map(n=>`<div class="dash-news-card">${n.image?`<img src="${n.image}" alt="${escHtml(n.title)}">`:''}<div class="body"><h3>${escHtml(n.title)}</h3><p>${escHtml(n.text||'')}</p></div></div>`).join(''):'<p class="muted" style="color:#9fd6bb">Nenhuma notícia cadastrada.</p>';
+
+  const msg=todaysMessage();
+  const msgEl=$('dashDailyMessage');
+  if(msgEl){
+    if(msg){msgEl.style.display='block';msgEl.innerHTML=`💬 ${escHtml(msg.text)}`}
+    else msgEl.style.display='none';
+  }
 }
 function openDashboardTV(){
   if(window.goDesktop&&window.goDesktop.isElectron){window.goDesktop.openTvWindow();return}
@@ -3360,6 +3497,15 @@ function renderRH(){
   const aMonth=val('absenceMonth');
   const abs=db.absences.filter(a=>!aMonth||a.date.slice(0,7)===aMonth).sort((a,b)=>b.date.localeCompare(a.date));
   $('absenceTable').innerHTML=abs.map(a=>`<tr><td>${a.date.split('-').reverse().join('/')}</td><td>${escHtml(a.name)}</td><td>${escHtml(a.role)}</td><td>${escHtml(a.type)}</td><td>${escHtml(a.note||'-')}</td><td><button class="btn danger" style="padding:5px 9px" onclick="deleteAbsence('${a.id}')">✕</button></td></tr>`).join('')||'<tr><td colspan="6" class="muted">Nenhuma falta no período.</td></tr>';
+
+  const birthdayList=[...active].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  $('birthdayTable').innerHTML=birthdayList.map(e=>`<tr><td>${escHtml(e.name)}</td><td>${escHtml(e.role||'-')}</td>
+    <td><input type="date" value="${e.birthDate||''}" onchange="setEmployeeBirthDate('${e.id}',this.value)"></td></tr>`).join('')||'<tr><td colspan="3" class="muted">Nenhum colaborador cadastrado.</td></tr>';
+}
+function setEmployeeBirthDate(id,value){
+  const e=db.employees.find(x=>x.id===id);if(!e)return;
+  e.birthDate=value||'';
+  save();
 }
 
 function renderFornecedores(){
