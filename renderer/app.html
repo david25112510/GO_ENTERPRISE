@@ -344,7 +344,7 @@ body.kiosk-mode .dash-preview-only{display:none}
 body.kiosk-mode .dash-kiosk-wrap{position:fixed;inset:0;border-radius:0;min-height:100vh;padding:40px 56px 30px;
   display:flex;flex-direction:column;justify-content:center;z-index:30}
 body.kiosk-mode .dash-kiosk-header{position:fixed;top:22px;left:56px;right:56px;margin:0;z-index:31}
-body.kiosk-mode .dash-slide{padding-top:74px;padding-bottom:44px}
+body.kiosk-mode .dash-slide{padding-top:104px;padding-bottom:44px}
 body.kiosk-mode .dash-slide-title{font-size:30px}
 body.kiosk-mode .dash-cards .card{padding:22px 20px}
 body.kiosk-mode .dash-cards .card .v{font-size:44px}
@@ -3106,13 +3106,30 @@ function openDashboardTV(){
   window.open(location.href.split('#')[0]+'#dashboard','_blank');
 }
 const DASH_SLIDE_BG=['bg-producao','bg-sla','bg-ranking','bg-ritmo','bg-producao'];
+const DASH_SLIDE_DURATIONS=[24000,16000,16000,16000,16000]; // Produção (slide 0) fica mais tempo em tela
 function showKioskSlide(i){
   document.querySelectorAll('#dashboardTv .dash-slide').forEach((el,idx)=>el.classList.toggle('active',idx===i));
   const wrap=document.querySelector('#dashboardTv .dash-kiosk-wrap');
   if(wrap){DASH_SLIDE_BG.forEach(c=>wrap.classList.remove(c));wrap.classList.add(DASH_SLIDE_BG[i]||DASH_SLIDE_BG[0])}
 }
+function scheduleKioskRotate(){
+  clearTimeout(kioskRotateTimer);
+  kioskRotateTimer=setTimeout(()=>{
+    kioskSlideIndex=(kioskSlideIndex+1)%DASH_SLIDE_BG.length;
+    showKioskSlide(kioskSlideIndex);
+    scheduleKioskRotate();
+  },DASH_SLIDE_DURATIONS[kioskSlideIndex]||16000);
+}
 async function refreshKioskData(){
   try{
+    // dentro do app desktop, a pasta compartilhada é a fonte de verdade — relê ela direto (igual ao
+    // boot()). Reler o cache local do IndexedDB aqui sobrescrevia com dados antigos os dados que já
+    // tinham chegado atualizados via evento de mudança externa (window.goDesktop.onDataChangedExternally).
+    if(window.goDesktop){
+      const remote=await window.goDesktop.readData();
+      if(remote&&remote.data){db=normalizeDb(remote.data);renderDashboardTv()}
+      return;
+    }
     const envelope=await idbGet(DBKEY);
     if(!envelope)return;
     if(envelope.format==='GO-DB-ENC'){
@@ -3138,8 +3155,8 @@ function enterKioskMode(){
   $('dashboardTv').classList.add('active');
   renderDashboardTv();
   kioskSlideIndex=0;showKioskSlide(0);
-  clearInterval(kioskRotateTimer);
-  kioskRotateTimer=setInterval(()=>{kioskSlideIndex=(kioskSlideIndex+1)%DASH_SLIDE_BG.length;showKioskSlide(kioskSlideIndex)},16000);
+  clearTimeout(kioskRotateTimer);
+  scheduleKioskRotate();
   clearInterval(kioskRefreshTimer);
   kioskRefreshTimer=setInterval(refreshKioskData,60000);
   clearInterval(kioskClockTimer);
