@@ -334,7 +334,11 @@ body.kiosk-mode .dash-news-card img{height:150px}
 .dash-daily-message{margin-top:24px;padding:14px 20px;background:rgba(4,14,10,.88);border:1px solid rgba(143,227,184,.22);
   border-radius:12px;color:#c9ecdc;font-size:13px;text-align:center;font-style:italic;position:relative;z-index:1;
   display:flex;align-items:center;justify-content:center}
-.dash-daily-message span{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+/* min-width:0 é essencial: sem isso, um item flex "recusa" encolher abaixo do tamanho natural do texto
+   (comportamento padrão do flexbox) e o line-clamp abaixo nunca chega a quebrar linha de verdade —
+   o texto só estoura a largura da faixa em vez de virar 2 linhas com reticências. */
+.dash-daily-message span{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  min-width:0;width:100%}
 body.kiosk-mode .dash-daily-message{position:fixed;left:0;right:0;bottom:0;margin:0;border-radius:0;height:88px;
   padding:14px 56px;font-size:16px;background:rgba(2,10,7,.92);border:none;border-top:1px solid rgba(143,227,184,.25);z-index:32}
 
