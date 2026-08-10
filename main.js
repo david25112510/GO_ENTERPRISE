@@ -82,6 +82,7 @@ function createTvWindow() {
   if (tvWindow && !tvWindow.isDestroyed()) { tvWindow.focus(); return tvWindow; }
   const display = pickTvDisplay();
   const settings = settingsStore.get();
+  const autoFullscreen = !settings.tv || settings.tv.autoFullscreen !== false;
   tvWindow = new BrowserWindow({
     x: display.bounds.x + 40,
     y: display.bounds.y + 40,
@@ -89,6 +90,12 @@ function createTvWindow() {
     height: Math.min(900, display.bounds.height - 80),
     title: 'GO Enterprise — Dashboard TV',
     backgroundColor: '#04140d',
+    // sem moldura/barra de menu desde a criação quando for abrir em tela cheia — não dá pra depender
+    // só de setKiosk/setFullScreen em tempo de execução: em algumas TVs/segundas telas isso falha
+    // silenciosamente, a barra de menu continua visível, encolhe a área útil e o conteúdo (que é mais
+    // alto que essa área menor) acaba sendo empurrado por cima do cabeçalho/rodapé fixos.
+    frame: !autoFullscreen,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -98,11 +105,8 @@ function createTvWindow() {
   });
   tvWindow.loadFile(RENDERER_PATH, { hash: 'dashboard' });
   tvWindow.once('ready-to-show', () => {
-    if (!settings.tv || settings.tv.autoFullscreen !== false) {
+    if (autoFullscreen) {
       tvWindow.setBounds(display.bounds);
-      // modo kiosk (não só "tela cheia"): cobre o monitor por completo, incluindo a barra de tarefas
-      // do Windows — é o modo dedicado do Electron para telas de sinalização/TV, mais confiável que
-      // setFullScreen sozinho em monitores secundários.
       tvWindow.setKiosk(true);
     }
     tvWindow.show();
