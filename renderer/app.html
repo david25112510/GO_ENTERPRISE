@@ -172,9 +172,10 @@ tr:hover td{background:#f7fbf9}
 .pin-box .gate-pane input[type=text]{width:100%;text-align:center;font-size:18px;letter-spacing:2px;padding:12px;margin-top:14px;
   background:#f4f7f9;border:1px solid var(--line2);border-radius:10px;color:var(--ink)}
 
-/* ---- Perfis de acesso: Gestor (completo) x Operador (próprias informações + produção) ---- */
-body.role-operador .nav button[data-role="gestor"]{display:none!important}
-body:not(.role-operador) .nav button[data-role="operador"]{display:none!important}
+/* ---- Perfis de acesso: Gestor (completo) x Operador (próprias informações + produção) ----
+   A visibilidade dos botões do menu é decidida inteiramente pelo JS (NAV_VIEWS_BY_ROLE / applyRoleUI),
+   não mais por CSS — regras [data-role] com !important aqui causavam conflito e escondiam botões que
+   o JS já tinha liberado (ex: Dashboard TV para o operador). */
 body.role-operador #home,body.role-operador #financeiro,body.role-operador #fornecedores,body.role-operador #admin{display:none!important}
 body.role-operador .finance-only{display:none!important}
 body.role-operador .gestor-only{display:none!important}
