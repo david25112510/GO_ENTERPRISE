@@ -100,7 +100,10 @@ function createTvWindow() {
   tvWindow.once('ready-to-show', () => {
     if (!settings.tv || settings.tv.autoFullscreen !== false) {
       tvWindow.setBounds(display.bounds);
-      tvWindow.setFullScreen(true);
+      // modo kiosk (não só "tela cheia"): cobre o monitor por completo, incluindo a barra de tarefas
+      // do Windows — é o modo dedicado do Electron para telas de sinalização/TV, mais confiável que
+      // setFullScreen sozinho em monitores secundários.
+      tvWindow.setKiosk(true);
     }
     tvWindow.show();
   });
