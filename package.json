@@ -1,7 +1,7 @@
 {
   "name": "go-enterprise-desktop",
   "productName": "GO Enterprise",
-  "version": "8.3.5",
+  "version": "8.3.6",
   "description": "GO Enterprise — gestão operacional Selbetti Correios MG (app desktop)",
   "main": "main.js",
   "author": "Selbetti",
