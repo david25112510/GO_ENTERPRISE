@@ -952,12 +952,12 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
       <div class="grid cards" id="adminCards"></div>
 
       <div class="panel"><h2>Configurações operacionais</h2><div class="form">
-        <div><label>Valor por impressão (R$)<input id="cfgPrint" type="number" step="0.001"></label></div>
-        <div><label>Peso unitário da folha (g)<input id="cfgPaper" type="number" step="0.1"></label></div>
-        <div><label>Meta de SLA (%)<input id="cfgSla" type="number" step="0.1"></label></div>
-        <div><label>Encargos da folha (%)<input id="cfgTax" type="number" step="0.01"></label></div>
-        <div><label>Meta diária de impressões<input id="cfgPrintGoal" type="number" step="1"></label></div>
-        <div><label>Meta diária de objetos<input id="cfgObjectGoal" type="number" step="1"></label></div>
+        <div><label>Valor por impressão (R$)<input id="cfgPrint" type="text" inputmode="decimal"></label></div>
+        <div><label>Peso unitário da folha (g)<input id="cfgPaper" type="text" inputmode="decimal"></label></div>
+        <div><label>Meta de SLA (%)<input id="cfgSla" type="text" inputmode="decimal"></label></div>
+        <div><label>Encargos da folha (%)<input id="cfgTax" type="text" inputmode="decimal"></label></div>
+        <div><label>Meta diária de impressões<input id="cfgPrintGoal" type="text" inputmode="decimal"></label></div>
+        <div><label>Meta diária de objetos<input id="cfgObjectGoal" type="text" inputmode="decimal"></label></div>
       </div><button class="btn primary" style="margin-top:12px" onclick="saveConfig()">Salvar configurações</button></div>
 
       <div class="panel"><h2>🔒 Segurança</h2>
@@ -1036,7 +1036,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
   <div><label>Turno<select id="rShift"><option>MANHÃ</option><option>TARDE</option><option>NOITE</option></select></label></div>
   <div><label>Data de admissão<input id="rAdmission" type="date"></label></div>
   <div><label>Data de nascimento<input id="rBirthDate" type="date"></label></div>
-  <div class="gestor-only"><label>Salário<input id="rSalary" type="number" step="0.01"></label></div>
+  <div class="gestor-only"><label>Salário<input id="rSalary" type="text" inputmode="decimal"></label></div>
   <div><label>Situação<select id="rStatus"><option>Ativo</option><option>Inativo</option></select></label></div>
   </div>
   <datalist id="costCenterList"></datalist>
@@ -1101,7 +1101,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
   <div><label>Fornecedor<select id="fSupplier"></select></label></div>
   <div><label>Tipo<select id="fType"><option>Medição</option><option>Pedido</option><option>Nota Fiscal</option><option>Fluxo</option></select></label></div>
   <div><label>Competência (AAAA-MM)<input id="fRef" type="month"></label></div>
-  <div><label>Valor<input id="fValue" type="number" step="0.01"></label></div>
+  <div><label>Valor<input id="fValue" type="text" inputmode="decimal"></label></div>
   <div><label>Situação<select id="fStatus"><option>Aguardando envio</option><option>Enviado para Contabilidade</option><option>Pago</option><option>Cancelado</option></select></label></div>
   <div><label>Vencimento<input id="fDueDate" type="date"></label></div>
   <div><label>Documento<input id="fDocument"></label></div>
@@ -1116,7 +1116,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
   <div><label>Competência (AAAA-MM)<input id="eRef" type="month"></label></div>
   <div><label>Data<input id="eDate" type="date"></label></div>
   <div><label>Categoria<input id="eCategory" placeholder="Prestação de serviço"></label></div>
-  <div><label>Valor<input id="eValue" type="number" step="0.01"></label></div>
+  <div><label>Valor<input id="eValue" type="text" inputmode="decimal"></label></div>
   <div><label>Documento<input id="eDocument"></label></div>
   <div style="grid-column:1/-1"><label>Observação<textarea id="eNote"></textarea></label></div>
 </div><div class="actions"><button class="btn ghost" onclick="closeModal('expModal')">Cancelar</button><button class="btn primary" onclick="addExpense()">Salvar</button></div></div></div>
@@ -1126,12 +1126,12 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
   <p class="muted" style="font-size:12px;margin-top:-6px">Lance cada pesagem de aparas/papel apurado durante o mês (igual ao relatório de pesagem). No fechamento, informe as resmas pagas para calcular o défice e o valor da perda.</p>
   <div class="form">
     <div><label>Data da pesagem<input id="lDate" type="date"></label></div>
-    <div><label>Peso apurado (g)<input id="lWeight" type="number" step="0.1"></label></div>
+    <div><label>Peso apurado (g)<input id="lWeight" type="text" inputmode="decimal"></label></div>
   </div>
   <button class="btn" style="margin-top:6px" onclick="addWeighing()">+ Adicionar pesagem</button>
   <div id="lossWeighingsList" style="margin-top:10px;max-height:150px;overflow:auto"></div>
   <div class="form" style="margin-top:12px">
-    <div><label>Resmas pagas na competência<input id="lossResmasPagas" type="number" step="0.01"></label></div>
+    <div><label>Resmas pagas na competência<input id="lossResmasPagas" type="text" inputmode="decimal"></label></div>
   </div>
   <div id="lossPreview" style="margin-top:10px"></div>
 <div class="actions"><button class="btn ghost" onclick="closeModal('lossModal')">Fechar</button><button class="btn primary" onclick="saveLossResmasPagas()">Salvar</button></div></div></div>
@@ -1228,6 +1228,10 @@ injectBrandAssets();
 /* ===================== 1. UTILITÁRIOS ===================== */
 const $=id=>document.getElementById(id);
 const val=id=>{const e=$(id);return e?e.value:''};
+// lê um campo numérico digitado manualmente aceitando tanto vírgula quanto ponto como separador
+// decimal (campos <input type="number"> nativos só aceitam ponto, o que "trava" a digitação pra
+// quem usa vírgula — por isso esses campos usam type="text" + inputmode="decimal" e passam por aqui)
+const numVal=id=>{const n=parseFloat(String(val(id)).trim().replace(',','.'));return isNaN(n)?0:n};
 const uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
 const norm=s=>String(s||'').trim().toUpperCase();
 let moneyVisible=false; // valores monetários começam ocultos; só aparecem depois de clicar no "olho"
@@ -1903,7 +1907,7 @@ function saveEmployee(){
   if(!val('rName').trim())return alert('Informe o nome.');
   const id=val('rId');
   const data={reg:val('rReg'),name:val('rName'),role:val('rRole'),costCenter:val('rCostCenter').trim(),
-    shift:val('rShift'),admission:val('rAdmission'),birthDate:val('rBirthDate'),salary:+val('rSalary')||0,status:val('rStatus'),photo:val('rPhoto')||''};
+    shift:val('rShift'),admission:val('rAdmission'),birthDate:val('rBirthDate'),salary:numVal('rSalary'),status:val('rStatus'),photo:val('rPhoto')||''};
   if(id){const e=db.employees.find(x=>x.id===id);if(e)Object.assign(e,data)}
   else{db.employees.push({id:uid(),...data})}
   closeModal('rhModal');save();
@@ -2136,7 +2140,7 @@ function addFinance(){
   const supplier=db.suppliers.find(x=>x.id===val('fSupplier'));
   if(!val('fRef')||!val('fValue')){alert('Informe competência e valor.');return}
   db.finance.push({id:uid(),type:val('fType'),supplierId:supplier?supplier.id:'',supplier:supplier?supplier.name:'',
-    ref:val('fRef'),value:+val('fValue')||0,status:val('fStatus'),document:val('fDocument'),dueDate:val('fDueDate'),
+    ref:val('fRef'),value:numVal('fValue'),status:val('fStatus'),document:val('fDocument'),dueDate:val('fDueDate'),
     responsible:val('fResponsible'),note:val('fNote'),order:val('fOrder'),flow:val('fFlow'),createdAt:new Date().toISOString()});
   closeModal('finModal');save();
 }
@@ -2148,7 +2152,7 @@ function addExpense(){
   const supplier=db.suppliers.find(x=>x.id===val('eSupplier'));
   if(!val('eRef')||!val('eValue')){alert('Informe competência e valor.');return}
   db.expenses.push({id:uid(),supplierId:supplier?supplier.id:'',supplier:supplier?supplier.name:'',ref:val('eRef'),
-    date:val('eDate'),category:val('eCategory')||'Geral',value:+val('eValue')||0,document:val('eDocument'),note:val('eNote'),createdAt:new Date().toISOString()});
+    date:val('eDate'),category:val('eCategory')||'Geral',value:numVal('eValue'),document:val('eDocument'),note:val('eNote'),createdAt:new Date().toISOString()});
   closeModal('expModal');save();
 }
 function deleteExpense(id){if(!confirm('Excluir este gasto?'))return;del('expenses',id)}
@@ -2184,7 +2188,7 @@ function ensureLossRecord(){
   return rec;
 }
 function addWeighing(){
-  const weight=+val('lWeight');
+  const weight=numVal('lWeight');
   if(!weight){alert('Informe o peso apurado da pesagem.');return}
   const rec=ensureLossRecord();
   rec.unit=+db.config.paperWeight||4.7;
@@ -2199,7 +2203,7 @@ function removeWeighing(id){
 }
 function saveLossResmasPagas(){
   const rec=ensureLossRecord();
-  rec.resmasPagas=+val('lossResmasPagas')||0;
+  rec.resmasPagas=numVal('lossResmasPagas');
   closeModal('lossModal');save();
 }
 function deleteLossRecord(ref){
@@ -2210,12 +2214,12 @@ function deleteLossRecord(ref){
 function editLossRecord(ref){$('financeMonth').value=ref;render();prepareLossModal()}
 
 function saveConfig(){
-  db.config.printValue=+val('cfgPrint')||db.config.printValue;
-  db.config.paperWeight=+val('cfgPaper')||db.config.paperWeight;
-  db.config.slaGoal=+val('cfgSla')||db.config.slaGoal;
-  db.config.payrollTax=+val('cfgTax')||db.config.payrollTax;
-  db.config.dailyPrintGoal=+val('cfgPrintGoal')||750000;
-  db.config.dailyObjectGoal=+val('cfgObjectGoal')||375000;
+  db.config.printValue=numVal('cfgPrint')||db.config.printValue;
+  db.config.paperWeight=numVal('cfgPaper')||db.config.paperWeight;
+  db.config.slaGoal=numVal('cfgSla')||db.config.slaGoal;
+  db.config.payrollTax=numVal('cfgTax')||db.config.payrollTax;
+  db.config.dailyPrintGoal=numVal('cfgPrintGoal')||750000;
+  db.config.dailyObjectGoal=numVal('cfgObjectGoal')||375000;
   save();alert('Configurações salvas.');
 }
 
