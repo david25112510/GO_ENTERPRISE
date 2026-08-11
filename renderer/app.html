@@ -249,7 +249,7 @@ body.kiosk-mode .dash-widget-head{font-size:15px;padding-bottom:14px;margin-bott
 .dash-linechart-val{position:absolute;transform:translate(-50%,-135%);font-size:12px;font-weight:700;color:#eafff2;
   white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.6)}
 .dash-linechart-day{position:absolute;bottom:-22px;transform:translateX(-50%);font-size:11px;color:#9fd6bb;white-space:nowrap}
-body.kiosk-mode .dash-linechart{height:300px}
+body.kiosk-mode .dash-linechart{flex:1;min-height:0;height:auto}
 body.kiosk-mode .dash-linechart-val{font-size:16px}
 body.kiosk-mode .dash-linechart-day{font-size:14px;bottom:-26px}
 body.kiosk-mode .dash-linechart-goallabel{font-size:13px}
@@ -349,11 +349,18 @@ body.kiosk-mode .dash-preview-only{display:none}
 body.kiosk-mode .dash-kiosk-wrap{position:fixed;inset:0;border-radius:0;min-height:100vh;padding:40px 56px 30px;
   display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;z-index:30}
 body.kiosk-mode .dash-kiosk-header{position:fixed;top:22px;left:56px;right:56px;height:52px;overflow:hidden;margin:0;z-index:31}
-/* sem altura travada aqui: o gráfico/cards ficam no tamanho natural deles, sem risco de serem
-   cortados. Como a mensagem do dia vem DEPOIS no fluxo normal (não é mais fixa), ela nunca sobrepõe
-   o slide de qualquer forma — no pior caso (conteúdo muito alto), quem fica sem espaço é só a
-   mensagem (cortada pelo overflow:hidden do wrap), nunca o gráfico/dados. */
+/* Deixa o próprio navegador calcular o espaço, em vez de eu adivinhar pixels pra um tamanho de tela
+   que não conheço: o slide ativo vira uma coluna flexível que ocupa exatamente o espaço que sobra no
+   wrap (depois de reservar o tamanho natural da mensagem do dia, que continua em fluxo normal). Dentro
+   dele, o gráfico é quem "flexiona" pra preencher o restante — nunca estoura, nunca é cortado, se
+   adapta automaticamente a qualquer altura de tela real. */
 body.kiosk-mode .dash-slide{padding-top:112px;padding-bottom:16px}
+body.kiosk-mode .dash-slide.active{display:flex;flex-direction:column;flex:1;min-height:0}
+body.kiosk-mode .dash-slide-title{flex:0 0 auto}
+body.kiosk-mode .dash-cards{flex:0 0 auto}
+body.kiosk-mode .dash-chart-wrap{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;
+  box-sizing:border-box}
+body.kiosk-mode .dash-news-grid{flex:1;min-height:0;overflow:hidden}
 body.kiosk-mode .dash-slide-title{font-size:30px}
 body.kiosk-mode .dash-cards .card{padding:22px 20px}
 body.kiosk-mode .dash-cards .card .v{font-size:44px}
