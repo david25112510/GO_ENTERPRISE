@@ -350,7 +350,12 @@ body.kiosk-mode .dash-preview-only{display:none}
 body.kiosk-mode .dash-kiosk-wrap{position:fixed;inset:0;border-radius:0;min-height:100vh;padding:40px 56px 30px;
   display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;z-index:30}
 body.kiosk-mode .dash-kiosk-header{position:fixed;top:22px;left:56px;right:56px;height:52px;overflow:hidden;margin:0;z-index:31}
-body.kiosk-mode .dash-slide{padding-top:112px;padding-bottom:100px}
+/* altura travada no tamanho exato disponível na tela (100vh menos o padding do wrap: 40px + 30px) e
+   overflow:hidden no próprio slide — assim, se algum conteúdo (gráfico, cards etc.) ficar mais alto
+   que o esperado por qualquer motivo, o excesso é cortado dentro do próprio slide, dentro da margem
+   já reservada pro rodapé, e nunca mais visualmente "invade" a faixa da mensagem do dia. */
+body.kiosk-mode .dash-slide{padding-top:112px;padding-bottom:100px;height:calc(100vh - 70px);
+  box-sizing:border-box;overflow:hidden}
 body.kiosk-mode .dash-slide-title{font-size:30px}
 body.kiosk-mode .dash-cards .card{padding:22px 20px}
 body.kiosk-mode .dash-cards .card .v{font-size:44px}
