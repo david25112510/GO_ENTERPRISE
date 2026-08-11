@@ -331,16 +331,15 @@ body.kiosk-mode .dash-birthdays h3{font-size:15px;padding-bottom:14px;margin-bot
 body.kiosk-mode .dash-news-card h3{font-size:19px}
 body.kiosk-mode .dash-news-card p{font-size:15px;-webkit-line-clamp:5}
 body.kiosk-mode .dash-news-card img{height:150px}
-/* Corte rígido: a caixa tem altura fixa e overflow:hidden nela mesma (não só num filho), então
-   nenhum texto — não importa o motivo de não caber — consegue vazar pra fora da faixa reservada.
-   Não depende de line-clamp/flex quebrarem linha "direito"; o que não couber é só invisível. */
-.dash-daily-message{margin-top:24px;padding:14px 20px;background:rgba(4,14,10,.88);border:1px solid rgba(143,227,184,.22);
-  border-radius:12px;color:#c9ecdc;font-size:13px;text-align:center;font-style:italic;position:relative;z-index:1;
-  display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box}
-.dash-daily-message span{min-width:0;line-height:1.3;max-height:2.6em;overflow:hidden}
-body.kiosk-mode .dash-daily-message{position:fixed;left:0;right:0;bottom:0;margin:0;border-radius:0;height:88px;
-  max-height:88px;padding:14px 56px;font-size:16px;background:rgba(2,10,7,.92);border:none;
-  border-top:1px solid rgba(143,227,184,.25);z-index:32;overflow:hidden;box-sizing:border-box}
+/* De propósito NÃO usa position:fixed aqui — fica no fluxo normal da página, logo depois do slide
+   ativo. Elemento em fluxo normal nunca sobrepõe outro elemento em fluxo normal, então isso elimina
+   de vez qualquer risco de sobreposição, sem depender de cálculo de altura de tela cheia (que não
+   está se comportando de forma confiável na TV real). */
+.dash-daily-message{flex:0 0 auto;margin-top:16px;padding:14px 20px;background:rgba(4,14,10,.88);
+  border:1px solid rgba(143,227,184,.22);border-radius:12px;color:#c9ecdc;font-size:13px;text-align:center;
+  font-style:italic;position:relative;z-index:1;max-height:4.5em;overflow:hidden;box-sizing:border-box}
+body.kiosk-mode .dash-daily-message{font-size:16px;padding:16px 40px;background:rgba(2,10,7,.92);
+  border-color:rgba(143,227,184,.25)}
 
 /* modo TV (kiosk): aberto em aba própria via #dashboard — tela cheia, sem menu, tipografia ampliada */
 body.kiosk-mode .side{display:none!important}
@@ -350,11 +349,11 @@ body.kiosk-mode .dash-preview-only{display:none}
 body.kiosk-mode .dash-kiosk-wrap{position:fixed;inset:0;border-radius:0;min-height:100vh;padding:40px 56px 30px;
   display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;z-index:30}
 body.kiosk-mode .dash-kiosk-header{position:fixed;top:22px;left:56px;right:56px;height:52px;overflow:hidden;margin:0;z-index:31}
-/* altura travada no tamanho exato disponível na tela (100vh menos o padding do wrap: 40px + 30px) e
-   overflow:hidden no próprio slide — assim, se algum conteúdo (gráfico, cards etc.) ficar mais alto
-   que o esperado por qualquer motivo, o excesso é cortado dentro do próprio slide, dentro da margem
-   já reservada pro rodapé, e nunca mais visualmente "invade" a faixa da mensagem do dia. */
-body.kiosk-mode .dash-slide{padding-top:112px;padding-bottom:100px;height:calc(100vh - 70px);
+/* altura travada — 100vh menos o padding do wrap (40+30) menos o espaço reservado pra mensagem do dia
+   aparecer DEPOIS do slide no fluxo normal (~130px). overflow:hidden no próprio slide: se algum
+   conteúdo (gráfico, cards etc.) ficar mais alto que o esperado por qualquer motivo, o excesso é
+   cortado ali dentro, nunca empurra nem sobrepõe a mensagem do dia que vem a seguir. */
+body.kiosk-mode .dash-slide{padding-top:112px;padding-bottom:16px;height:calc(100vh - 200px);
   box-sizing:border-box;overflow:hidden}
 body.kiosk-mode .dash-slide-title{font-size:30px}
 body.kiosk-mode .dash-cards .card{padding:22px 20px}
@@ -3108,7 +3107,7 @@ function renderDashboardTv(){
   const msg=todaysMessage();
   const msgEl=$('dashDailyMessage');
   if(msgEl){
-    if(msg){msgEl.style.display='';msgEl.innerHTML=`<span>💬 ${escHtml(msg.text)}</span>`}
+    if(msg){msgEl.style.display='';msgEl.innerHTML=`💬 ${escHtml(msg.text)}`}
     else msgEl.style.display='none';
   }
 }
