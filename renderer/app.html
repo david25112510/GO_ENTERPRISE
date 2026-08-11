@@ -2771,12 +2771,11 @@ function slaPercentForMonth(month,prods){
 }
 function financeTotals(month){
   // receita = faturamento produzido (impressões da competência x valor por impressão);
-  // gastos = gastos por fornecedor + registros financeiros lançados (registro financeiro NÃO é receita)
+  // gastos = somente gastos por fornecedor — registros financeiros são apenas lembretes de
+  // cobrança/vencimento e não entram no cálculo
   const prints=dailyProduction().filter(x=>x.date.startsWith(month)).reduce((s,x)=>s+x.prints,0);
   const inc=prints*db.config.printValue;
-  const supplierExp=db.expenses.filter(x=>x.ref===month).reduce((s,x)=>s+(+x.value||0),0);
-  const financeExp=db.finance.filter(x=>x.ref===month&&norm(x.status)!=='CANCELADO').reduce((s,x)=>s+(+x.value||0),0);
-  const exp=supplierExp+financeExp;
+  const exp=db.expenses.filter(x=>x.ref===month).reduce((s,x)=>s+(+x.value||0),0);
   return {inc,exp,net:inc-exp};
 }
 /* alertas de férias — heurística baseada na data de admissão (ciclos de 12 meses) */
