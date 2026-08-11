@@ -349,12 +349,11 @@ body.kiosk-mode .dash-preview-only{display:none}
 body.kiosk-mode .dash-kiosk-wrap{position:fixed;inset:0;border-radius:0;min-height:100vh;padding:40px 56px 30px;
   display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;z-index:30}
 body.kiosk-mode .dash-kiosk-header{position:fixed;top:22px;left:56px;right:56px;height:52px;overflow:hidden;margin:0;z-index:31}
-/* altura travada — 100vh menos o padding do wrap (40+30) menos o espaço reservado pra mensagem do dia
-   aparecer DEPOIS do slide no fluxo normal (~130px). overflow:hidden no próprio slide: se algum
-   conteúdo (gráfico, cards etc.) ficar mais alto que o esperado por qualquer motivo, o excesso é
-   cortado ali dentro, nunca empurra nem sobrepõe a mensagem do dia que vem a seguir. */
-body.kiosk-mode .dash-slide{padding-top:112px;padding-bottom:16px;height:calc(100vh - 200px);
-  box-sizing:border-box;overflow:hidden}
+/* sem altura travada aqui: o gráfico/cards ficam no tamanho natural deles, sem risco de serem
+   cortados. Como a mensagem do dia vem DEPOIS no fluxo normal (não é mais fixa), ela nunca sobrepõe
+   o slide de qualquer forma — no pior caso (conteúdo muito alto), quem fica sem espaço é só a
+   mensagem (cortada pelo overflow:hidden do wrap), nunca o gráfico/dados. */
+body.kiosk-mode .dash-slide{padding-top:112px;padding-bottom:16px}
 body.kiosk-mode .dash-slide-title{font-size:30px}
 body.kiosk-mode .dash-cards .card{padding:22px 20px}
 body.kiosk-mode .dash-cards .card .v{font-size:44px}
