@@ -1206,6 +1206,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
   <div class="actions"><button class="btn ghost" onclick="closeModal('tvPinChangeModal')">Cancelar</button><button class="btn primary" onclick="setNewTvPin()">Salvar PIN da TV</button></div>
 </div></div>
 
+<script src="master-secret.js"></script>
 <script>
 'use strict';
 /* ---- Identidade visual Selbetti (logo + mascote), extraídos do GO Enterprise V7 ---- */
@@ -1603,9 +1604,8 @@ function updateDbStatus(){
 /* ===================== 5. SEGURANÇA / PIN ===================== */
 // Senha mestre: libera o primeiro acesso de gestor num computador/banco onde ainda não existe
 // nenhum PIN de gestor definido (em vez de deixar qualquer pessoa entrar sem digitar nada).
-// Guardada como hash (salt + senha, SHA-256) — nunca em texto puro.
-const MASTER_SALT='GOENT-MASTER-2026';
-const MASTER_PASSWORD_HASH='5f54567d8effb34384dcdcc1bc604d3de5da84883ce130b979fe9e9630536590';
+// Guardada como hash (salt + senha, SHA-256) — nunca em texto puro. MASTER_SALT/MASTER_PASSWORD_HASH
+// vêm de master-secret.js (não versionado — ver .gitignore) para não expor o segredo no repositório.
 function escHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 async function boot(){

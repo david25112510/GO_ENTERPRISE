@@ -104,6 +104,17 @@ do Electron nem para compilar o instalador do Windows — então o build final (
 ser feito em um computador com internet normal, de preferência **Windows** (ou Linux/Mac com Wine
 configurado, mas Windows é o caminho mais simples e confiável para gerar um instalador Windows).
 
+Antes do primeiro build, crie `renderer/master-secret.js` (não versionado — fica só na sua máquina)
+com a senha mestre que libera o primeiro acesso de gestor num PC/banco sem PIN ainda definido:
+
+```js
+const MASTER_SALT='sua-string-de-sal-aqui';
+const MASTER_PASSWORD_HASH='hash-sha256-de-(SALT+senha)-aqui';
+```
+
+Sem esse arquivo, o app carrega normalmente mas ninguém consegue usar a senha mestre (é preciso já
+existir um PIN de gestor configurado no banco para entrar).
+
 Passo a passo:
 
 ```bash
