@@ -1991,18 +1991,40 @@ function parseHourBankCell(raw){
 /* importa a planilha de banco de horas de toda a equipe (enviada pela gestão): casa cada linha por
    matrícula e, na falta dela, por nome normalizado, e substitui o saldo do colaborador — esta planilha
    passa a ser a única fonte do banco de horas, não é mais calculado a partir da folha de ponto */
+/* alguns exports (ex.: relatório "Banco de horas do time" do sistema de ponto) trazem um título e a
+   data de geração antes da linha de cabeçalho de verdade — "12 de ago. de 2026 14:57:54" — em vez de
+   assumir que a primeira linha é o cabeçalho, procuramos a linha que realmente tem "Nome"/"Matrícula" */
+function findHeaderRow(rows){
+  const normNoAcc=s=>stripAccents(norm(s));
+  for(let i=0;i<Math.min(rows.length,10);i++){
+    const r=rows[i]||[];
+    if(r.some(c=>{const n=normNoAcc(c);return n==='NOME'||n==='MATRICULA'}))return i;
+  }
+  return 0;
+}
+function parsePtBrReportDate(s){
+  const months={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+  const m=String(s||'').match(/(\d{1,2})\s+de\s+([a-zç]{3,4})\.?\s+de\s+(\d{4})/i);
+  if(!m)return '';
+  const mon=months[stripAccents(m[2]).toLowerCase().slice(0,3)];
+  return mon?`${m[3]}-${String(mon).padStart(2,'0')}-${m[1].padStart(2,'0')}`:'';
+}
 async function importHourBank(file){
   if(!file)return;
   try{
-    const rows=await readFirstSheet(file),h=rows[0]||[];
+    const rows=await readFirstSheet(file);
+    const hIdx=findHeaderRow(rows),h=rows[hIdx]||[];
+    let reportDate='';
+    for(let i=0;i<hIdx;i++){const d=parsePtBrReportDate(rows[i]&&rows[i][0]);if(d){reportDate=d;break}}
     const ix={reg:findCol(h,'Matricula','Matrícula'),name:findCol(h,'Nome'),
-      saldo:findCol(h,'Banco de Horas','Banco De Horas','Saldo','Saldo Atual','Saldo Banco de Horas','Saldo do Banco de Horas'),
+      saldo:findCol(h,'Total Banco','Banco Total','Saldo Total','Total do Banco','Total do Banco de Horas',
+        'Banco de Horas','Banco De Horas','Saldo','Saldo Atual','Saldo Banco de Horas','Saldo do Banco de Horas'),
       asOf:findCol(h,'Data','Data Base','Competencia','Competência','Atualizado em')};
-    if(ix.saldo<0){alert('Coluna com o saldo do banco de horas não encontrada na planilha (ex.: "Banco de Horas" ou "Saldo").');return}
+    if(ix.saldo<0){alert('Coluna com o saldo do banco de horas não encontrada na planilha (ex.: "Total Banco", "Banco de Horas" ou "Saldo").');return}
     if(ix.reg<0&&ix.name<0){alert('Informe ao menos a coluna "Matrícula" ou "Nome" para identificar cada colaborador.');return}
     const today=new Date().toISOString().slice(0,10);
     let updated=0,notFound=0,skipped=0;const misses=[];
-    for(const r of rows.slice(1)){
+    for(const r of rows.slice(hIdx+1)){
       const reg=ix.reg>=0?String(r[ix.reg]??'').trim():'';
       const name=ix.name>=0?String(r[ix.name]??'').trim():'';
       if(!reg&&!name)continue;
@@ -2011,11 +2033,11 @@ async function importHourBank(file){
       let emp=reg?db.employees.find(x=>x.reg&&norm(x.reg)===norm(reg)):null;
       if(!emp&&name)emp=db.employees.find(x=>normName(x.name)===normName(name));
       if(!emp){notFound++;misses.push(name||reg);continue}
-      const asOf=(ix.asOf>=0&&excelDate(r[ix.asOf]))||today;
+      const asOf=(ix.asOf>=0&&excelDate(r[ix.asOf]))||reportDate||today;
       emp.hourBank={minutes:parsed.minutes,sign:parsed.sign,asOf};
       updated++;
     }
-    db.imports.unshift({at:new Date().toLocaleString('pt-BR'),file:file.name,total:rows.length-1,added:0,updated,same:skipped,errors:notFound});
+    db.imports.unshift({at:new Date().toLocaleString('pt-BR'),file:file.name,total:rows.length-hIdx-1,added:0,updated,same:skipped,errors:notFound});
     db.imports=db.imports.slice(0,30);
     await save(true);
     let msg=`Banco de horas atualizado: ${updated} colaborador(es).`;
