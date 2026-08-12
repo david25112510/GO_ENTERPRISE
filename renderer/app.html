@@ -575,6 +575,12 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
 .profile-header h1{margin:0;font-size:24px;color:var(--ink)}
 .profile-header .role{color:var(--muted);font-weight:700;font-size:14px;margin-top:2px}
 .profile-header .pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.op-greeting-row{display:flex;align-items:center;gap:14px}
+.op-greeting-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid var(--selbetti-soft);background:#eef1f4;flex:0 0 auto}
+.op-greeting-avatar-fallback{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--selbetti),var(--selbetti-dark));color:#fff;font-weight:800;font-size:18px;
+  border:3px solid var(--selbetti-soft);flex:0 0 auto}
+.op-greeting-tenure{margin:2px 0 0;font-size:12px;color:var(--muted)}
 .profile-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
 .profile-info-item{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;min-width:0}
 .profile-info-item .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;overflow-wrap:break-word}
@@ -681,7 +687,9 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
       <div class="grid cards executive-cards" id="homeCards"></div>
       <div class="executive-pulse" id="executivePulse"></div>
       <div class="panel" id="alertsPanel"><h2>⚠️ Central de alertas</h2><div id="alertsList"></div></div>
-      <div class="panel"><div class="toolbar"><h2 style="margin:0">🕒 Banco de horas da equipe</h2><p class="muted" style="margin:0;font-size:12px">Saldo atual apurado pelas folhas de ponto importadas — crédito ou débito acumulado por colaborador.</p></div>
+      <div class="panel"><div class="toolbar"><h2 style="margin:0">🕒 Banco de horas da equipe</h2>
+        <label class="btn primary file" style="font-size:12px">⬆ Importar planilha de banco de horas<input type="file" accept=".xlsx" onchange="importHourBank(this.files[0]);this.value=''"></label></div>
+        <p class="muted" style="margin:0 0 8px;font-size:12px">Saldo atual (crédito ou débito) por colaborador, atualizado pela planilha de banco de horas enviada pela gestão.</p>
         <div id="teamHourBank"></div>
       </div>
       <div class="grid" style="grid-template-columns:1.4fr 1fr">
@@ -704,13 +712,18 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
     <!-- MEU PAINEL (OPERADOR) -->
     <section class="view" id="operadorHome">
       <div class="header-brand"><img class="official-header-logo" alt="Selbetti"><img class="astronaut-header" alt="Mascote Selbetti"><div class="tagline">Juntos, <b>fazemos a excelência acontecer!</b></div></div>
-      <div class="top"><div><h1 id="opHomeGreeting">Meu Painel</h1><p>Produção da equipe, meu banco de horas e avisos.</p></div></div>
+      <div class="top">
+        <div class="op-greeting-row">
+          <img class="op-greeting-avatar" id="opGreetingAvatar" alt="" style="display:none">
+          <div class="op-greeting-avatar-fallback" id="opGreetingAvatarFallback" style="display:none"></div>
+          <div><h1 id="opHomeGreeting">Meu Painel</h1><p class="op-greeting-tenure" id="opGreetingTenure">Produção da equipe, meu banco de horas e avisos.</p></div>
+        </div>
+      </div>
       <div class="grid cards executive-cards" id="opHomeCards"></div>
       <div class="panel" id="opAlertsPanel"><h2>⚠️ Avisos</h2><div id="opAlertsList"></div></div>
       <div class="grid" style="grid-template-columns:1.4fr 1fr">
         <div class="panel chart-panel"><h2>Produção da equipe — evolução diária (mês atual)</h2><div class="bars" id="opHomeChart"></div></div>
-        <div class="panel"><div class="toolbar"><h2 style="margin:0">🕒 Meu banco de horas</h2>
-          <label class="btn primary file" style="font-size:12px">⬆ Importar folha de ponto (PDF)<input type="file" accept=".pdf" onchange="importTimesheetForSelf(this)"></label></div>
+        <div class="panel"><div class="toolbar"><h2 style="margin:0">🕒 Meu banco de horas</h2></div>
           <div id="opHourBank"></div></div>
       </div>
     </section>
@@ -811,7 +824,7 @@ body.kiosk-mode .dash-birthdays{min-height:280px}
       <div class="panel">
         <div class="toolbar"><h2 style="margin:0">🕒 Folha de Ponto</h2>
           <label class="btn primary file">⬆ Importar folha de ponto (PDF)<input type="file" accept=".pdf" onchange="importTimesheet(this)"></label></div>
-        <p class="muted" style="font-size:12px;margin-top:-6px">Ao importar, turno, horário de trabalho, localização e período são atualizados automaticamente no cadastro. O cálculo de horas usa o saldo de banco de horas já fechado pelo sistema de ponto de cada competência — veja as observações no resumo.</p>
+        <p class="muted" style="font-size:12px;margin-top:-6px">Ao importar, turno, horário de trabalho, localização e período são atualizados automaticamente no cadastro, e o valor a receber estimado abaixo usa o saldo apurado nesta folha. O Banco de horas exibido no painel do colaborador não vem mais daqui — é atualizado pela planilha de banco de horas da equipe (Visão Geral).</p>
         <div id="profileTsControls"></div>
         <div id="profileTsSummary"></div>
       </div>
@@ -1952,6 +1965,66 @@ async function importEmployeesRoster(file){
   }catch(e){alert('Falha ao importar planilha de colaboradores: '+e.message)}
 }
 
+/* interpreta a célula de saldo do banco de horas da planilha: aceita número decimal (2,5 = 2h30),
+   HH:MM com sinal (+02:30 / -01:15) ou o texto do sistema de ponto ("02:30 (A DESCONTAR)") */
+function parseHourBankCell(raw){
+  if(raw===null||raw===undefined||raw==='')return null;
+  if(typeof raw==='number'){
+    const sign=raw<0?-1:1;
+    return {minutes:Math.round(Math.abs(raw)*60),sign};
+  }
+  const s=String(raw).trim();
+  if(!s)return null;
+  const hhmm=s.match(/(-)?\s*(\d+):(\d{2})/);
+  if(hhmm){
+    const sign=/DESCONTAR/i.test(s)?-1:(hhmm[1]==='-'?-1:1);
+    return {minutes:(+hhmm[2])*60+(+hhmm[3]),sign};
+  }
+  const dec=s.replace(',','.').match(/(-)?\d+(\.\d+)?/);
+  if(dec){
+    const n=Math.abs(parseFloat(dec[0]));
+    if(isNaN(n))return null;
+    return {minutes:Math.round(n*60),sign:dec[1]==='-'?-1:1};
+  }
+  return null;
+}
+/* importa a planilha de banco de horas de toda a equipe (enviada pela gestão): casa cada linha por
+   matrícula e, na falta dela, por nome normalizado, e substitui o saldo do colaborador — esta planilha
+   passa a ser a única fonte do banco de horas, não é mais calculado a partir da folha de ponto */
+async function importHourBank(file){
+  if(!file)return;
+  try{
+    const rows=await readFirstSheet(file),h=rows[0]||[];
+    const ix={reg:findCol(h,'Matricula','Matrícula'),name:findCol(h,'Nome'),
+      saldo:findCol(h,'Banco de Horas','Banco De Horas','Saldo','Saldo Atual','Saldo Banco de Horas','Saldo do Banco de Horas'),
+      asOf:findCol(h,'Data','Data Base','Competencia','Competência','Atualizado em')};
+    if(ix.saldo<0){alert('Coluna com o saldo do banco de horas não encontrada na planilha (ex.: "Banco de Horas" ou "Saldo").');return}
+    if(ix.reg<0&&ix.name<0){alert('Informe ao menos a coluna "Matrícula" ou "Nome" para identificar cada colaborador.');return}
+    const today=new Date().toISOString().slice(0,10);
+    let updated=0,notFound=0,skipped=0;const misses=[];
+    for(const r of rows.slice(1)){
+      const reg=ix.reg>=0?String(r[ix.reg]??'').trim():'';
+      const name=ix.name>=0?String(r[ix.name]??'').trim():'';
+      if(!reg&&!name)continue;
+      const parsed=parseHourBankCell(r[ix.saldo]);
+      if(!parsed){skipped++;continue}
+      let emp=reg?db.employees.find(x=>x.reg&&norm(x.reg)===norm(reg)):null;
+      if(!emp&&name)emp=db.employees.find(x=>normName(x.name)===normName(name));
+      if(!emp){notFound++;misses.push(name||reg);continue}
+      const asOf=(ix.asOf>=0&&excelDate(r[ix.asOf]))||today;
+      emp.hourBank={minutes:parsed.minutes,sign:parsed.sign,asOf};
+      updated++;
+    }
+    db.imports.unshift({at:new Date().toLocaleString('pt-BR'),file:file.name,total:rows.length-1,added:0,updated,same:skipped,errors:notFound});
+    db.imports=db.imports.slice(0,30);
+    await save(true);
+    let msg=`Banco de horas atualizado: ${updated} colaborador(es).`;
+    if(notFound)msg+=` ${notFound} não encontrado(s) na equipe${misses.length?' ('+misses.slice(0,5).join(', ')+(misses.length>5?'…':'')+')':''}.`;
+    if(skipped)msg+=` ${skipped} linha(s) com saldo inválido ignorada(s).`;
+    alert(msg);
+  }catch(e){alert('Falha ao importar planilha de banco de horas: '+e.message)}
+}
+
 function prepareAbsenceModal(){
   if(!db.employees.length){alert('Cadastre pelo menos um colaborador antes de registrar uma falta.');return}
   $('aEmployee').innerHTML=db.employees.map(x=>`<option value="${x.id}">${escHtml(x.name)}</option>`).join('');
@@ -2696,10 +2769,6 @@ function syncAbsencesFromTimesheet(e,ts){
   return {created,updated};
 }
 
-function importTimesheetForSelf(input){
-  currentProfileId=currentOperatorId; // importar a folha de ponto direto do "Meu Painel" do operador
-  importTimesheet(input);
-}
 async function importTimesheet(input){
   const file=input.files&&input.files[0];input.value='';
   if(!file||!currentProfileId)return;
@@ -2723,8 +2792,6 @@ async function importTimesheet(input){
     if(sched)e.schedule=sched;
     if(info.localizacao)e.sector=info.localizacao;
     e.timesheetPeriod={start:periodStart,end:periodEnd};
-    const saldoAtual=pontoSaldoParse(footer.saldoAtual);
-    e.hourBank={minutes:saldoAtual.minutes,sign:saldoAtual.sign,text:footer.saldoAtual,asOf:periodEnd};
     const guessedShift=guessShiftFromSchedule(sched);
     if(guessedShift)e.shift=guessedShift;
     if(!e.reg&&info.matricula)e.reg=info.matricula;
@@ -3203,10 +3270,33 @@ function enterKioskMode(){
 }
 
 /* ---- Meu Painel: tela inicial do operador — produção da equipe (sem faturamento), banco de horas próprio e avisos ---- */
+/* tempo de casa em texto ("2 anos e 3 meses") a partir da data de admissão */
+function tenureLabel(admission){
+  if(!admission)return '';
+  const start=new Date(admission+'T12:00:00');
+  if(isNaN(start))return '';
+  const now=new Date();
+  let years=now.getFullYear()-start.getFullYear(),months=now.getMonth()-start.getMonth();
+  if(now.getDate()<start.getDate())months--;
+  if(months<0){years--;months+=12}
+  if(years<=0&&months<=0)return 'menos de 1 mês';
+  const parts=[];
+  if(years>0)parts.push(`${years} ano${years>1?'s':''}`);
+  if(months>0)parts.push(`${months} ${months>1?'meses':'mês'}`);
+  return parts.join(' e ');
+}
 function renderOperadorHome(prods){
   if(!$('operadorHome'))return;
   const e=db.employees.find(x=>x.id===currentOperatorId);
   $('opHomeGreeting').textContent=e?('Olá, '+e.name.split(' ')[0]+'!'):'Meu Painel';
+  const avatarImg=$('opGreetingAvatar'),avatarFallback=$('opGreetingAvatarFallback');
+  if(avatarImg&&avatarFallback){
+    if(e&&e.photo){avatarImg.src=e.photo;avatarImg.style.display='';avatarFallback.style.display='none'}
+    else if(e){avatarImg.style.display='none';avatarFallback.style.display='grid';avatarFallback.textContent=initials(e.name)}
+    else{avatarImg.style.display='none';avatarFallback.style.display='none'}
+  }
+  const tenure=e?tenureLabel(e.admission):'';
+  $('opGreetingTenure').textContent=tenure?`Você faz parte da Selbetti há ${tenure}. Seguimos juntos fazendo a excelência acontecer!`:'Produção da equipe, meu banco de horas e avisos.';
   const now=new Date(),month=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const pRows=prods.filter(x=>x.date.startsWith(month));
   const pPrints=pRows.reduce((s,x)=>s+x.prints,0),pObjects=pRows.reduce((s,x)=>s+x.objects,0);
@@ -3228,19 +3318,19 @@ function renderOperadorHome(prods){
 
   if(e&&e.hourBank){
     $('opHourBank').innerHTML=`<div class="metricline"><span>Saldo atual</span><strong style="color:${e.hourBank.sign<0?'var(--red)':'var(--selbetti-dark)'}">${fmtSaldoHM(e.hourBank)}</strong></div>
-      <div class="metricline"><span>Referente à competência até</span><strong>${e.hourBank.asOf?e.hourBank.asOf.split('-').reverse().join('/'):'—'}</strong></div>
-      <p class="muted" style="font-size:12px;margin-top:8px">Saldo apurado pela última folha de ponto importada no seu perfil.</p>`;
+      <div class="metricline"><span>Atualizado em</span><strong>${e.hourBank.asOf?e.hourBank.asOf.split('-').reverse().join('/'):'—'}</strong></div>
+      <p class="muted" style="font-size:12px;margin-top:8px">Saldo informado pela gestão através da planilha de banco de horas da equipe.</p>`;
   }else{
-    $('opHourBank').innerHTML='<p class="muted">Nenhuma folha de ponto importada ainda. Importe no seu perfil para acompanhar o saldo.</p>';
+    $('opHourBank').innerHTML='<p class="muted">Seu banco de horas ainda não foi informado pela gestão.</p>';
   }
 
-  const alerts=[];
+  const alerts=[{severity:'warn',text:'Feedz e PDI em dia?',detail:'Não esqueça de acessar o Feedz e manter seu Plano de Desenvolvimento Individual (PDI) atualizado.'}];
   if(e){
     if(!e.hourBank||!e.hourBank.asOf){
-      alerts.push({severity:'warn',text:'Você ainda não tem folha de ponto importada.',detail:'Importe no seu perfil para ver banco de horas e horas extras.'});
+      alerts.push({severity:'warn',text:'Seu banco de horas ainda não foi informado.',detail:'A gestão atualiza esse saldo periodicamente pela planilha de banco de horas da equipe.'});
     }else{
       const ageDays=Math.floor((now-new Date(e.hourBank.asOf+'T12:00:00'))/86400000);
-      if(ageDays>45)alerts.push({severity:'warn',text:'Sua folha de ponto está desatualizada.',detail:`Última competência importada há ${ageDays} dia(s) (${e.hourBank.asOf.split('-').reverse().join('/')}).`});
+      if(ageDays>45)alerts.push({severity:'warn',text:'Seu banco de horas está desatualizado.',detail:`Último saldo informado há ${ageDays} dia(s) (${e.hourBank.asOf.split('-').reverse().join('/')}).`});
     }
     if(e.admission){
       let cycleStart=e.admission,cycleEnd=addMonths(e.admission,12),lastCompleted=null;
