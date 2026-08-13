@@ -5,6 +5,9 @@ App desktop do GO Enterprise para a Selbetti (Correios MG), empacotado com Elect
 que agora ele roda como um `.exe` instalado no Windows, com uma pasta compartilhada sincronizando os
 dados entre todos os computadores, uma janela de TV independente e verificação de atualização.
 
+📚 **Documentação técnica completa** (arquitetura, modelo de dados, telas, segurança, sincronização,
+build/release e o histórico de decisões/armadilhas conhecidas): [`docs/README.md`](docs/README.md).
+
 ## O que foi construído
 
 - **`main.js`** — processo principal do Electron: cria a janela principal, a janela da TV (independente),
