@@ -400,14 +400,17 @@ body.kiosk-mode .dash-kiosk-wrap{position:fixed;inset:0;border-radius:0;min-heig
   display:flex;flex-direction:column;overflow:hidden;z-index:30}
 body.kiosk-mode .dash-kiosk-header{position:fixed;top:22px;left:56px;right:56px;height:70px;overflow:hidden;margin:0;z-index:31}
 body.kiosk-mode .dash-board{flex:1;min-height:0;padding-top:100px}
-/* as 4 linhas (KPIs · produção+SLA+ranking · avisos+destaque · ticker) dividem o espaço de forma
-   proporcional (flex-grow), nunca por "auto" — numa TV real de 50" os 8 KPIs sozinhos, com altura
-   por conteúdo, tomavam espaço demais e sobrava pouco pra o gráfico/gauge/ranking, cortando tudo.
-   Com flex-grow em todo mundo, a soma das 4 linhas SEMPRE cabe exatamente na altura disponível. */
-body.kiosk-mode .dash-row-kpis{flex:0.75;min-height:0;overflow:hidden}
-body.kiosk-mode .dash-row-main{flex:2.3;min-height:0}
-body.kiosk-mode .dash-row-secondary{flex:0.85;min-height:0}
-body.kiosk-mode .dash-tile{overflow:hidden;box-sizing:border-box;padding:12px 16px}
+/* a linha de KPIs volta a ter altura por CONTEÚDO (não mais um flex-grow forçado): dar pouco espaço
+   de propósito a ela (flex:0.75 numa tentativa anterior) fazia o valor/rótulo de cada card encolher
+   até desaparecer — o título (que não encolhe) continuava visível sozinho, com o resto invisível.
+   Como agora a tipografia dos KPIs já é bem mais compacta (ver .dash-kpi-val etc. abaixo), o
+   conteúdo natural da linha já é pequeno o bastante — só produção/SLA/ranking e avisos/destaque
+   dividem o que sobra, por flex-grow (nunca "auto"), então nunca estouram a tela. */
+body.kiosk-mode .dash-row-kpis{flex:0 0 auto}
+body.kiosk-mode .dash-row-main{flex:1.6;min-height:0}
+body.kiosk-mode .dash-row-secondary{flex:1;min-height:0}
+body.kiosk-mode .dash-tile{overflow:hidden;box-sizing:border-box;padding:10px 16px}
+body.kiosk-mode .dash-kpi{overflow:visible}
 body.kiosk-mode .dash-var{font-size:13px}
 
 /* ---- Manuais de equipamentos ---- */
