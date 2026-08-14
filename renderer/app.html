@@ -3175,6 +3175,15 @@ function dashNewsLenTier(text){
 }
 function renderDashboardTv(){
   if(!$('dashboardTv'))return;
+  // um erro aqui dentro nunca pode interromper o resto de render() (RH, Financeiro, perfil do
+  // colaborador etc. são chamados DEPOIS desta função) nem o fluxo de sincronização entre PCs
+  // (save()/onDataChangedExternally chamam render() e dependem que ele termine) — por isso todo o
+  // corpo fica protegido e loga no console em vez de propagar o erro pra cima.
+  try{
+  renderDashboardTvInner();
+  }catch(e){console.warn('Falha ao renderizar o Dashboard TV:',e)}
+}
+function renderDashboardTvInner(){
   const prods=dailyProduction();
   const now=new Date(),currentISO=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const month=currentISO.slice(0,7),dayOfMonth=now.getDate();
@@ -3303,7 +3312,7 @@ function renderDashSpotlight(){
 function scheduleDashSpotRotate(){
   clearInterval(dashSpotTimer);
   if(dashSpotItems.length<=1)return;
-  dashSpotTimer=setInterval(()=>{dashSpotIndex=(dashSpotIndex+1)%dashSpotItems.length;renderDashSpotlight()},7000);
+  dashSpotTimer=setInterval(()=>{try{dashSpotIndex=(dashSpotIndex+1)%dashSpotItems.length;renderDashSpotlight()}catch(e){console.warn('Falha ao revezar notícias/aniversariantes da TV:',e)}},7000);
 }
 function openDashboardTV(){
   if(window.goDesktop&&window.goDesktop.isElectron){window.goDesktop.openTvWindow();return}
