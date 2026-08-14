@@ -396,10 +396,14 @@ body.kiosk-mode .side{display:none!important}
 body.kiosk-mode .app{display:block}
 body.kiosk-mode .main{padding:0}
 body.kiosk-mode .dash-preview-only{display:none}
-body.kiosk-mode .dash-kiosk-wrap{position:fixed;inset:0;border-radius:0;min-height:100vh;padding:40px 56px 26px;
+/* "área segura" de TV: muitas TVs (a Philips desta operação inclusive) aplicam overscan e cortam uma
+   faixa nas bordas do sinal HDMI, achando que é transmissão de TV comum — não tem como o app saber
+   quanto cada TV vai cortar, então a margem aqui é em vw/vh (porcentagem da tela, não pixels fixos)
+   pra sobrar uma borda de verdade em qualquer resolução, absorvendo o corte típico de overscan. */
+body.kiosk-mode .dash-kiosk-wrap{position:fixed;inset:0;border-radius:0;min-height:100vh;padding:3.5vh 4vw 2.5vh;
   display:flex;flex-direction:column;overflow:hidden;z-index:30}
-body.kiosk-mode .dash-kiosk-header{position:fixed;top:22px;left:56px;right:56px;height:70px;overflow:hidden;margin:0;z-index:31}
-body.kiosk-mode .dash-board{flex:1;min-height:0;padding-top:100px}
+body.kiosk-mode .dash-kiosk-header{position:fixed;top:2.2vh;left:4vw;right:4vw;height:70px;overflow:hidden;margin:0;z-index:31}
+body.kiosk-mode .dash-board{flex:1;min-height:0;padding-top:130px}
 /* a linha de KPIs volta a ter altura por CONTEÚDO (não mais um flex-grow forçado): dar pouco espaço
    de propósito a ela (flex:0.75 numa tentativa anterior) fazia o valor/rótulo de cada card encolher
    até desaparecer — o título (que não encolhe) continuava visível sozinho, com o resto invisível.
