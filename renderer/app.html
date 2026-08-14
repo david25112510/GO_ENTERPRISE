@@ -268,13 +268,15 @@ body.kiosk-mode .dash-linechart-goallabel{font-size:13px}
 .dash-gauge-ring-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center}
 body.kiosk-mode .dash-gauge-ring-wrap{width:200px;height:200px}
 body.kiosk-mode .dash-gauge .big-pct{font-size:34px}
-.dash-alerts .alert-box{background:rgba(8,28,20,.62);border-color:rgba(143,227,184,.2);color:#eaf6ef;
-  margin-bottom:0;box-sizing:border-box}
-.dash-alerts .alert-box.bad{background:rgba(212,60,60,.22);border-color:rgba(212,60,60,.45)}
-.dash-alerts .alert-box.warn{background:rgba(230,180,40,.18);border-color:rgba(230,180,40,.45)}
+/* trilho de cor na lateral em vez do card inteiro tingido — mais legível à distância na TV */
+.dash-alerts .alert-box{background:rgba(8,28,20,.62);border-color:rgba(143,227,184,.16);color:#eaf6ef;
+  margin-bottom:0;box-sizing:border-box;position:relative;padding-left:20px;overflow:hidden}
+.dash-alerts .alert-box::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#6fe6a0}
+.dash-alerts .alert-box.warn::before{background:#ffcf7a}
+.dash-alerts .alert-box.bad::before{background:#ff6b6b}
 .dash-alerts .alert-box b{color:#fff}
 .dash-alerts .alert-box small{color:#c7ddd0}
-.alert-box-img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:0 0 auto}
+.alert-box-img{width:40px;height:40px;border-radius:8px;object-fit:contain;background:rgba(0,0,0,.25);flex:0 0 auto}
 body.kiosk-mode .alert-box-img{width:56px;height:56px}
 /* em modo kiosk cada aviso divide igualmente o espaço vertical disponível (nunca corta um item pela
    metade) e o próprio texto/imagem dele se ajustam ao espaço recebido, em vez do widget cortar por
@@ -328,10 +330,11 @@ body.kiosk-mode .dash-birthdays h3{font-size:15px;padding-bottom:14px;margin-bot
 .dash-rank-bar-fill.low{background:linear-gradient(90deg,#c98f00,#ffb37a)}
 /* Grade de notícias adaptativa: o número de linhas/colunas muda conforme a quantidade de notícias
    (classe dash-news-grid--N, aplicada em JS) e cada célula recebe uma fração igual (1fr) da altura
-   disponível — nunca "estoura" pra fora do slide, então não há necessidade de cortar por
-   overflow:hidden no grid inteiro (o que antes cortava cards inteiros, imagem incluída). Dentro de
-   cada card, a imagem fica numa área própria que flexiona pro espaço que sobrar depois do texto, com
-   object-fit:cover — a imagem sempre aparece, do tamanho que o card realmente tem disponível. */
+   disponível — nunca "estoura" pra fora do slide. Dentro de cada card, a foto fica numa área própria
+   (object-fit:contain — a imagem aparece INTEIRA, nunca cortada) e o texto vai por completo abaixo,
+   sem line-clamp; o tamanho da letra se ajusta ao tamanho do texto de cada notícia (data-len,
+   calculado em JS) — notícia curta ganha letra maior, notícia longa encolhe o bastante pra continuar
+   cabendo inteira. */
 .dash-news-grid{display:grid;gap:16px}
 .dash-news-grid--1{grid-template-columns:1fr;grid-template-rows:1fr}
 .dash-news-grid--2{grid-template-columns:1fr;grid-template-rows:repeat(2,1fr)}
@@ -343,17 +346,27 @@ body.kiosk-mode .dash-birthdays h3{font-size:15px;padding-bottom:14px;margin-bot
 .dash-news-card{background:rgba(4,14,10,.88);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
   border-top:3px solid #00a859;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35);
   display:flex;flex-direction:column;min-height:0}
-.dash-news-card .img-wrap{position:relative;flex:1 1 auto;min-height:70px;background:rgba(0,0,0,.2)}
-.dash-news-card .img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.dash-news-card .img-wrap{position:relative;flex:0 1 40%;min-height:70px;background:rgba(0,0,0,.22)}
+.dash-news-card .img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
 .dash-news-card.no-image .img-wrap{display:none}
 .dash-news-card.no-image .body{flex:1;display:flex;flex-direction:column;justify-content:center}
-.dash-news-card .body{flex:0 0 auto;padding:14px 18px;min-height:0}
-.dash-news-card h3{margin:0 0 6px;color:#eafff2;font-size:16px}
-.dash-news-card p{margin:0;color:#dcefe4;font-size:13px;line-height:1.5;
-  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-body.kiosk-mode .dash-news-card h3{font-size:20px}
-body.kiosk-mode .dash-news-card p{font-size:15px;-webkit-line-clamp:4}
-body.kiosk-mode .dash-news-card .body{padding:16px 22px}
+.dash-news-card .body{flex:1;display:flex;flex-direction:column;padding:14px 18px;min-height:0;overflow:hidden}
+.dash-news-card h3{flex:0 0 auto;margin:0 0 6px;color:#eafff2;font-weight:800;line-height:1.22}
+.dash-news-card .text-wrap{flex:1;min-height:0;overflow:hidden}
+.dash-news-card p{margin:0;color:#dcefe4;line-height:1.44}
+.dash-news-card[data-len="short"] h3{font-size:17px}
+.dash-news-card[data-len="short"] p{font-size:13.5px}
+.dash-news-card[data-len="medium"] h3{font-size:15.5px}
+.dash-news-card[data-len="medium"] p{font-size:12.5px}
+.dash-news-card[data-len="long"] h3{font-size:14.5px}
+.dash-news-card[data-len="long"] p{font-size:11.5px}
+body.kiosk-mode .dash-news-card .body{padding:18px 22px}
+body.kiosk-mode .dash-news-card[data-len="short"] h3{font-size:23px}
+body.kiosk-mode .dash-news-card[data-len="short"] p{font-size:17px}
+body.kiosk-mode .dash-news-card[data-len="medium"] h3{font-size:20px}
+body.kiosk-mode .dash-news-card[data-len="medium"] p{font-size:15.5px}
+body.kiosk-mode .dash-news-card[data-len="long"] h3{font-size:18px}
+body.kiosk-mode .dash-news-card[data-len="long"] p{font-size:14px}
 /* De propósito NÃO usa position:fixed aqui — fica no fluxo normal da página, logo depois do slide
    ativo. Elemento em fluxo normal nunca sobrepõe outro elemento em fluxo normal, então isso elimina
    de vez qualquer risco de sobreposição, sem depender de cálculo de altura de tela cheia (que não
@@ -3151,6 +3164,12 @@ function renderRadialGauge(value,goodColor,badColor,isOk){
     <div class="dash-gauge-ring-center"><div class="big-pct" style="color:${color}">${pct(value)}</div></div>
   </div>`;
 }
+/* tamanho do texto do card de notícia conforme o comprimento real — notícia curta ganha letra maior
+   e mais destaque, notícia longa encolhe o bastante pra continuar cabendo inteira (sem cortar) */
+function dashNewsLenTier(text){
+  const n=(text||'').length;
+  return n<70?'short':n<150?'medium':'long';
+}
 function renderDashboardTv(){
   if(!$('dashboardTv'))return;
   const prods=dailyProduction();
@@ -3245,9 +3264,9 @@ function renderDashboardTv(){
   const news=[...(db.news||[])].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,4);
   const newsGrid=$('dashNewsGrid');
   newsGrid.className='dash-news-grid'+(news.length?' dash-news-grid--'+news.length:'');
-  newsGrid.innerHTML=news.length?news.map(n=>`<div class="dash-news-card${n.image?'':' no-image'}">
+  newsGrid.innerHTML=news.length?news.map(n=>`<div class="dash-news-card${n.image?'':' no-image'}" data-len="${dashNewsLenTier(n.text)}">
       ${n.image?`<div class="img-wrap"><img src="${n.image}" alt="${escHtml(n.title)}"></div>`:''}
-      <div class="body"><h3>${escHtml(n.title)}</h3><p>${escHtml(n.text||'')}</p></div>
+      <div class="body"><h3>${escHtml(n.title)}</h3><div class="text-wrap"><p>${escHtml(n.text||'')}</p></div></div>
     </div>`).join(''):'<p class="muted" style="color:#9fd6bb">Nenhuma notícia cadastrada.</p>';
 
   const msg=todaysMessage();
