@@ -231,7 +231,8 @@ body.role-tv .view:not(#dashboardTv):not(#noticias){display:none!important}
   text-transform:uppercase;color:#8fe3b8}
 body.kiosk-mode .dash-widget-head{font-size:15px;padding-bottom:14px;margin-bottom:18px}
 .dash-alerts-widget{background:rgba(8,28,20,.62);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
-  border-radius:14px;padding:24px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  border-radius:14px;padding:24px;box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;flex-direction:column;min-height:0}
+.dash-alerts{display:flex;flex-direction:column;gap:10px;min-height:0}
 .dash-chart-wrap{background:rgba(8,28,20,.5);border:1px solid rgba(143,227,184,.16);border-radius:12px;padding:18px 22px 34px}
 .dash-bars{min-height:220px}
 .dash-bars .bar{background:linear-gradient(180deg,#8ff5b8,#0e9a55);box-shadow:0 0 14px rgba(111,230,160,.35)}
@@ -267,13 +268,19 @@ body.kiosk-mode .dash-linechart-goallabel{font-size:13px}
 .dash-gauge-ring-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center}
 body.kiosk-mode .dash-gauge-ring-wrap{width:200px;height:200px}
 body.kiosk-mode .dash-gauge .big-pct{font-size:34px}
-.dash-alerts .alert-box{background:rgba(8,28,20,.62);border-color:rgba(143,227,184,.2);color:#eaf6ef}
+.dash-alerts .alert-box{background:rgba(8,28,20,.62);border-color:rgba(143,227,184,.2);color:#eaf6ef;
+  margin-bottom:0;box-sizing:border-box}
 .dash-alerts .alert-box.bad{background:rgba(212,60,60,.22);border-color:rgba(212,60,60,.45)}
 .dash-alerts .alert-box.warn{background:rgba(230,180,40,.18);border-color:rgba(230,180,40,.45)}
 .dash-alerts .alert-box b{color:#fff}
 .dash-alerts .alert-box small{color:#c7ddd0}
 .alert-box-img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:0 0 auto}
-body.kiosk-mode .alert-box-img{width:52px;height:52px}
+body.kiosk-mode .alert-box-img{width:56px;height:56px}
+/* em modo kiosk cada aviso divide igualmente o espaço vertical disponível (nunca corta um item pela
+   metade) e o próprio texto/imagem dele se ajustam ao espaço recebido, em vez do widget cortar por
+   overflow:hidden quando há avisos demais para a altura da tela */
+body.kiosk-mode .dash-alerts .alert-box{flex:1;min-height:0;overflow:hidden;align-items:center}
+body.kiosk-mode .dash-alerts .alert-box small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .dash-ritmo-box{background:rgba(4,14,10,.88);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
   border-radius:14px;padding:24px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .dash-ritmo-box .big-pct{font-size:42px;font-weight:800;color:#fff;text-shadow:0 0 24px rgba(111,230,160,.4);
@@ -319,18 +326,34 @@ body.kiosk-mode .dash-birthdays h3{font-size:15px;padding-bottom:14px;margin-bot
 .dash-rank-bar-track{height:5px;border-radius:999px;background:rgba(255,255,255,.1);margin-top:7px;overflow:hidden}
 .dash-rank-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#0e9a55,#8ff5b8)}
 .dash-rank-bar-fill.low{background:linear-gradient(90deg,#c98f00,#ffb37a)}
-.dash-news-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-@media (max-width:1100px){.dash-news-grid{grid-template-columns:1fr}}
+/* Grade de notícias adaptativa: o número de linhas/colunas muda conforme a quantidade de notícias
+   (classe dash-news-grid--N, aplicada em JS) e cada célula recebe uma fração igual (1fr) da altura
+   disponível — nunca "estoura" pra fora do slide, então não há necessidade de cortar por
+   overflow:hidden no grid inteiro (o que antes cortava cards inteiros, imagem incluída). Dentro de
+   cada card, a imagem fica numa área própria que flexiona pro espaço que sobrar depois do texto, com
+   object-fit:cover — a imagem sempre aparece, do tamanho que o card realmente tem disponível. */
+.dash-news-grid{display:grid;gap:16px}
+.dash-news-grid--1{grid-template-columns:1fr;grid-template-rows:1fr}
+.dash-news-grid--2{grid-template-columns:1fr;grid-template-rows:repeat(2,1fr)}
+.dash-news-grid--3{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}
+.dash-news-grid--3 .dash-news-card:first-child{grid-row:1/3}
+.dash-news-grid--4{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}
+@media (max-width:1100px){.dash-news-grid--3,.dash-news-grid--4{grid-template-columns:1fr;grid-template-rows:none}
+  .dash-news-grid--3 .dash-news-card:first-child{grid-row:auto}}
 .dash-news-card{background:rgba(4,14,10,.88);backdrop-filter:blur(2px);border:1px solid rgba(143,227,184,.22);
-  border-top:3px solid #00a859;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;flex-direction:column}
-.dash-news-card img{width:100%;height:120px;object-fit:cover;display:block}
-.dash-news-card .body{padding:16px 18px}
+  border-top:3px solid #00a859;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35);
+  display:flex;flex-direction:column;min-height:0}
+.dash-news-card .img-wrap{position:relative;flex:1 1 auto;min-height:70px;background:rgba(0,0,0,.2)}
+.dash-news-card .img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.dash-news-card.no-image .img-wrap{display:none}
+.dash-news-card.no-image .body{flex:1;display:flex;flex-direction:column;justify-content:center}
+.dash-news-card .body{flex:0 0 auto;padding:14px 18px;min-height:0}
 .dash-news-card h3{margin:0 0 6px;color:#eafff2;font-size:16px}
 .dash-news-card p{margin:0;color:#dcefe4;font-size:13px;line-height:1.5;
-  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-body.kiosk-mode .dash-news-card h3{font-size:19px}
-body.kiosk-mode .dash-news-card p{font-size:15px;-webkit-line-clamp:5}
-body.kiosk-mode .dash-news-card img{height:150px}
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+body.kiosk-mode .dash-news-card h3{font-size:20px}
+body.kiosk-mode .dash-news-card p{font-size:15px;-webkit-line-clamp:4}
+body.kiosk-mode .dash-news-card .body{padding:16px 22px}
 /* De propósito NÃO usa position:fixed aqui — fica no fluxo normal da página, logo depois do slide
    ativo. Elemento em fluxo normal nunca sobrepõe outro elemento em fluxo normal, então isso elimina
    de vez qualquer risco de sobreposição, sem depender de cálculo de altura de tela cheia (que não
@@ -360,7 +383,8 @@ body.kiosk-mode .dash-slide-title{flex:0 0 auto}
 body.kiosk-mode .dash-cards{flex:0 0 auto}
 body.kiosk-mode .dash-chart-wrap{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;
   box-sizing:border-box}
-body.kiosk-mode .dash-news-grid{flex:1;min-height:0;overflow:hidden}
+body.kiosk-mode .dash-news-grid{flex:1;min-height:0}
+body.kiosk-mode .dash-alerts{flex:1;min-height:0;overflow:hidden}
 body.kiosk-mode .dash-sla-row,
 body.kiosk-mode .dash-rank-grid,
 body.kiosk-mode .dash-ritmo-row{flex:1;min-height:0;overflow:hidden;align-items:stretch}
@@ -3169,14 +3193,20 @@ function renderDashboardTv(){
 
   const absent=teamAbsenteeism();
   const otherAlerts=[...vacationDeadlineAlerts(),...lossAlerts()];
-  const alertHtml=otherAlerts.slice(0,6).map(a=>{
-    if(a.type==='ferias')return `<div class="alert-box ${a.severity}"><div class="ic">🏖️</div><div><b>${escHtml(a.text)}</b><small>${escHtml(a.detail)}</small></div></div>`;
-    return `<div class="alert-box ${a.severity}"><div class="ic">📉</div><div><b>Perda de papel — ${monthLabel(a.x.ref)}</b><small>Défice de ${a.m.defct.toFixed(2).replace('.',',')} resma(s)</small></div></div>`;
-  }).join('');
-  const absentHtml=absent.rate>5?`<div class="alert-box ${absent.rate>10?'bad':'warn'}"><div class="ic">📋</div><div><b>Absenteísmo acima do esperado</b><small>${pct(absent.rate)} no período apurado</small></div></div>`:'';
-  const slaAlertHtml=(pIn+pOut&&pRate<db.config.slaGoal)?`<div class="alert-box warn"><div class="ic">⏱️</div><div><b>SLA do mês abaixo da meta</b><small>${pct(pRate)} realizado, meta ${pct(db.config.slaGoal)}</small></div></div>`:'';
-  const customAlertHtml=(db.alerts||[]).map(a=>`<div class="alert-box ${a.severity||'warn'}">${a.image?`<img class="alert-box-img" src="${a.image}" alt="${escHtml(a.title)}">`:'<div class="ic">📢</div>'}<div><b>${escHtml(a.title)}</b><small>${escHtml(a.text||'')}</small></div></div>`).join('');
-  $('dashAlertsList').innerHTML=(slaAlertHtml+absentHtml+customAlertHtml+alertHtml)||'<p class="muted" style="color:#9fd6bb">Sem avisos no momento. Tudo em dia! ✅</p>';
+  // lista única de avisos (em vez de concatenar HTML de fontes com limites independentes, o que
+  // deixava a lista sem um teto real — com muitos alertas customizados cadastrados, o widget
+  // acabava tendo que cortar itens/imagens por overflow:hidden). Agora tudo entra numa única lista,
+  // com no máximo 6 avisos no total, e cada aviso exibido divide igualmente o espaço do widget.
+  const alertItems=[];
+  if(pIn+pOut&&pRate<db.config.slaGoal)alertItems.push({severity:'warn',icon:'⏱️',title:'SLA do mês abaixo da meta',detail:`${pct(pRate)} realizado, meta ${pct(db.config.slaGoal)}`});
+  if(absent.rate>5)alertItems.push({severity:absent.rate>10?'bad':'warn',icon:'📋',title:'Absenteísmo acima do esperado',detail:`${pct(absent.rate)} no período apurado`});
+  (db.alerts||[]).forEach(a=>alertItems.push({severity:a.severity||'warn',icon:'📢',image:a.image,title:a.title,detail:a.text||''}));
+  otherAlerts.forEach(a=>{
+    if(a.type==='ferias')alertItems.push({severity:a.severity,icon:'🏖️',title:a.text,detail:a.detail});
+    else alertItems.push({severity:a.severity,icon:'📉',title:`Perda de papel — ${monthLabel(a.x.ref)}`,detail:`Défice de ${a.m.defct.toFixed(2).replace('.',',')} resma(s)`});
+  });
+  const alertHtml=alertItems.slice(0,6).map(a=>`<div class="alert-box ${a.severity}">${a.image?`<img class="alert-box-img" src="${a.image}" alt="${escHtml(a.title)}">`:`<div class="ic">${a.icon}</div>`}<div><b>${escHtml(a.title)}</b><small>${escHtml(a.detail||'')}</small></div></div>`).join('');
+  $('dashAlertsList').innerHTML=alertHtml||'<p class="muted" style="color:#9fd6bb">Sem avisos no momento. Tudo em dia! ✅</p>';
 
   // ---- ranking do mês: melhores/piores dias de produção e melhor dia de SLA ----
   const withProd=[...monthRows].filter(x=>x.prints>0);
@@ -3213,7 +3243,12 @@ function renderDashboardTv(){
   $('dashBirthdayList').innerHTML=bdays.length?bdays.map(e=>`<div class="dash-bday-item"><div class="day">${String(e.bDay).padStart(2,'0')}</div><div><b>${escHtml(e.name)}${e.today?' 🎉':''}</b><small>${escHtml(e.role||'')}</small></div></div>`).join(''):'<p class="muted" style="color:#9fd6bb">Nenhum aniversário cadastrado este mês.</p>';
 
   const news=[...(db.news||[])].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,4);
-  $('dashNewsGrid').innerHTML=news.length?news.map(n=>`<div class="dash-news-card">${n.image?`<img src="${n.image}" alt="${escHtml(n.title)}">`:''}<div class="body"><h3>${escHtml(n.title)}</h3><p>${escHtml(n.text||'')}</p></div></div>`).join(''):'<p class="muted" style="color:#9fd6bb">Nenhuma notícia cadastrada.</p>';
+  const newsGrid=$('dashNewsGrid');
+  newsGrid.className='dash-news-grid'+(news.length?' dash-news-grid--'+news.length:'');
+  newsGrid.innerHTML=news.length?news.map(n=>`<div class="dash-news-card${n.image?'':' no-image'}">
+      ${n.image?`<div class="img-wrap"><img src="${n.image}" alt="${escHtml(n.title)}"></div>`:''}
+      <div class="body"><h3>${escHtml(n.title)}</h3><p>${escHtml(n.text||'')}</p></div>
+    </div>`).join(''):'<p class="muted" style="color:#9fd6bb">Nenhuma notícia cadastrada.</p>';
 
   const msg=todaysMessage();
   const msgEl=$('dashDailyMessage');
