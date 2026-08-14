@@ -191,6 +191,115 @@ alternância é feita via chamada direta à API REST do GitHub (`PATCH /repos/{o
 do principal (ex.: um novo repo vazio criado pelo usuário), sempre conferir o conteúdo primeiro
 (`GET /repos/{owner}/{repo}/contents/`) — nunca presumir que está vazio ou inofensivo.
 
+## 12. Reformulação do Dashboard TV: de 5 slides rotativos pra tela única
+
+**Pedido do usuário:** usar craft de design de verdade (skill `artifact-design`) pra reformular o
+Dashboard TV — não só corrigir bugs, e sim repensar o design, "estilo Zabbix, com animações, numa só
+tela". O rodízio de 5 slides (Produção/SLA/Ranking/Ritmo/Notícias) virou uma única tela sempre visível
+(ver [TELAS_E_FUNCIONALIDADES.md](TELAS_E_FUNCIONALIDADES.md) pra estrutura atual).
+
+**Fluxo de trabalho usado (vale repetir pra mudanças visuais grandes):** antes de mexer no
+`app.html` de verdade, o design foi prototipado como um arquivo HTML autônomo local (não como
+Artifact publicado — nesse ambiente específico, publicar Artifact retornava "page not found",
+provavelmente por ser a extensão do VSCode e não "Claude Code on the web"; o fallback funcional foi
+salvar o HTML na Área de Trabalho do usuário e abrir com `Start-Process`), com dados de exemplo
+realistas, e só foi portado pro app depois de várias rodadas de aprovação do usuário sobre esse
+protótipo. Esse ciclo (protótipo local → aprovação → porta pro app real) evitou repetir o erro da
+tentativa de redesign de notícias mencionada no item 6 (mudar direto no app sem preview e quebrar na
+TV real).
+
+**Assets reaproveitados, não recriados:** o tema espacial (campo de estrelas, "planeta", mascote
+astronauta) já existia no app antes dessa reformulação (`STARFIELD_B64`, `PLANET_B64`,
+`DASH_MASCOTE_B64` — ver [ARQUITETURA.md](ARQUITETURA.md)). Pra montar o protótipo com fidelidade
+visual sem gastar contexto lendo esses base64 enormes (80-150KB cada como texto), a extração foi feita
+só com `sed`/Node **fora** do contexto do modelo — grava cada constante num arquivo `.txt` à parte via
+`sed -n 'Np'` + strip do `const X='...'`, depois um script Node pequeno faz a substituição de
+placeholders (`__ASTRO_B64__` etc.) no HTML final. Útil de repetir sempre que precisar reusar um asset
+grande já embutido no app sem estourar o contexto.
+
+**Logo dos Correios adicionada ao cabeçalho** (`CORREIOS_B64`, novo) — o arquivo que o usuário mandou
+inicialmente por engano estava salvo como `.png` mas era na verdade um JPEG (sem canal alfa, daí o
+fundo branco "colado" mesmo sendo anunciado como transparente); a versão certa era um PNG de verdade
+já baixado antes no Desktop do usuário. Lição: **nunca confiar na extensão do arquivo** — cheque a
+assinatura de bytes (`89 50 4E 47` = PNG real, `FF D8 FF` = JPEG) antes de assumir transparência.
+
+Removidas nessa reformulação, por não fazerem mais sentido sem o rodízio por slide: as constantes
+`DASHBG_PRODUCAO_B64`/`DASHBG_RANKING_B64`/`DASHBG_SLA_B64` (fundo fotográfico por slide) e as classes
+`.bg-producao`/`.bg-sla`/`.bg-ranking`/`.bg-ritmo`. `--bg-starfield`/`--bg-planet` continuam em uso
+(login e o novo `.dash-planet-accent`).
+
+### 12a. Regressão "parou de sincronizar" — causa real vs. causa aparente
+
+Depois de publicar a primeira versão da tela única, o usuário reportou "parou de sincronizar" — sem
+nenhum erro visível, só a TV parando de atualizar sozinha. Investigação:
+
+- `renderDashboardTv()` é chamado no **meio** da sequência de `render()` (antes do perfil do
+  colaborador e do detalhe de manual) e também por `refreshKioskData()` (a cada 60s) e por
+  `onDataChangedExternally` (quando outro PC salva algo). Um erro não tratado dentro dele impedia o
+  resto dessas funções de rodar — mesmo que os dados já tivessem sido lidos/salvos corretamente por
+  baixo. `save()` já escreve no arquivo compartilhado **antes** de chamar `render()`, então a escrita
+  em si nunca ficou comprometida — era só a atualização visual que travava.
+- Testado exaustivamente com um harness Node+jsdom que carrega o `app.html` de verdade
+  (`vm.runInContext` contra `dom.getInternalVMContext()`, não `window.eval` — este último não expõe
+  declarações de função no `window` do jsdom) e chama a função com dezenas de formatos de dado
+  realistas — nenhum erro foi reproduzido dessa forma, então a causa raiz exata nunca foi confirmada.
+- Correção aplicada independente de achar a causa exata: `renderDashboardTv()` virou uma casca fina
+  que chama `renderDashboardTvInner()` dentro de `try/catch`, só logando um aviso no console. Isso é
+  uma proteção estrutural permanente — qualquer bug futuro na TV não pode mais travar o resto do app.
+  **Mas não resolve, sozinho, um problema real dentro do render da TV** — só isola o dano. Se "a TV não
+  atualiza mais" acontecer de novo, abrir o DevTools da janela da TV (`Ctrl+Shift+I` ou menu → Exibir →
+  toggleDevTools) e procurar por "Falha ao renderizar o Dashboard TV:" no console é o primeiro passo.
+
+### 12b. Layout do kiosk: dois erros de proporção, em direções opostas
+
+Depois de portar a tela única pro app, uma TV real de 50" mostrou o conteúdo do meio (gráfico/SLA/
+ranking) cortado — a linha de KPIs, com altura `auto` (por conteúdo) e tipografia grande (`38px`),
+sozinha já tomava a maior parte da altura disponível, sobrando pouco pras outras duas linhas.
+
+**Primeira correção — passou do ponto oposto:** trocar `.dash-row-kpis` pra `flex:0.75` (competindo
+por espaço com as outras linhas) resolveu o corte do gráfico, mas encolheu demais a linha de KPIs —
+como `.dash-tile-head` tem `flex:0 0 auto` (não encolhe) mas `.dash-kpi-val`/`.dash-kpi-lbl` não têm
+essa trava, eles encolheram até desaparecer visualmente (cortados pelo `overflow:hidden` necessário
+pra TV nunca estourar) — sobrando só o título de cada card, vazio por dentro. Foto confirmou.
+
+**Correção final:** depois de já ter reduzido a tipografia dos KPIs numa rodada anterior, o conteúdo
+*natural* da linha de KPIs já é pequeno o bastante — voltar `.dash-row-kpis` pra `flex:0 0 auto`
+(altura por conteúdo) resolveu de vez, com `.dash-row-main`/`.dash-row-secondary` dividindo o resto
+por `flex-grow` normalmente. **Lição:** quando um elemento tem filhos que "não podem encolher"
+(`flex:0 0 auto`, como um título) misturados com filhos que podem, dar pouco espaço ao container pai
+não deixa o conteúdo "menor" — deixa ele **invisível**, porque só os filhos que não encolhem sobrevivem
+visualmente. Nesses casos, ajustar o *conteúdo* (fonte/padding) pra ser naturalmente compacto é mais
+seguro do que forçar uma fração de espaço via flex-grow.
+
+Nessa mesma rodada: as datas do gráfico (`.dash-linechart-day`) usavam `position:absolute;
+bottom:NEGATIVO` — ficavam de propósito **fora** da caixa do próprio gráfico. Isso funcionava bem
+antes de existir `overflow:hidden` nos tiles, mas depois de virar padrão pra TV nunca estourar, essas
+datas passaram a ser cortadas (invisíveis) pelo pai. Correção: aumentar a margem reservada na base do
+próprio SVG (`padBottom` dentro de `renderProdLineChart()`, de 6 pra 16) e colocar a data **dentro**
+da caixa (`bottom:0`), nunca mais depender de conteúdo "vazando" pra fora via offset negativo.
+
+### 12c. Overscan de TV — corte simétrico nas duas bordas
+
+Com o gráfico/KPIs já corrigidos, uma foto ainda mostrava texto cortado **nas duas bordas** (esquerda
+e direita) de forma simétrica — assinatura clássica de *overscan* (a própria TV recorta uma faixa do
+sinal HDMI achando que é transmissão de TV comum, não pixel-a-pixel de computador), não um bug de
+CSS. Como o app não tem como saber quanto cada TV vai cortar, a correção foi puramente defensiva:
+trocar as margens fixas em pixel do `.dash-kiosk-wrap`/`.dash-kiosk-header` por `vw`/`vh` (porcentagem
+da tela) — uma "área segura" que sobra de propósito nas bordas, absorvendo o corte típico de overscan
+em qualquer resolução. Isso é diferente de mudar a configuração da própria TV (que também resolveria,
+procurando por "Sem escala"/"Ponto a ponto" no menu de formato de imagem) — a margem em `vw`/`vh` é a
+correção do lado do app, que funciona mesmo se ninguém mexer na TV.
+
+### 12d. Disco cheio interrompendo o build (não é bug de código)
+
+Um `npm run dist` falhou com `Error: can't write ... bytes to output` — não tinha nada a ver com o
+código, o disco `C:` da máquina de build estava com **145MB livres de 118GB** (99% cheio). A pasta
+`dist/` sozinha acumulava ~1,5GB de instaladores antigos (cada versão publicada nesta jornada gerou um
+`.exe` de ~78MB que nunca era apagado). Como `dist/` é gitignored e inteiramente regenerável
+(`npm run dist`), apagá-la por completo antes de cada build é seguro e já virou rotina — mas o disco
+cheio em si é um problema da máquina, não do projeto, e vale o usuário investigar o que mais está
+ocupando espaço (118GB usados é muito).
+
 ## Coisas que parecem bug mas são intencionais
 
 - `db.production` sempre vazio — não é bug, é vestigial; produção real vem de `db.sla` (ver
@@ -202,3 +311,9 @@ do principal (ex.: um novo repo vazio criado pelo usuário), sempre conferir o c
   operador (`.gestor-only` é só uma trava visual).
 - `db.finance` (registros financeiros) não entra em nenhum total de Financeiro — é só uma lista com
   alertas de vencimento, de propósito (ver item 8 acima).
+- No Dashboard TV, só o card de destaque (notícias/aniversariantes) reveza sozinho — todo o resto da
+  tela única fica sempre visível, sem nenhum rodízio. Isso é o design atual (item 12), não um resquício
+  incompleto do rodízio antigo de 5 slides.
+- As margens do `.dash-kiosk-wrap` em modo TV são em `vw`/`vh`, não pixel fixo — de propósito, é a
+  "área segura" contra overscan de TV física (item 12c). Não trocar de volta pra pixel fixo achando
+  que é mais preciso.

@@ -142,3 +142,17 @@ Toda comunicação passa por `ipcMain.handle`/`ipcRenderer.invoke` (request/resp
 correção importante (ver [HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md)) porque em TVs reais
 `setKiosk(true)` sozinho às vezes falhava silenciosamente, deixando a barra de menu visível e
 encolhendo a área útil, o que empurrava o conteúdo por trás do cabeçalho/rodapé fixos do dashboard.
+
+Duas lições mais recentes, específicas do layout do conteúdo (não da janela em si) — ver a seção
+"Dashboard TV" em [TELAS_E_FUNCIONALIDADES.md](TELAS_E_FUNCIONALIDADES.md) e
+[HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md) para o relato completo de cada uma:
+
+- **Nunca testar layout de TV só no monitor de desenvolvimento.** TVs físicas aplicam *overscan*
+  (recortam uma faixa das bordas do sinal HDMI) — o app não tem como saber quanto cada TV vai cortar,
+  então o `.dash-kiosk-wrap` reserva uma margem de segurança em `vw`/`vh` (nunca pixel fixo) ao redor
+  de todo o conteúdo do kiosk.
+- **`overflow:hidden` corta em dois sentidos.** É necessário pra TV nunca "estourar" conteúdo pra fora
+  da tela, mas também pode fazer conteúdo **encolher até sumir** se o elemento pai receber pouco
+  espaço via `flex-grow`/`min-height:0` — um título com `flex:0 0 auto` (não encolhe) pode continuar
+  visível enquanto o valor abaixo dele (que pode encolher) desaparece por completo, dando a impressão
+  de um card "vazio". Ao ajustar proporções de layout do kiosk, sempre testar com uma foto da TV real.

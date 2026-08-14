@@ -46,7 +46,7 @@ O `README.md` na raiz do projeto continua existindo com uma visão geral mais cu
 está configurando o app pela primeira vez (instalação, pasta compartilhada, TV). Esta pasta `docs/`
 é o nível "manutenção e evolução do código".
 
-## Fatos rápidos (verificados na versão 8.3.10)
+## Fatos rápidos (verificados na versão 8.4.6)
 
 - **Stack:** Electron 30 + electron-builder 24, sem framework de UI, sem bundler/transpiler.
 - **Banco de dados:** um único arquivo JSON (`gestao_operacional.json`) dentro de uma pasta
@@ -56,5 +56,8 @@ está configurando o app pela primeira vez (instalação, pasta compartilhada, T
   mesma pasta compartilhada, numa subpasta `atualizacoes/`. Sem servidor de update próprio.
 - **Papéis de acesso:** `gestor` (acesso total), `operador` (painel próprio + produção), `tv`
   (somente Dashboard TV/Notícias, tela de kiosk).
+- **Dashboard TV:** desde a v8.4.0, é uma tela única sempre visível (sem rodízio de slides) — ver
+  [TELAS_E_FUNCIONALIDADES.md](TELAS_E_FUNCIONALIDADES.md) e o item 12 de
+  [HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md).
 - **Repositório Git:** github.com/david25112510/GO_ENTERPRISE — alterna entre privado/público
   conforme pedido do David; o segredo de bootstrap (`renderer/master-secret.js`) nunca é commitado.

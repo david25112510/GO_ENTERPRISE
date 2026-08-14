@@ -95,36 +95,75 @@ Manuais ilustrados de manutenção de equipamento (passo a passo com fotos), pr�
 (`seedManuals()`, seção 3) e 100% editáveis (`prepareManualModal`, `renderManualStepsEditor()`,
 `renderLightbox()` para ver as fotos em tela cheia). Disponível para todos os papéis exceto TV.
 
-## Dashboard TV (`id="dashboardTv"`) — `renderDashboardTv()`
+## Dashboard TV (`id="dashboardTv"`) — `renderDashboardTv()` / `renderDashboardTvInner()`
 
-Painel giratório em tela cheia pensado para um monitor/TV da operação. Pode abrir:
+**Tela única sempre visível**, no estilo "parede de monitoramento" (Zabbix/NOC) — desde ago/2026 não
+existe mais rodízio de slides (ver [HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md) para o histórico
+completo dessa reformulação, inclusive os bugs reais encontrados numa TV física). Pode abrir:
 - **Dentro do app desktop**, numa janela Electron independente (`window.goDesktop.openTvWindow()` →
   `main.js:createTvWindow()`), que continua funcionando mesmo com a janela principal fechada.
 - **No navegador**, abrindo `#dashboard` numa aba nova (`openDashboardTV()` cai nesse caminho fora do
   Electron) — é assim que o papel de acesso dedicado `tv` funciona (ver
   [SEGURANCA_E_ACESSO.md](SEGURANCA_E_ACESSO.md)).
 
-Mecânica do rodízio de slides (constantes `DASH_SLIDE_BG`/`DASH_SLIDE_DURATIONS`, 5 slides — Produção
-fica mais tempo em tela que os demais):
+`renderDashboardTv()` é só uma casca: `if(!$('dashboardTv'))return; try{renderDashboardTvInner()}
+catch(e){console.warn(...)}`. Isso é proposital — um erro dentro do render de verdade nunca pode
+travar o resto de `render()` (RH, Financeiro, perfil do colaborador etc. rodam **depois** dela na
+sequência) nem o fluxo de sincronização entre PCs (`save()`/`onDataChangedExternally` dependem que
+`render()` termine). Qualquer mudança futura na TV deve manter essa separação — mexer direto dentro
+de `renderDashboardTvInner()`.
+
+### Estrutura (`.dash-kiosk-wrap` → `.dash-kiosk-header` + `.dash-board`)
 
 ```
-enterKioskMode() → body.kiosk-mode, renderDashboardTv(), showKioskSlide(0), scheduleKioskRotate()
-                                                                    │
-                              a cada N ms (por slide) ──────────────┘
-                                        │
-                          showKioskSlide(next) + scheduleKioskRotate() de novo
+.dash-kiosk-header   logo Selbetti · divisória · logo Correios + "Operação Correios-MG" · AO VIVO (pulsando) · relógio/data
+.dash-board
+  .dash-row.dash-row-kpis       8 tiles (grid 4×2): impressões/objetos hoje, ritmo, perdas de papel,
+                                 impressões do mês, dias com produção, dias faltantes, produção de ontem
+  .dash-row.dash-row-main       gráfico de produção (flex maior) · gauge de SLA · ranking (melhores dias)
+  .dash-row.dash-row-secondary  avisos (trilho de cor lateral) · destaque notícias/aniversariantes
+  .dash-tile.dash-tile-ticker   mensagem do dia, em ticker de rolagem horizontal contínua
 ```
 
-- `refreshKioskData()` roda em intervalo à parte para os dados (não só o slide) — relê a pasta
-  compartilhada direto (`window.goDesktop.readData()`), **não** o cache do IndexedDB, pra nunca mostrar
-  dado desatualizado quando o slide volta pra Produção depois de já ter atualizado uma vez (ver
-  [HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md) — esse foi um bug real).
-- Slides: Produção (gráfico de linha com meta), SLA (gauge circular), Ranking, Ritmo (+ aniversariantes
-  do mês), Notícias. Rodapé mostra a "mensagem do dia" (`todaysMessage()`, rotação determinística por
-  dia do ano dentro de `db.dailyMessages`).
-- CSS: todo o conteúdo dos slides usa `flex:1;min-height:0;overflow:hidden` em vez de alturas fixas em
-  `calc()` — necessário pra funcionar em qualquer resolução de TV real, não só no monitor de dev (ver
-  histórico).
+Cada `.dash-tile` reaproveita o mesmo "cartão de vidro escuro" (`rgba(8,28,20,.62)` + borda
+`rgba(143,227,184,.22)`) usado em todo o resto da TV. `.dash-tile-head` é o cabeçalho padrão
+(ícone + título maiúsculo, borda inferior verde) — o mesmo em todo widget.
+
+### Só uma coisa ainda "roda": o card de destaque
+
+`dashSpotStage`/`dashSpotDots`/`dashSpotLabel` revezam sozinhos a cada 7s entre cada notícia
+individual (`db.news`, uma de cada vez, foto com `object-fit:contain` — nunca corta — e texto
+completo, sem `line-clamp`, com o tamanho da letra ajustado ao comprimento via `dashNewsLenTier()`) e
+os aniversariantes do mês (`monthBirthdays()`). A lista (`dashSpotItems`) é remontada a cada
+`renderDashboardTvInner()`, mas o índice/temporizador (`dashSpotIndex`/`dashSpotTimer`) são geridos à
+parte por `scheduleDashSpotRotate()`, chamada uma única vez em `enterKioskMode()` — mesmo padrão do
+relógio (`updateKioskClock`/`kioskClockTimer`). Fora do modo kiosk (preview normal na aba do app), o
+card fica parado no primeiro item; só gira de verdade em tela cheia.
+
+- `refreshKioskData()` roda a cada 60s e relê a pasta compartilhada direto
+  (`window.goDesktop.readData()`), **não** o cache do IndexedDB, pra nunca mostrar dado desatualizado.
+- Gráfico de produção: `renderProdLineChart()` (reaproveitada, não é exclusiva da TV) — mostra o valor
+  de **todos** os dias do período (não só destaques), com a margem inferior do próprio SVG
+  (`padBottom` dentro da função) reservada para as datas — ver histórico sobre por que isso importa.
+- Ranking: só "melhores dias de produção" (top 3) — a versão antiga também tinha "melhor SLA" e "dias
+  abaixo do ritmo" em colunas separadas; foram descartadas nessa reformulação pra caber numa tela só.
+- Avisos: lista única (`alertItems`) combinando SLA/absenteísmo/alertas customizados/férias/perda de
+  papel, capada em 6 itens no total — ver histórico, essa unificação já existia antes da reformulação
+  de tela única.
+
+### Layout do modo kiosk — por que é flexbox em várias camadas, não CSS Grid
+
+O corpo (`.dash-board`) é uma coluna flex; `.dash-row-kpis` tem altura por **conteúdo**
+(`flex:0 0 auto`, com tipografia compacta) e as outras duas linhas (`.dash-row-main`/
+`.dash-row-secondary`) dividem o que sobra por `flex-grow` proporcional — nunca por porcentagem fixa
+nem `calc()`. Essa combinação (uma linha por conteúdo + duas por flex-grow) foi a solução depois de
+duas tentativas erradas — ver [HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md) antes de mexer nesses
+números de novo, porque os dois erros já cometidos (dar `flex-grow` demais OU de menos pra
+`.dash-row-kpis`) são fáceis de repetir.
+
+Além disso, `.dash-kiosk-wrap` tem uma margem de segurança em `vw`/`vh` (não pixels fixos) ao redor de
+tudo — é a "área segura" contra overscan de TV física (TVs recortam uma faixa das bordas do sinal
+HDMI achando que é transmissão comum). Nunca trocar essa margem de volta pra pixel fixo.
 
 ## Conteúdo TV / Notícias (`id="noticias"`, papel: gestor) — `renderNoticias()`
 
