@@ -12,11 +12,11 @@ const fs = require('fs');
 const settingsStore = require('./src/settingsStore');
 const dataStore = require('./src/dataStore');
 const updater = require('./src/updater');
+const mediaStore = require('./src/mediaStore');
 
 const APP_VERSION = require('./package.json').version;
 
 let mainWindow = null;
-let tvWindow = null;
 let tray = null;
 let isQuitting = false;
 let updateCheckTimer = null;
@@ -32,8 +32,9 @@ function configureDataStoreFromSettings() {
   dataStore.watch((data, savedAt, external, savedBy) => {
     if (!external) return; // provocado pela nossa própria escrita, os renderers já têm o dado certo
     const payload = { data, savedAt, savedBy };
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('data:changedExternally', payload);
-    if (tvWindow && !tvWindow.isDestroyed()) tvWindow.webContents.send('data:changedExternally', payload);
+    [mainWindow, tvController.get(), selbNewsController.get()]
+      .filter(w => w && !w.isDestroyed())
+      .forEach(w => w.webContents.send('data:changedExternally', payload));
   });
 }
 
@@ -54,9 +55,11 @@ function createMainWindow() {
   });
   mainWindow.loadFile(RENDERER_PATH);
   mainWindow.on('close', (e) => {
-    // se a TV estiver aberta, fechar a janela principal não deve derrubar o app inteiro nem a TV —
-    // a janela some pra bandeja e continua rodando em segundo plano. Sem TV aberta, fecha normalmente.
-    if (!isQuitting && tvWindow && !tvWindow.isDestroyed()) {
+    // se alguma janela de TV estiver aberta (Dashboard TV ou SELBNEWS TV), fechar a janela principal
+    // não deve derrubar o app inteiro nem a TV — a janela some pra bandeja e continua rodando em
+    // segundo plano. Sem nenhuma TV aberta, fecha normalmente.
+    const anyTvOpen = tvController.get() || selbNewsController.get();
+    if (!isQuitting && anyTvOpen) {
       e.preventDefault();
       mainWindow.hide();
     } else {
@@ -65,62 +68,79 @@ function createMainWindow() {
   });
 }
 
-function pickTvDisplay() {
-  const displays = screen.getAllDisplays();
-  const primary = screen.getPrimaryDisplay();
-  const settings = settingsStore.get();
-  if (settings.tv && settings.tv.displayId != null) {
-    const chosen = displays.find(d => d.id === settings.tv.displayId);
-    if (chosen) return chosen;
+// fábrica de controlador de janela "kiosk" (TV): encapsula a lógica de escolher o monitor certo,
+// abrir sem moldura desde a criação (setKiosk depois falha silenciosamente em algumas TVs/segundas
+// telas) e liberar a referência ao fechar. Usada tanto pelo Dashboard TV operacional quanto pelo
+// SELBNEWS TV — cada um com sua própria janela, seu próprio hash de rota e sua própria preferência
+// de monitor em settingsStore, mas sem duplicar essa lógica duas vezes.
+function createKioskWindowController({ settingsKey, hash, title, bgColor }) {
+  let win = null;
+  function pickDisplay() {
+    const displays = screen.getAllDisplays();
+    const primary = screen.getPrimaryDisplay();
+    const cfg = settingsStore.get()[settingsKey];
+    if (cfg && cfg.displayId != null) {
+      const chosen = displays.find(d => d.id === cfg.displayId);
+      if (chosen) return chosen;
+    }
+    // por padrão, prefere um monitor secundário (o mais comum: TV ligada como segunda tela)
+    const secondary = displays.find(d => d.id !== primary.id);
+    return secondary || primary;
   }
-  // por padrão, prefere um monitor secundário (o mais comum: TV ligada como segunda tela)
-  const secondary = displays.find(d => d.id !== primary.id);
-  return secondary || primary;
+  function open() {
+    if (win && !win.isDestroyed()) { win.focus(); return win; }
+    const display = pickDisplay();
+    const cfg = settingsStore.get()[settingsKey];
+    const autoFullscreen = !cfg || cfg.autoFullscreen !== false;
+    win = new BrowserWindow({
+      x: display.bounds.x + 40,
+      y: display.bounds.y + 40,
+      width: Math.min(1600, display.bounds.width - 80),
+      height: Math.min(900, display.bounds.height - 80),
+      title,
+      backgroundColor: bgColor || '#04140d',
+      frame: !autoFullscreen,
+      autoHideMenuBar: true,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: false
+      }
+    });
+    win.loadFile(RENDERER_PATH, { hash });
+    win.once('ready-to-show', () => {
+      if (autoFullscreen) {
+        win.setBounds(display.bounds);
+        win.setKiosk(true);
+      }
+      win.show();
+    });
+    win.on('close', () => { win = null; });
+    return win;
+  }
+  function close() { if (win && !win.isDestroyed()) win.close(); }
+  function isSelf(webContents) {
+    const w = BrowserWindow.fromWebContents(webContents);
+    return !!(win && w && w.id === win.id);
+  }
+  return { open, close, isSelf, get: () => win };
 }
 
-function createTvWindow() {
-  if (tvWindow && !tvWindow.isDestroyed()) { tvWindow.focus(); return tvWindow; }
-  const display = pickTvDisplay();
-  const settings = settingsStore.get();
-  const autoFullscreen = !settings.tv || settings.tv.autoFullscreen !== false;
-  tvWindow = new BrowserWindow({
-    x: display.bounds.x + 40,
-    y: display.bounds.y + 40,
-    width: Math.min(1600, display.bounds.width - 80),
-    height: Math.min(900, display.bounds.height - 80),
-    title: 'GO Enterprise — Dashboard TV',
-    backgroundColor: '#04140d',
-    // sem moldura/barra de menu desde a criação quando for abrir em tela cheia — não dá pra depender
-    // só de setKiosk/setFullScreen em tempo de execução: em algumas TVs/segundas telas isso falha
-    // silenciosamente, a barra de menu continua visível, encolhe a área útil e o conteúdo (que é mais
-    // alto que essa área menor) acaba sendo empurrado por cima do cabeçalho/rodapé fixos.
-    frame: !autoFullscreen,
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false
-    }
-  });
-  tvWindow.loadFile(RENDERER_PATH, { hash: 'dashboard' });
-  tvWindow.once('ready-to-show', () => {
-    if (autoFullscreen) {
-      tvWindow.setBounds(display.bounds);
-      tvWindow.setKiosk(true);
-    }
-    tvWindow.show();
-  });
-  tvWindow.on('close', () => { tvWindow = null; });
-  return tvWindow;
-}
+const tvController = createKioskWindowController({
+  settingsKey: 'tv', hash: 'dashboard', title: 'GO Enterprise — Dashboard TV'
+});
+const selbNewsController = createKioskWindowController({
+  settingsKey: 'selbnews', hash: 'selbnewstv', title: 'GO Enterprise — SELBNEWS TV'
+});
 
 function buildMenu() {
   const template = [
     {
       label: 'GO Enterprise',
       submenu: [
-        { label: 'Abrir Dashboard TV', click: () => createTvWindow() },
+        { label: 'Abrir Dashboard TV', click: () => tvController.open() },
+        { label: 'Abrir SELBNEWS TV', click: () => selbNewsController.open() },
         { label: 'Verificar atualizações agora', click: () => runUpdateCheck(true) },
         { label: 'Abrir pasta compartilhada', click: () => openSharedFolder() },
         { type: 'separator' },
@@ -147,7 +167,8 @@ function createTray() {
     if (!tray) return;
     const menu = Menu.buildFromTemplate([
       { label: 'Abrir GO Enterprise', click: () => { if (mainWindow) { mainWindow.show(); } else { createMainWindow(); } } },
-      { label: 'Abrir Dashboard TV', click: () => createTvWindow() },
+      { label: 'Abrir Dashboard TV', click: () => tvController.open() },
+      { label: 'Abrir SELBNEWS TV', click: () => selbNewsController.open() },
       { label: 'Verificar atualizações', click: () => runUpdateCheck(true) },
       { type: 'separator' },
       { label: 'Sair', click: () => { isQuitting = true; app.quit(); } }
@@ -174,7 +195,7 @@ function runUpdateCheck(manual) {
   const result = updater.checkForUpdate(updatesFolder, APP_VERSION);
   settingsStore.set({ lastUpdateCheck: new Date().toISOString() });
   if (result.available) {
-    const targets = [mainWindow, tvWindow].filter(w => w && !w.isDestroyed());
+    const targets = [mainWindow, tvController.get(), selbNewsController.get()].filter(w => w && !w.isDestroyed());
     targets.forEach(w => w.webContents.send('update:available', result));
   } else if (manual) {
     dialog.showMessageBox({
@@ -230,12 +251,17 @@ ipcMain.handle('settings:getDisplays', () => {
 ipcMain.handle('data:read', () => dataStore.readData());
 ipcMain.handle('data:write', (_e, db) => dataStore.writeData(db));
 
-ipcMain.handle('tv:open', () => { createTvWindow(); return true; });
-ipcMain.handle('tv:close', () => { if (tvWindow && !tvWindow.isDestroyed()) tvWindow.close(); return true; });
-ipcMain.handle('tv:isSelf', (e) => {
-  const w = BrowserWindow.fromWebContents(e.sender);
-  return !!(tvWindow && w && w.id === tvWindow.id);
-});
+ipcMain.handle('tv:open', () => { tvController.open(); return true; });
+ipcMain.handle('tv:close', () => { tvController.close(); return true; });
+ipcMain.handle('tv:isSelf', (e) => tvController.isSelf(e.sender));
+
+ipcMain.handle('selbnews:open', () => { selbNewsController.open(); return true; });
+ipcMain.handle('selbnews:close', () => { selbNewsController.close(); return true; });
+ipcMain.handle('selbnews:isSelf', (e) => selbNewsController.isSelf(e.sender));
+ipcMain.handle('selbnews:isOpen', () => !!selbNewsController.get());
+ipcMain.handle('selbnews:saveImage', (_e, dataUrl, subfolder) => mediaStore.saveImage(dataUrl, subfolder));
+ipcMain.handle('selbnews:deleteImage', (_e, relativePath) => { mediaStore.deleteImage(relativePath); return true; });
+ipcMain.handle('selbnews:resolveMediaPath', (_e, relativePath) => mediaStore.resolveFileUrl(relativePath));
 
 ipcMain.handle('update:check', () => runUpdateCheck(true));
 ipcMain.handle('update:install', async (_e, installerPath) => {

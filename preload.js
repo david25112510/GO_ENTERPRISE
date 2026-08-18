@@ -37,5 +37,16 @@ contextBridge.exposeInMainWorld('goDesktop', {
   // ---- janela da TV (independente da janela principal) ----
   openTvWindow: () => ipcRenderer.invoke('tv:open'),
   closeTvWindow: () => ipcRenderer.invoke('tv:close'),
-  isTvWindow: () => ipcRenderer.invoke('tv:isSelf')
+  isTvWindow: () => ipcRenderer.invoke('tv:isSelf'),
+
+  // ---- janela do SELBNEWS TV (independente da janela principal e da Dashboard TV) ----
+  openSelbNewsWindow: () => ipcRenderer.invoke('selbnews:open'),
+  closeSelbNewsWindow: () => ipcRenderer.invoke('selbnews:close'),
+  isSelbNewsWindow: () => ipcRenderer.invoke('selbnews:isSelf'),
+  isSelbNewsWindowOpen: () => ipcRenderer.invoke('selbnews:isOpen'),
+
+  // ---- mídia do SELBNEWS (upload salvo como arquivo na pasta compartilhada) ----
+  saveSelbNewsImage: (dataUrl, subfolder) => ipcRenderer.invoke('selbnews:saveImage', dataUrl, subfolder),
+  deleteSelbNewsImage: (relativePath) => ipcRenderer.invoke('selbnews:deleteImage', relativePath),
+  resolveSelbNewsMediaUrl: (relativePath) => ipcRenderer.invoke('selbnews:resolveMediaPath', relativePath)
 });

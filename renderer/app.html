@@ -631,6 +631,118 @@ body.kiosk-mode .dash-var{font-size:13px}
   .panel,.card{box-shadow:none;border:1px solid #ccc}
 }
 #printArea{display:none}
+
+/* ======================= SELBNEWS — portal de comunicação interna para TV =======================
+   Módulo independente do Dashboard TV operacional: nenhum indicador de produção/SLA aqui, e nenhuma
+   classe .dash-* é reaproveitada (evita qualquer risco de um ajuste aqui vazar pro painel operacional).
+   Autoria em px sobre uma tela virtual de 1920×1080 — a escala real é um "zoom" CSS calculado em JS
+   (fitSelbNewsTvScale) a partir do tamanho da janela/monitor, por isso NUNCA vw/vh aqui: zoom (ao
+   contrário de transform) recalcula o layout, então unidades em px escalam certinho; vw/vh não —
+   ficariam presas ao viewport real, quebrando a fidelidade do preview reduzido (.sn-tv-frame). */
+.selbnews-tabs{max-width:680px}
+.selbnews-tabpane{display:none}
+.selbnews-tabpane.active{display:block;animation:fade .2s ease}
+
+.sn-tv-viewport{position:fixed;inset:0;background:#010b07;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:1}
+.sn-tv-wrap{width:1920px;height:1080px;flex:0 0 auto;position:relative;overflow:hidden;box-sizing:border-box;
+  background:linear-gradient(160deg,#020e09 0%,#05201a 45%,#010b07 100%);
+  color:#eaf6ef;font-family:"Segoe UI",Arial,sans-serif;
+  display:flex;flex-direction:column;padding:44px 56px 34px}
+.sn-tv-wrap.sn-tv-frame{zoom:.5;border-radius:18px;box-shadow:0 26px 80px rgba(0,0,0,.55);border:1px solid rgba(143,227,184,.25)}
+.sn-tv-wrap::before{content:"";position:absolute;inset:0;background-image:var(--bg-starfield);background-size:cover;
+  background-position:center;opacity:.30;mix-blend-mode:screen;pointer-events:none;animation:snTwinkle 7s ease-in-out infinite alternate}
+@keyframes snTwinkle{from{opacity:.20}to{opacity:.42}}
+.sn-tv-planet{position:absolute;top:-120px;right:-120px;width:440px;height:440px;border-radius:50%;z-index:0;
+  pointer-events:none;background-image:var(--bg-planet);background-size:cover;background-position:center;opacity:.38;
+  box-shadow:0 0 140px 20px rgba(0,168,89,.14);animation:snPlanetGlow 9s ease-in-out infinite}
+@keyframes snPlanetGlow{0%,100%{opacity:.30;filter:brightness(1)}50%{opacity:.44;filter:brightness(1.14)}}
+.sn-tv-scanline{position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.05;
+  background:repeating-linear-gradient(180deg,#fff 0px,transparent 1px,transparent 3px);
+  animation:snScanMove 9s linear infinite}
+@keyframes snScanMove{from{background-position-y:0}to{background-position-y:600px}}
+
+.sn-tv-header{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;
+  flex:0 0 auto;padding-bottom:26px;margin-bottom:26px;border-bottom:1px solid rgba(143,227,184,.22)}
+.sn-tv-brand{display:flex;align-items:center;gap:20px}
+.sn-tv-astro{height:96px;width:auto;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))}
+.sn-tv-brand-copy h1{margin:0;font-size:46px;font-weight:800;letter-spacing:.02em;line-height:1;
+  background:linear-gradient(90deg,#fff,#8fe3b8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sn-tv-brand-copy small{display:block;margin-top:8px;font-size:18px;color:#9fd6bb;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+.sn-tv-status{display:flex;align-items:center;gap:28px}
+.sn-tv-online{display:flex;align-items:center;gap:10px;padding:9px 20px 9px 16px;border-radius:999px;
+  background:rgba(0,214,137,.1);border:1px solid rgba(0,214,137,.32);font-size:15px;font-weight:800;
+  letter-spacing:.09em;color:#00d689}
+.sn-tv-online .dot{width:10px;height:10px;border-radius:50%;background:#00d689;animation:snLivePulse 2.2s ease-in-out infinite}
+@keyframes snLivePulse{0%,100%{box-shadow:0 0 0 0 rgba(0,214,137,.5)}50%{box-shadow:0 0 0 8px rgba(0,214,137,0)}}
+.sn-tv-clock{text-align:right}
+.sn-tv-clock-time{font-size:44px;font-weight:800;line-height:1;text-shadow:0 0 20px rgba(111,230,160,.5)}
+.sn-tv-clock-date{display:block;margin-top:6px;font-size:16px;color:#9fd6bb;text-transform:capitalize}
+
+.sn-tv-body{position:relative;z-index:2;flex:1;min-height:0;display:flex;gap:30px}
+.sn-tv-col{min-width:0;min-height:0;display:flex;flex-direction:column;gap:16px}
+.sn-tv-news{flex:2.05}
+.sn-tv-alerts{flex:1}
+.sn-tv-bdays{flex:0.95}
+
+.sn-col-title{margin:0;font-size:15px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8fe3b8}
+
+.sn-news-featured{position:relative;flex:1.5;min-height:0;border-radius:18px;overflow:hidden;
+  background:rgba(8,28,20,.6);border:1px solid rgba(143,227,184,.2);display:flex;flex-direction:column;
+  box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.sn-news-featured-img{flex:1.4;min-height:0;position:relative;overflow:hidden}
+.sn-news-featured-img img{width:100%;height:100%;object-fit:cover;display:block;animation:snSlowZoom 26s ease-in-out infinite alternate}
+@keyframes snSlowZoom{from{transform:scale(1)}to{transform:scale(1.06)}}
+.sn-news-featured-body{flex:0 0 auto;padding:26px 30px 30px;background:linear-gradient(180deg,rgba(4,16,12,0) 0%,rgba(3,14,10,.55) 100%)}
+.sn-news-featured-body h2{margin:10px 0 0;font-size:32px;line-height:1.22;font-weight:800;color:#fff}
+.sn-news-featured-body p{margin:12px 0 0;font-size:18px;line-height:1.4;color:#d7ecdf;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sn-news-cat{display:inline-block;padding:4px 12px;border-radius:999px;background:rgba(0,168,89,.22);
+  color:#8fe3b8;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+
+.sn-news-secondary-list{flex:1;min-height:0;display:flex;gap:18px}
+.sn-news-sec{flex:1;min-width:0;min-height:0;border-radius:14px;overflow:hidden;position:relative;
+  background:rgba(8,28,20,.55);border:1px solid rgba(143,227,184,.16);display:flex;flex-direction:column}
+.sn-news-sec-img{flex:1;min-height:0;position:relative;overflow:hidden}
+.sn-news-sec-img img{width:100%;height:100%;object-fit:cover;display:block}
+.sn-news-fallback{background-image:linear-gradient(180deg,rgba(3,20,15,.2) 0%,rgba(1,18,12,.55) 100%),var(--bg-starfield);
+  background-size:cover;background-position:center}
+.sn-news-sec-body{flex:0 0 auto;padding:14px 16px 16px;background:linear-gradient(180deg,rgba(4,16,12,0) 0%,rgba(3,14,10,.6) 100%)}
+.sn-news-sec-body h4{margin:6px 0 0;font-size:16px;line-height:1.3;font-weight:700;color:#fff;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.sn-alerts-list{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px}
+.sn-alert-card{flex:1;min-height:0;border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;
+  background:rgba(8,28,20,.62);border:1px solid rgba(143,227,184,.18);display:flex;flex-direction:column;gap:8px}
+.sn-alert-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px}
+.sn-alert-card b{font-size:18px;color:#fff;line-height:1.25}
+.sn-alert-card p{margin:0;font-size:14.5px;line-height:1.35;color:#cfe6da;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sn-alert-badge{align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:.07em;padding:4px 10px;border-radius:999px}
+.sn-alert-info::before{background:#9fd6bb}
+.sn-alert-info .sn-alert-badge{background:rgba(159,214,187,.18);color:#9fd6bb}
+.sn-alert-notice::before{background:#8fe3b8}
+.sn-alert-notice .sn-alert-badge{background:rgba(0,168,89,.22);color:#8fe3b8}
+.sn-alert-important::before{background:#ffb37a}
+.sn-alert-important .sn-alert-badge{background:rgba(255,179,122,.2);color:#ffb37a}
+.sn-alert-urgent::before{background:#ff6b6b}
+.sn-alert-urgent .sn-alert-badge{background:rgba(255,107,107,.22);color:#ff9d9d}
+.sn-alert-urgent{animation:snUrgentPulse 3s ease-in-out infinite}
+@keyframes snUrgentPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,107,0)}50%{box-shadow:0 0 22px 2px rgba(255,107,107,.22)}}
+
+.sn-bdays-grid{flex:1;min-height:0;overflow:hidden;column-gap:24px}
+.sn-bday-row{display:flex;align-items:center;gap:12px;padding:9px 0;break-inside:avoid}
+.sn-bday-day{background:var(--selbetti);color:#fff;font-weight:800;border-radius:8px;padding:5px 9px;font-size:13px;
+  min-width:32px;text-align:center;box-shadow:0 0 12px rgba(111,230,160,.45);flex:0 0 auto}
+.sn-bday-name{font-size:15px;color:#eaf6ef;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sn-bday-row.today .sn-bday-day{background:var(--brand-orange);box-shadow:0 0 14px rgba(238,136,68,.6)}
+
+.sn-empty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;
+  border-radius:14px;background:rgba(8,28,20,.4);border:1px dashed rgba(143,227,184,.22);
+  color:#9fd6bb;font-size:16px;font-weight:600}
+
+.sn-tv-footer{position:relative;z-index:2;flex:0 0 auto;margin-top:26px;padding-top:18px;
+  border-top:1px solid rgba(143,227,184,.18);display:flex;justify-content:space-between;
+  font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:#9fd6bb;font-weight:700}
 </style>
 </head>
 <body>
@@ -691,6 +803,7 @@ body.kiosk-mode .dash-var{font-size:13px}
       <button data-view="manuais">📘 <span>Manuais</span></button>
       <button data-view="dashboardTv" data-role="gestor">📺 <span>Dashboard TV</span></button>
       <button data-view="noticias" data-role="gestor">📰 <span>Conteúdo TV</span></button>
+      <button data-view="selbnews" data-role="gestor">📡 <span>SELBNEWS</span></button>
       <button data-view="fornecedores" data-role="gestor">🏢 <span>Fornecedores</span></button>
       <button data-view="admin" data-role="gestor">⚙️ <span>Administração</span></button>
     </nav>
@@ -1005,6 +1118,98 @@ body.kiosk-mode .dash-var{font-size:13px}
       </div>
     </section>
 
+    <!-- SELBNEWS — portal de comunicação interna para a TV (independente do Dashboard TV operacional) -->
+    <section class="view" id="selbnews">
+      <div class="top"><div><h1>SELBNEWS</h1><p>Portal de notícias corporativas para a TV — comunicação interna Selbetti. Sem dados operacionais.</p></div></div>
+      <div class="role-tabs selbnews-tabs" id="selbnewsTabs">
+        <button class="role-tab active" data-tab="overview" onclick="switchSelbNewsTab('overview')">Visão Geral</button>
+        <button class="role-tab" data-tab="news" onclick="switchSelbNewsTab('news')">Notícias</button>
+        <button class="role-tab" data-tab="alerts" onclick="switchSelbNewsTab('alerts')">Avisos</button>
+        <button class="role-tab" data-tab="birthdays" onclick="switchSelbNewsTab('birthdays')">Aniversariantes</button>
+        <button class="role-tab" data-tab="settings" onclick="switchSelbNewsTab('settings')">Configurações</button>
+      </div>
+
+      <div class="selbnews-tabpane active" data-pane="overview">
+        <div class="grid cards" id="selbOverviewCards"></div>
+        <div class="panel"><h2>📡 Tela SELBNEWS</h2>
+          <p class="muted" style="margin:0 0 10px">Status da TV: <span id="selbScreenStatus">—</span></p>
+          <div class="toolbar">
+            <button class="btn primary" onclick="openSelbNewsTV()">🖥️ Abrir SELBNEWS na TV (tela cheia)</button>
+            <button class="btn" onclick="openSelbNewsPreview()">👁️ Pré-visualizar SELBNEWS</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="selbnews-tabpane" data-pane="news">
+        <div class="panel"><div class="toolbar"><button class="btn primary" onclick="openSelbNewsModal()">+ Nova notícia</button></div>
+          <h2>📰 Notícias</h2>
+          <p class="muted" style="font-size:12px;margin-top:-6px">A principal é a de maior destaque; até 4 secundárias aparecem junto. Notícias fora da janela de vigência somem sozinhas da TV.</p>
+          <div class="manual-grid" id="selbNewsGrid"></div>
+        </div>
+      </div>
+
+      <div class="selbnews-tabpane" data-pane="alerts">
+        <div class="panel"><div class="toolbar"><button class="btn primary" onclick="openSelbAlertModal()">+ Novo aviso</button></div>
+          <h2>🔔 Avisos importantes</h2>
+          <p class="muted" style="font-size:12px;margin-top:-6px">Até 4 avisos aparecem na TV, ordenados por prioridade (Urgente → Importante → Comunicado → Informação).</p>
+          <div class="manual-grid" id="selbAlertsGrid"></div>
+        </div>
+      </div>
+
+      <div class="selbnews-tabpane" data-pane="birthdays">
+        <div class="panel"><div class="toolbar">
+            <button class="btn primary" onclick="openSelbBirthdayModal()">+ Novo aniversariante</button>
+            <button class="btn" onclick="importSelbBirthdaysFromEmployees()">📥 Importar do cadastro de RH</button>
+          </div>
+          <h2>🎂 Aniversariantes</h2>
+          <p class="muted" style="font-size:12px;margin-top:-6px">Sem foto e sem ano de nascimento — só dia e nome. A TV mostra automaticamente só quem faz aniversário no mês vigente.</p>
+          <div class="tablewrap"><table><thead><tr><th>Nome</th><th>Data</th><th>Status</th><th></th></tr></thead><tbody id="selbBirthdaysTable"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="selbnews-tabpane" data-pane="settings">
+        <div class="panel"><h2>🖥️ Monitor da TV do SELBNEWS</h2>
+          <p class="muted">Escolha em qual monitor o SELBNEWS deve abrir quando "Abrir SELBNEWS na TV" for clicado — independente do monitor usado pelo Dashboard TV.</p>
+          <div class="form">
+            <div><label>Monitor<select id="selbNewsMonitorSelect"></select></label></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px">
+            <input type="checkbox" id="selbNewsAutoFullscreen" style="width:auto"> Abrir automaticamente em tela cheia
+          </label>
+          <button class="btn primary" style="margin-top:14px" onclick="saveSelbNewsSettings()">Salvar configurações</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SELBNEWS TV — tela única 1920×1080, só alcançável via hash #selbnewstv (janela kiosk dedicada) -->
+    <section class="view" id="selbNewsTv">
+      <div class="sn-tv-viewport">
+        <div class="sn-tv-wrap" id="snTvWrap">
+          <div class="sn-tv-planet"></div>
+          <div class="sn-tv-scanline"></div>
+          <div class="sn-tv-header">
+            <div class="sn-tv-brand">
+              <img class="astronaut-header sn-tv-astro" alt="Mascote Selbetti">
+              <div class="sn-tv-brand-copy"><h1>SELBNEWS</h1><small>Comunicação Interna Selbetti</small></div>
+            </div>
+            <div class="sn-tv-status">
+              <span class="sn-tv-online"><span class="dot"></span>SISTEMA ONLINE</span>
+              <div class="sn-tv-clock"><div class="sn-tv-clock-time" id="snClock">--:--</div><small class="sn-tv-clock-date" id="snDate">—</small></div>
+            </div>
+          </div>
+          <div class="sn-tv-body">
+            <div class="sn-tv-col sn-tv-news" id="snNewsCol"></div>
+            <div class="sn-tv-col sn-tv-alerts" id="snAlertsCol"></div>
+            <div class="sn-tv-col sn-tv-bdays" id="snBdaysCol"></div>
+          </div>
+          <div class="sn-tv-footer">
+            <span>SELBNEWS • Comunicação Interna Selbetti</span>
+            <span id="snFooterStatus">ONLINE • SYNC OK</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- FORNECEDORES -->
     <section class="view" id="fornecedores">
       <div class="top"><div><h1>Fornecedores</h1><p>Cadastro de fornecedores e contratos.</p></div></div>
@@ -1157,6 +1362,100 @@ body.kiosk-mode .dash-var{font-size:13px}
 <div class="modal" id="dailyMessageModal"><div class="box"><h3>Nova mensagem do dia</h3><div class="form wide">
   <div><label>Mensagem<textarea id="dailyMessageText" style="min-height:70px" maxlength="200"></textarea></label></div>
 </div><div class="actions"><button class="btn ghost" onclick="closeModal('dailyMessageModal')">Cancelar</button><button class="btn primary" onclick="saveDailyMessage()">Salvar</button></div></div></div>
+
+<div class="modal" id="selbNewsModal"><div class="box"><h3 id="selbNewsModalTitle">Nova notícia</h3><div class="form wide">
+  <div><label>Título<input id="selbNewsTitle" maxlength="90"></label></div>
+  <div><label>Resumo<textarea id="selbNewsSummary" style="min-height:80px" maxlength="240"></textarea></label></div>
+  <div class="photo-upload" style="margin-top:4px">
+    <img class="photo-preview" id="selbNewsImagePreview" alt="Imagem" style="border-radius:10px;width:150px;height:84px;object-fit:cover;display:none">
+    <div>
+      <label class="btn file" style="font-size:12px">🖼️ Imagem (16:9, 1280×720+)<input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onchange="handleSelbNewsImage(this)"></label>
+      <button class="btn ghost" id="selbNewsImageClearBtn" style="font-size:12px;display:none;margin-top:6px" onclick="clearSelbNewsImage()">Remover imagem</button>
+      <div class="muted" style="font-size:11px;margin-top:5px">JPG, PNG ou WEBP · sem imagem, a TV usa o fundo espacial do próprio tema</div>
+    </div>
+  </div>
+  <div class="form">
+    <div><label>Categoria<input id="selbNewsCategory" list="selbNewsCategoryList"></label></div>
+    <div><label>Data de publicação<input id="selbNewsPublishedAt" type="date"></label></div>
+  </div>
+  <div class="form">
+    <div><label>Início da exibição<input id="selbNewsStartDate" type="date"></label></div>
+    <div><label>Fim da exibição (vazio = sem vencimento)<input id="selbNewsEndDate" type="date"></label></div>
+  </div>
+  <div class="form">
+    <div><label>Ordem de exibição<input id="selbNewsOrder" type="text" inputmode="numeric" value="0"></label></div>
+    <div style="display:flex;flex-direction:column;gap:8px;justify-content:flex-end">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="selbNewsFeatured" style="width:auto"> Notícia em destaque</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="selbNewsActive" style="width:auto" checked> Ativa</label>
+    </div>
+  </div>
+  <datalist id="selbNewsCategoryList"><option>Institucional</option><option>RH</option><option>Operacional</option><option>Eventos</option><option>Comunicado</option><option>Outros</option></datalist>
+</div><div class="actions"><button class="btn ghost" onclick="closeModal('selbNewsModal')">Cancelar</button><button class="btn primary" onclick="saveSelbNewsItem()">Salvar</button></div></div></div>
+
+<div class="modal" id="selbAlertModal"><div class="box"><h3 id="selbAlertModalTitle">Novo aviso</h3><div class="form wide">
+  <div><label>Título<input id="selbAlertTitle" maxlength="90"></label></div>
+  <div><label>Descrição<textarea id="selbAlertDescription" style="min-height:80px" maxlength="240"></textarea></label></div>
+  <div><label>Prioridade<select id="selbAlertPriority">
+    <option value="INFO">Informação</option>
+    <option value="NOTICE" selected>Comunicado</option>
+    <option value="IMPORTANT">Importante</option>
+    <option value="URGENT">Urgente</option>
+  </select></label></div>
+  <div class="form">
+    <div><label>Início da exibição<input id="selbAlertStartDate" type="date"></label></div>
+    <div><label>Fim da exibição (vazio = sem vencimento)<input id="selbAlertEndDate" type="date"></label></div>
+  </div>
+  <div class="form">
+    <div><label>Ordem de exibição<input id="selbAlertOrder" type="text" inputmode="numeric" value="0"></label></div>
+    <div style="display:flex;align-items:flex-end">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="selbAlertActive" style="width:auto" checked> Ativo</label>
+    </div>
+  </div>
+</div><div class="actions"><button class="btn ghost" onclick="closeModal('selbAlertModal')">Cancelar</button><button class="btn primary" onclick="saveSelbAlertItem()">Salvar</button></div></div></div>
+
+<div class="modal" id="selbBirthdayModal"><div class="box"><h3 id="selbBirthdayModalTitle">Novo aniversariante</h3><div class="form wide">
+  <div><label>Nome completo<input id="selbBirthdayName" maxlength="80"></label></div>
+  <div class="form">
+    <div><label>Dia<input id="selbBirthdayDay" type="text" inputmode="numeric" maxlength="2" placeholder="1-31"></label></div>
+    <div><label>Mês<select id="selbBirthdayMonth">
+      <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+      <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+      <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+      <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+    </select></label></div>
+  </div>
+  <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="selbBirthdayActive" style="width:auto" checked> Ativo</label>
+</div><div class="actions"><button class="btn ghost" onclick="closeModal('selbBirthdayModal')">Cancelar</button><button class="btn primary" onclick="saveSelbBirthdayItem()">Salvar</button></div></div></div>
+
+<div class="modal" id="selbNewsPreviewModal"><div class="box" style="max-width:1000px;width:96vw">
+  <h3>Pré-visualização — SELBNEWS TV</h3>
+  <p class="muted" style="margin:-6px 0 14px;font-size:12px">Moldura reduzida proporcionalmente (1920×1080) — exatamente como ficará na TV.</p>
+  <div style="display:flex;justify-content:center">
+    <div class="sn-tv-wrap sn-tv-frame" id="snpTvWrap">
+      <div class="sn-tv-planet"></div>
+      <div class="sn-tv-header">
+        <div class="sn-tv-brand">
+          <img class="astronaut-header sn-tv-astro" alt="Mascote Selbetti">
+          <div class="sn-tv-brand-copy"><h1>SELBNEWS</h1><small>Comunicação Interna Selbetti</small></div>
+        </div>
+        <div class="sn-tv-status">
+          <span class="sn-tv-online"><span class="dot"></span>SISTEMA ONLINE</span>
+          <div class="sn-tv-clock"><div class="sn-tv-clock-time" id="snpClock">--:--</div><small class="sn-tv-clock-date" id="snpDate">—</small></div>
+        </div>
+      </div>
+      <div class="sn-tv-body">
+        <div class="sn-tv-col sn-tv-news" id="snpNewsCol"></div>
+        <div class="sn-tv-col sn-tv-alerts" id="snpAlertsCol"></div>
+        <div class="sn-tv-col sn-tv-bdays" id="snpBdaysCol"></div>
+      </div>
+      <div class="sn-tv-footer">
+        <span>SELBNEWS • Comunicação Interna Selbetti</span>
+        <span>ONLINE • SYNC OK</span>
+      </div>
+    </div>
+  </div>
+  <div class="actions"><button class="btn ghost" onclick="closeModal('selbNewsPreviewModal')">Fechar</button></div>
+</div></div>
 
 <div class="modal" id="supModal"><div class="box"><h3>Novo fornecedor</h3><div class="form">
   <div><label>Nome<input id="sName"></label></div>
@@ -1484,6 +1783,8 @@ let currentRole=null; // 'gestor' | 'operador' — define o que aparece na naveg
 let currentOperatorId=null; // id do colaborador logado quando currentRole==='operador'
 let kioskMode=false; // true quando a aba foi aberta com #dashboard — modo TV, tela cheia, sem PIN se o banco não estiver criptografado
 let kioskRefreshTimer=null,kioskClockTimer=null;
+let selbNewsKioskMode=false; // true quando a aba foi aberta com #selbnewstv — TV do SELBNEWS, independente do Dashboard TV
+let selbNewsKioskRefreshTimer=null,selbNewsKioskClockTimer=null;
 let godbHandle=null, godbSaveTimer=null, godbLastSave=null, lastLocalSaveError=null;
 
 function normalizeVacation(v){
@@ -1514,8 +1815,61 @@ function normalizeDb(x){
     news:Array.isArray(source.news)?source.news:[],
     alerts:Array.isArray(source.alerts)?source.alerts:[],
     dailyMessages:Array.isArray(source.dailyMessages)?source.dailyMessages:[],
+    selbNews:Array.isArray(source.selbNews)?source.selbNews.map(normalizeSelbNews):[],
+    selbAlerts:Array.isArray(source.selbAlerts)?source.selbAlerts.map(normalizeSelbAlert):[],
+    selbBirthdays:Array.isArray(source.selbBirthdays)?source.selbBirthdays.map(normalizeSelbBirthday):[],
     config:{...db.config,...(source.config||{}),security:{...db.config.security,...((source.config||{}).security||{})}}
   };
+}
+/* ---- SELBNEWS: normalização de registro (tolera campos ausentes de versões anteriores do schema) ---- */
+function normalizeSelbNews(n){
+  return {id:n.id||uid(),title:n.title||'',summary:n.summary||'',imagePath:n.imagePath||'',
+    category:n.category||'',publishedAt:n.publishedAt||'',startDate:n.startDate||'',endDate:n.endDate||'',
+    isFeatured:!!n.isFeatured,isActive:n.isActive!==false,displayOrder:Number(n.displayOrder)||0,
+    createdAt:n.createdAt||new Date().toISOString(),updatedAt:n.updatedAt||n.createdAt||new Date().toISOString()};
+}
+function normalizeSelbAlert(a){
+  return {id:a.id||uid(),title:a.title||'',description:a.description||'',
+    priority:['INFO','NOTICE','IMPORTANT','URGENT'].includes(a.priority)?a.priority:'NOTICE',
+    startDate:a.startDate||'',endDate:a.endDate||'',isActive:a.isActive!==false,displayOrder:Number(a.displayOrder)||0,
+    createdAt:a.createdAt||new Date().toISOString(),updatedAt:a.updatedAt||a.createdAt||new Date().toISOString()};
+}
+function normalizeSelbBirthday(b){
+  return {id:b.id||uid(),employeeName:b.employeeName||'',birthDay:Number(b.birthDay)||1,birthMonth:Number(b.birthMonth)||1,
+    isActive:b.isActive!==false,sourceEmployeeId:b.sourceEmployeeId||null,
+    createdAt:b.createdAt||new Date().toISOString(),updatedAt:b.updatedAt||b.createdAt||new Date().toISOString()};
+}
+/* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
+   grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
+function isSelbItemLive(item){
+  if(!item||!item.isActive)return false;
+  const today=new Date().toISOString().slice(0,10);
+  if(item.startDate&&today<item.startDate)return false;
+  if(item.endDate&&today>item.endDate)return false;
+  return true;
+}
+const SELB_PRIORITY_RANK={URGENT:0,IMPORTANT:1,NOTICE:2,INFO:3};
+function selbActiveNewsSorted(){
+  const live=(db.selbNews||[]).filter(isSelbItemLive).sort((a,b)=>{
+    if(!!b.isFeatured!==!!a.isFeatured)return (b.isFeatured?1:0)-(a.isFeatured?1:0);
+    if((a.displayOrder||0)!==(b.displayOrder||0))return (a.displayOrder||0)-(b.displayOrder||0);
+    return (b.publishedAt||b.createdAt||'').localeCompare(a.publishedAt||a.createdAt||'');
+  });
+  const featuredIdx=live.findIndex(n=>n.isFeatured);
+  const featured=featuredIdx>=0?live[featuredIdx]:live[0]||null;
+  const rest=live.filter(n=>n!==featured);
+  return {featured, secondary:rest.slice(0,4)};
+}
+function selbActiveAlertsSorted(){
+  return (db.selbAlerts||[]).filter(isSelbItemLive).sort((a,b)=>{
+    const pr=(SELB_PRIORITY_RANK[a.priority]??2)-(SELB_PRIORITY_RANK[b.priority]??2);
+    if(pr!==0)return pr;
+    return (a.displayOrder||0)-(b.displayOrder||0);
+  }).slice(0,4);
+}
+function selbCurrentMonthBirthdays(){
+  const month=new Date().getMonth()+1;
+  return (db.selbBirthdays||[]).filter(b=>b.isActive&&b.birthMonth===month).sort((a,b)=>a.birthDay-b.birthDay);
 }
 function normalizeManual(m){
   return {id:m.id||uid(),name:m.name||'',category:m.category||'',coverImage:m.coverImage||'',
@@ -1658,10 +2012,11 @@ async function boot(){
   // no navegador da TV, ou pela janela de TV independente do app desktop). Pula a trava de acesso
   // sempre que possível (banco não criptografado).
   kioskMode=location.hash==='#dashboard';
+  selbNewsKioskMode=location.hash==='#selbnewstv';
   await initDesktopIntegration();
   // rodando dentro do app desktop e ainda sem pasta compartilhada configurada neste PC: bloqueia
   // o uso até escolher a pasta de rede, para nunca operar "sozinho" com uma base local divergente.
-  if(window.goDesktop&&!kioskMode&&!(window.__desktopSettings&&window.__desktopSettings.sharedFolder)){
+  if(window.goDesktop&&!kioskMode&&!selbNewsKioskMode&&!(window.__desktopSettings&&window.__desktopSettings.sharedFolder)){
     $('sharedFolderGate').style.display='flex';
     return;
   }
@@ -1693,7 +2048,7 @@ async function boot(){
     }catch(e){console.warn('Não foi possível ler os dados da pasta compartilhada, usando cópia local:',e)}
   }
   if(envelope&&envelope.format==='GO-DB'){db=normalizeDb(envelope.data)}
-  if(kioskMode){
+  if(kioskMode||selbNewsKioskMode){
     // banco não criptografado: a TV entra direto, sem pedir PIN — o PIN de gestor aqui
     // controla o acesso de edição dentro do app, não a exibição somente-leitura da TV.
     currentRole='gestor';currentOperatorId=null;currentPin=null;
@@ -1820,11 +2175,12 @@ async function afterUnlock(){
   }
   render();applyRoleUI();updateDbStatus();updateMoneyToggleUI();
   if(kioskMode)enterKioskMode();
+  else if(selbNewsKioskMode)enterSelbNewsKioskMode();
 }
 const NAV_VIEWS_BY_ROLE={
   operador:['operadorHome','producao','manuais','dashboardTv'],
   tv:['dashboardTv','noticias'],
-  gestor:['home','producao','financeiro','rh','manuais','dashboardTv','fornecedores','admin','noticias']
+  gestor:['home','producao','financeiro','rh','manuais','dashboardTv','fornecedores','admin','noticias','selbnews']
 };
 function applyRoleUI(){
   const isOp=currentRole==='operador',isTv=currentRole==='tv';
@@ -2977,6 +3333,11 @@ function render(){
   renderAlertsGrid();
   renderDailyMessageTable();
   renderDashboardTv();
+  renderSelbNewsOverview();
+  renderSelbNewsAdminGrid();
+  renderSelbAlertsAdminGrid();
+  renderSelbBirthdaysAdminTable();
+  renderSelbNewsTv();
   if(currentProfileId)renderEmployeeProfile();
   if(currentManualId)renderManualDetail();
 }
@@ -3365,6 +3726,466 @@ function enterKioskMode(){
   // dentro do app desktop, o processo principal já põe a janela da TV em modo kiosk (mais confiável);
   // chamar a Fullscreen API do navegador aqui por cima podia competir com isso. Só usa essa API como
   // alternativa quando a tela roda direto num navegador comum (sem window.goDesktop).
+  if(!window.goDesktop){
+    try{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}
+  }
+}
+
+/* ===================== SELBNEWS — portal de comunicação interna para TV =====================
+   Módulo independente do "Conteúdo TV"/Dashboard TV acima: coleções próprias (db.selbNews/selbAlerts/
+   selbBirthdays), janela de TV própria (window.goDesktop.openSelbNewsWindow, hash #selbnewstv) e
+   nenhum dado operacional. As funções puras de regra de negócio (isSelbItemLive, selbActiveNewsSorted,
+   selbActiveAlertsSorted, selbCurrentMonthBirthdays, normalizeSelb*) ficam lá em cima, perto de
+   normalizeDb — aqui só CRUD, renderização (admin + TV) e o "modo kiosk" do SELBNEWS. */
+const SELB_PRIORITY_META={
+  URGENT:{label:'URGENTE',color:'#ff6b6b'},
+  IMPORTANT:{label:'IMPORTANTE',color:'#ffb37a'},
+  NOTICE:{label:'COMUNICADO',color:'#8fe3b8'},
+  INFO:{label:'INFORMAÇÃO',color:'#9fd6bb'}
+};
+
+/* ---- sub-abas internas (reaproveita o componente .role-tabs já usado na tela de login) ---- */
+function switchSelbNewsTab(tab){
+  document.querySelectorAll('#selbnewsTabs .role-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('#selbnews .selbnews-tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===tab));
+  if(tab==='settings')renderSelbNewsSettingsTab();
+  if(tab==='overview')renderSelbScreenStatus();
+}
+
+/* ---- imagens: caminho relativo salvo no registro -> URL exibível (file:// via IPC, ou a própria
+   data: URL quando rodando sem Electron). Cache simples em memória — evita repetir o IPC a cada render. ---- */
+let selbNewsImgUrlCache={};
+async function resolveSelbImg(relativePath){
+  if(!relativePath)return '';
+  if(selbNewsImgUrlCache[relativePath]!==undefined)return selbNewsImgUrlCache[relativePath];
+  let url='';
+  if(relativePath.startsWith('data:')){url=relativePath}
+  else if(window.goDesktop&&window.goDesktop.isElectron){
+    try{url=await window.goDesktop.resolveSelbNewsMediaUrl(relativePath)||''}catch(e){url=''}
+  }
+  selbNewsImgUrlCache[relativePath]=url;
+  return url;
+}
+
+/* ---- CRUD: Notícias ---- */
+let selbNewsDraft=null;
+function openSelbNewsModal(id){
+  const existing=id?(db.selbNews||[]).find(n=>n.id===id):null;
+  selbNewsDraft=existing?{...existing}:normalizeSelbNews({});
+  $('selbNewsModalTitle').textContent=existing?'Editar notícia':'Nova notícia';
+  $('selbNewsTitle').value=selbNewsDraft.title;
+  $('selbNewsSummary').value=selbNewsDraft.summary;
+  $('selbNewsCategory').value=selbNewsDraft.category;
+  $('selbNewsPublishedAt').value=selbNewsDraft.publishedAt||new Date().toISOString().slice(0,10);
+  $('selbNewsStartDate').value=selbNewsDraft.startDate;
+  $('selbNewsEndDate').value=selbNewsDraft.endDate;
+  $('selbNewsFeatured').checked=selbNewsDraft.isFeatured;
+  $('selbNewsActive').checked=selbNewsDraft.isActive;
+  $('selbNewsOrder').value=selbNewsDraft.displayOrder;
+  const prev=$('selbNewsImagePreview');
+  if(selbNewsDraft.imagePath){
+    prev.style.display='block';prev.src=selbNewsImgUrlCache[selbNewsDraft.imagePath]||'';
+    $('selbNewsImageClearBtn').style.display='inline-flex';
+    resolveSelbImg(selbNewsDraft.imagePath).then(url=>{if(url)prev.src=url});
+  }else{prev.style.display='none';prev.src='';$('selbNewsImageClearBtn').style.display='none'}
+  openModal('selbNewsModal');
+}
+async function handleSelbNewsImage(input){
+  const file=input.files&&input.files[0];if(!file)return;
+  try{
+    // 1280px de lado maior: notícias merecem mais nitidez que os 900px usados no "Conteúdo TV" simples
+    const dataUrl=await compressImageFile(file,1280,.85);
+    let finalPath=dataUrl,previewUrl=dataUrl;
+    if(window.goDesktop&&window.goDesktop.isElectron){
+      finalPath=await window.goDesktop.saveSelbNewsImage(dataUrl,'news');
+      previewUrl=await window.goDesktop.resolveSelbNewsMediaUrl(finalPath)||dataUrl;
+    }
+    if(selbNewsDraft.imagePath&&selbNewsDraft.imagePath!==finalPath&&window.goDesktop&&!selbNewsDraft.imagePath.startsWith('data:')){
+      try{window.goDesktop.deleteSelbNewsImage(selbNewsDraft.imagePath)}catch(e){}
+    }
+    selbNewsDraft.imagePath=finalPath;
+    selbNewsImgUrlCache[finalPath]=previewUrl;
+    const prev=$('selbNewsImagePreview');
+    prev.src=previewUrl;prev.style.display='block';
+    $('selbNewsImageClearBtn').style.display='inline-flex';
+  }catch(e){alert('Não foi possível salvar a imagem: '+e.message)}
+  input.value='';
+}
+function clearSelbNewsImage(){
+  if(selbNewsDraft.imagePath&&window.goDesktop&&!selbNewsDraft.imagePath.startsWith('data:')){
+    try{window.goDesktop.deleteSelbNewsImage(selbNewsDraft.imagePath)}catch(e){}
+  }
+  selbNewsDraft.imagePath='';
+  $('selbNewsImagePreview').style.display='none';
+  $('selbNewsImageClearBtn').style.display='none';
+}
+function saveSelbNewsItem(){
+  const title=val('selbNewsTitle').trim();
+  if(!title)return alert('Informe o título da notícia.');
+  selbNewsDraft.title=title;
+  selbNewsDraft.summary=val('selbNewsSummary').trim();
+  selbNewsDraft.category=val('selbNewsCategory').trim();
+  selbNewsDraft.publishedAt=val('selbNewsPublishedAt');
+  selbNewsDraft.startDate=val('selbNewsStartDate');
+  selbNewsDraft.endDate=val('selbNewsEndDate');
+  selbNewsDraft.isFeatured=$('selbNewsFeatured').checked;
+  selbNewsDraft.isActive=$('selbNewsActive').checked;
+  selbNewsDraft.displayOrder=Number(val('selbNewsOrder'))||0;
+  selbNewsDraft.updatedAt=new Date().toISOString();
+  db.selbNews=db.selbNews||[];
+  const idx=db.selbNews.findIndex(n=>n.id===selbNewsDraft.id);
+  if(idx>=0)db.selbNews[idx]=selbNewsDraft;else db.selbNews.push(selbNewsDraft);
+  closeModal('selbNewsModal');
+  save();
+}
+function deleteSelbNewsItem(id){
+  if(!confirm('Excluir esta notícia?'))return;
+  const item=(db.selbNews||[]).find(n=>n.id===id);
+  if(item&&item.imagePath&&window.goDesktop&&!item.imagePath.startsWith('data:')){
+    try{window.goDesktop.deleteSelbNewsImage(item.imagePath)}catch(e){}
+  }
+  del('selbNews',id);
+}
+function toggleSelbNewsActive(id){
+  const item=(db.selbNews||[]).find(n=>n.id===id);if(!item)return;
+  item.isActive=!item.isActive;item.updatedAt=new Date().toISOString();save();
+}
+function renderSelbNewsAdminGrid(){
+  const grid=$('selbNewsGrid');if(!grid)return;
+  const list=[...(db.selbNews||[])].sort((a,b)=>(a.displayOrder||0)-(b.displayOrder||0)||(b.publishedAt||b.createdAt||'').localeCompare(a.publishedAt||a.createdAt||''));
+  if(!list.length){grid.innerHTML='<p class="muted">Nenhuma notícia cadastrada ainda.</p>';return}
+  grid.innerHTML=list.map(n=>{
+    const live=isSelbItemLive(n);
+    const cachedUrl=n.imagePath?(selbNewsImgUrlCache[n.imagePath]||''):'';
+    return `<div class="manual-card" onclick="openSelbNewsModal('${n.id}')">
+      ${n.imagePath?`<img class="manual-cover" data-selb-id="${n.id}" src="${cachedUrl}" alt="${escHtml(n.title)}">`:'<div class="manual-cover manual-cover-fallback">📰</div>'}
+      <div class="manual-card-body">
+        <b>${escHtml(n.title)}${n.isFeatured?' ★':''}</b>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${n.category?`<span class="pill mut">${escHtml(n.category)}</span>`:''}
+          <span class="pill ${live?'ok':'mut'}">${live?'No ar':'Fora do ar'}</span>
+        </div>
+        <small>${escHtml((n.summary||'').slice(0,80))}${(n.summary||'').length>80?'…':''}</small>
+        <div class="toolbar" style="margin-top:4px">
+          <button class="btn" style="padding:4px 9px;font-size:11px" onclick="event.stopPropagation();toggleSelbNewsActive('${n.id}')">${n.isActive?'Desativar':'Ativar'}</button>
+          <button class="btn danger" style="padding:4px 9px;font-size:11px" onclick="event.stopPropagation();deleteSelbNewsItem('${n.id}')">✕ Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  // resolve miniaturas ainda não cacheadas em segundo plano, sem re-renderizar a grid inteira
+  list.filter(n=>n.imagePath&&selbNewsImgUrlCache[n.imagePath]===undefined).forEach(n=>{
+    resolveSelbImg(n.imagePath).then(url=>{
+      if(!url)return;
+      const img=grid.querySelector(`img[data-selb-id="${n.id}"]`);
+      if(img)img.src=url;
+    });
+  });
+}
+
+/* ---- CRUD: Avisos ---- */
+let selbAlertDraft=null;
+function openSelbAlertModal(id){
+  const existing=id?(db.selbAlerts||[]).find(a=>a.id===id):null;
+  selbAlertDraft=existing?{...existing}:normalizeSelbAlert({});
+  $('selbAlertModalTitle').textContent=existing?'Editar aviso':'Novo aviso';
+  $('selbAlertTitle').value=selbAlertDraft.title;
+  $('selbAlertDescription').value=selbAlertDraft.description;
+  $('selbAlertPriority').value=selbAlertDraft.priority;
+  $('selbAlertStartDate').value=selbAlertDraft.startDate;
+  $('selbAlertEndDate').value=selbAlertDraft.endDate;
+  $('selbAlertActive').checked=selbAlertDraft.isActive;
+  $('selbAlertOrder').value=selbAlertDraft.displayOrder;
+  openModal('selbAlertModal');
+}
+function saveSelbAlertItem(){
+  const title=val('selbAlertTitle').trim();
+  if(!title)return alert('Informe o título do aviso.');
+  selbAlertDraft.title=title;
+  selbAlertDraft.description=val('selbAlertDescription').trim();
+  selbAlertDraft.priority=val('selbAlertPriority');
+  selbAlertDraft.startDate=val('selbAlertStartDate');
+  selbAlertDraft.endDate=val('selbAlertEndDate');
+  selbAlertDraft.isActive=$('selbAlertActive').checked;
+  selbAlertDraft.displayOrder=Number(val('selbAlertOrder'))||0;
+  selbAlertDraft.updatedAt=new Date().toISOString();
+  db.selbAlerts=db.selbAlerts||[];
+  const idx=db.selbAlerts.findIndex(a=>a.id===selbAlertDraft.id);
+  if(idx>=0)db.selbAlerts[idx]=selbAlertDraft;else db.selbAlerts.push(selbAlertDraft);
+  closeModal('selbAlertModal');
+  save();
+}
+function deleteSelbAlertItem(id){if(!confirm('Excluir este aviso?'))return;del('selbAlerts',id)}
+function toggleSelbAlertActive(id){
+  const item=(db.selbAlerts||[]).find(a=>a.id===id);if(!item)return;
+  item.isActive=!item.isActive;item.updatedAt=new Date().toISOString();save();
+}
+function renderSelbAlertsAdminGrid(){
+  const grid=$('selbAlertsGrid');if(!grid)return;
+  const list=[...(db.selbAlerts||[])].sort((a,b)=>(SELB_PRIORITY_RANK[a.priority]??2)-(SELB_PRIORITY_RANK[b.priority]??2)||(a.displayOrder||0)-(b.displayOrder||0));
+  if(!list.length){grid.innerHTML='<p class="muted">Nenhum aviso cadastrado ainda.</p>';return}
+  grid.innerHTML=list.map(a=>{
+    const live=isSelbItemLive(a);
+    const meta=SELB_PRIORITY_META[a.priority]||SELB_PRIORITY_META.NOTICE;
+    return `<div class="manual-card" onclick="openSelbAlertModal('${a.id}')">
+      <div class="manual-cover manual-cover-fallback" style="background:${meta.color}22;color:${meta.color}">⚠️</div>
+      <div class="manual-card-body">
+        <b>${escHtml(a.title)}</b>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="pill" style="background:${meta.color}22;color:${meta.color}">${meta.label}</span>
+          <span class="pill ${live?'ok':'mut'}">${live?'No ar':'Fora do ar'}</span>
+        </div>
+        <small>${escHtml((a.description||'').slice(0,80))}${(a.description||'').length>80?'…':''}</small>
+        <div class="toolbar" style="margin-top:4px">
+          <button class="btn" style="padding:4px 9px;font-size:11px" onclick="event.stopPropagation();toggleSelbAlertActive('${a.id}')">${a.isActive?'Desativar':'Ativar'}</button>
+          <button class="btn danger" style="padding:4px 9px;font-size:11px" onclick="event.stopPropagation();deleteSelbAlertItem('${a.id}')">✕ Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---- CRUD: Aniversariantes ---- */
+let selbBirthdayDraft=null;
+function openSelbBirthdayModal(id){
+  const existing=id?(db.selbBirthdays||[]).find(b=>b.id===id):null;
+  selbBirthdayDraft=existing?{...existing}:normalizeSelbBirthday({});
+  $('selbBirthdayModalTitle').textContent=existing?'Editar aniversariante':'Novo aniversariante';
+  $('selbBirthdayName').value=selbBirthdayDraft.employeeName;
+  $('selbBirthdayDay').value=selbBirthdayDraft.birthDay;
+  $('selbBirthdayMonth').value=selbBirthdayDraft.birthMonth;
+  $('selbBirthdayActive').checked=selbBirthdayDraft.isActive;
+  openModal('selbBirthdayModal');
+}
+function saveSelbBirthdayItem(){
+  const name=val('selbBirthdayName').trim();
+  if(!name)return alert('Informe o nome.');
+  const day=Number(val('selbBirthdayDay')),month=Number(val('selbBirthdayMonth'));
+  if(!day||day<1||day>31)return alert('Informe um dia válido (1-31).');
+  selbBirthdayDraft.employeeName=name;
+  selbBirthdayDraft.birthDay=day;
+  selbBirthdayDraft.birthMonth=month;
+  selbBirthdayDraft.isActive=$('selbBirthdayActive').checked;
+  selbBirthdayDraft.updatedAt=new Date().toISOString();
+  db.selbBirthdays=db.selbBirthdays||[];
+  const idx=db.selbBirthdays.findIndex(b=>b.id===selbBirthdayDraft.id);
+  if(idx>=0)db.selbBirthdays[idx]=selbBirthdayDraft;else db.selbBirthdays.push(selbBirthdayDraft);
+  closeModal('selbBirthdayModal');
+  save();
+}
+function deleteSelbBirthdayItem(id){if(!confirm('Excluir este aniversariante?'))return;del('selbBirthdays',id)}
+function toggleSelbBirthdayActive(id){
+  const item=(db.selbBirthdays||[]).find(b=>b.id===id);if(!item)return;
+  item.isActive=!item.isActive;item.updatedAt=new Date().toISOString();save();
+}
+function renderSelbBirthdaysAdminTable(){
+  const tbl=$('selbBirthdaysTable');if(!tbl)return;
+  const list=[...(db.selbBirthdays||[])].sort((a,b)=>a.birthMonth-b.birthMonth||a.birthDay-b.birthDay);
+  const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  tbl.innerHTML=list.map(b=>`<tr>
+    <td>${escHtml(b.employeeName)}</td>
+    <td>${String(b.birthDay).padStart(2,'0')}/${MESES[b.birthMonth-1]||''}</td>
+    <td><span class="pill ${b.isActive?'ok':'mut'}">${b.isActive?'Ativo':'Inativo'}</span></td>
+    <td>
+      <button class="btn" style="padding:5px 9px" onclick="openSelbBirthdayModal('${b.id}')">Editar</button>
+      <button class="btn" style="padding:5px 9px" onclick="toggleSelbBirthdayActive('${b.id}')">${b.isActive?'Desativar':'Ativar'}</button>
+      <button class="btn danger" style="padding:5px 9px" onclick="deleteSelbBirthdayItem('${b.id}')">✕</button>
+    </td>
+  </tr>`).join('')||'<tr><td colspan="4" class="muted">Nenhum aniversariante cadastrado ainda.</td></tr>';
+}
+/* importa a partir do cadastro de RH (db.employees[].birthDate) — pula quem já foi importado antes
+   (sourceEmployeeId), pra poder rodar de novo depois sem duplicar */
+function importSelbBirthdaysFromEmployees(){
+  const existingSourceIds=new Set((db.selbBirthdays||[]).map(b=>b.sourceEmployeeId).filter(Boolean));
+  const candidates=(db.employees||[]).filter(e=>e.status!=='Inativo'&&e.birthDate&&!existingSourceIds.has(e.id));
+  if(!candidates.length)return alert('Nenhum colaborador novo com data de nascimento para importar.');
+  if(!confirm(`Importar ${candidates.length} colaborador(es) do cadastro de RH como aniversariantes?`))return;
+  db.selbBirthdays=db.selbBirthdays||[];
+  candidates.forEach(e=>{
+    const d=new Date(e.birthDate+'T12:00:00');
+    if(isNaN(d))return;
+    db.selbBirthdays.push(normalizeSelbBirthday({employeeName:e.name,birthDay:d.getDate(),birthMonth:d.getMonth()+1,sourceEmployeeId:e.id}));
+  });
+  save();
+}
+
+/* ---- Visão Geral / status ---- */
+let selbNewsLastRefreshAt=null;
+function renderSelbNewsOverview(){
+  const el=$('selbOverviewCards');if(!el)return;
+  const activeNews=(db.selbNews||[]).filter(isSelbItemLive).length;
+  const activeAlerts=(db.selbAlerts||[]).filter(isSelbItemLive).length;
+  const bdays=selbCurrentMonthBirthdays().length;
+  el.innerHTML=`
+    <div class="card accent-teal"><div class="k">Notícias ativas</div><div class="v">${activeNews}</div></div>
+    <div class="card accent-amber"><div class="k">Avisos ativos</div><div class="v">${activeAlerts}</div></div>
+    <div class="card accent-indigo"><div class="k">Aniversariantes do mês</div><div class="v">${bdays}</div></div>
+    <div class="card"><div class="k">Última atualização da TV</div><div class="v" style="font-size:15px">${selbNewsLastRefreshAt?new Date(selbNewsLastRefreshAt).toLocaleTimeString('pt-BR'):'—'}</div></div>`;
+}
+async function renderSelbScreenStatus(){
+  const el=$('selbScreenStatus');if(!el)return;
+  if(!window.goDesktop||!window.goDesktop.isElectron){el.textContent='Disponível só no app desktop.';return}
+  try{
+    const open=await window.goDesktop.isSelbNewsWindowOpen();
+    el.innerHTML=open?'<span class="pill ok">● Aberta</span>':'<span class="pill mut">○ Fechada</span>';
+  }catch(e){el.textContent='—'}
+}
+
+/* ---- Configurações: monitor dedicado do SELBNEWS (independente do monitor do Dashboard TV) ---- */
+async function renderSelbNewsSettingsTab(){
+  const sel=$('selbNewsMonitorSelect');if(!sel)return;
+  if(!window.goDesktop||!window.goDesktop.isElectron){
+    sel.innerHTML='<option value="">Disponível só no app desktop</option>';
+    return;
+  }
+  try{
+    const displays=await window.goDesktop.getDisplays();
+    const current=(window.__desktopSettings&&window.__desktopSettings.selbnews)||{};
+    sel.innerHTML='<option value="">Automático (prefere o monitor secundário)</option>'+
+      displays.map(d=>`<option value="${d.id}" ${current.displayId===d.id?'selected':''}>${d.isPrimary?'Principal — ':''}${d.bounds.width}×${d.bounds.height}</option>`).join('');
+    $('selbNewsAutoFullscreen').checked=current.autoFullscreen!==false;
+  }catch(e){sel.innerHTML='<option value="">Não foi possível listar os monitores</option>'}
+}
+async function saveSelbNewsSettings(){
+  if(!window.goDesktop||!window.goDesktop.isElectron)return alert('Disponível só no app desktop.');
+  const sel=$('selbNewsMonitorSelect');
+  const displayId=sel.value?Number(sel.value):null;
+  const autoFullscreen=$('selbNewsAutoFullscreen').checked;
+  // sempre espalha o objeto "selbnews" atual antes de salvar: settingsStore.set() faz merge RASO,
+  // então mandar só {displayId} apagaria o resto (ex: autoFullscreen) do objeto aninhado.
+  const current=(window.__desktopSettings&&window.__desktopSettings.selbnews)||{};
+  const updated=await window.goDesktop.setSettings({selbnews:{...current,displayId,autoFullscreen}});
+  window.__desktopSettings=updated;
+  alert('Configurações do SELBNEWS salvas.');
+}
+
+/* ---- Tela de TV: monta os 3 blocos (notícias/avisos/aniversariantes) escrevendo em
+   #{prefix}NewsCol/AlertsCol/BdaysCol — usada tanto pela TV real ('sn') quanto pelo preview ('snp'),
+   pra nunca divergir entre "como fica" e "como fica de verdade". ---- */
+function selbNewsImgTag(n,cls){
+  const url=n.imagePath?(selbNewsImgUrlCache[n.imagePath]||''):'';
+  if(url)return `<div class="${cls}"><img src="${url}" alt="${escHtml(n.title)}"></div>`;
+  return `<div class="${cls} sn-news-fallback"></div>`; // sem imagem: usa o próprio fundo espacial do tema
+}
+function selbNewsColumnHtml(featured,secondary){
+  if(!featured)return '<div class="sn-empty">Nenhuma nova notícia publicada.</div>';
+  const secHtml=secondary.length?secondary.map(n=>`
+    <article class="sn-news-sec">
+      ${selbNewsImgTag(n,'sn-news-sec-img')}
+      <div class="sn-news-sec-body"><span class="sn-news-cat">${escHtml(n.category||'')}</span><h4>${escHtml(n.title)}</h4></div>
+    </article>`).join(''):'';
+  return `
+    <article class="sn-news-featured">
+      ${selbNewsImgTag(featured,'sn-news-featured-img')}
+      <div class="sn-news-featured-body">
+        <span class="sn-news-cat">${escHtml(featured.category||'')}</span>
+        <h2>${escHtml(featured.title)}</h2>
+        <p>${escHtml(featured.summary||'')}</p>
+      </div>
+    </article>
+    ${secHtml?`<div class="sn-news-secondary-list">${secHtml}</div>`:''}`;
+}
+function selbAlertsColumnHtml(alerts){
+  const title='<h3 class="sn-col-title">🔔 Avisos</h3>';
+  if(!alerts.length)return title+'<div class="sn-empty">Nenhum aviso importante no momento.</div>';
+  return title+`<div class="sn-alerts-list">${alerts.map(a=>{
+    const meta=SELB_PRIORITY_META[a.priority]||SELB_PRIORITY_META.NOTICE;
+    return `<div class="sn-alert-card sn-alert-${a.priority.toLowerCase()}">
+      <div class="sn-alert-badge">${meta.label}</div>
+      <b>${escHtml(a.title)}</b>
+      <p>${escHtml(a.description||'')}</p>
+    </div>`;
+  }).join('')}</div>`;
+}
+function selbBdaysColumnHtml(bdays){
+  const title='<h3 class="sn-col-title">🎂 Aniversariantes</h3>';
+  if(!bdays.length)return title+'<div class="sn-empty">Nenhum aniversariante cadastrado neste mês.</div>';
+  const cols=bdays.length>10?3:bdays.length>5?2:1;
+  const today=new Date().getDate();
+  return title+`<div class="sn-bdays-grid" style="column-count:${cols}">${bdays.map(b=>`
+    <div class="sn-bday-row${b.birthDay===today?' today':''}"><span class="sn-bday-day">${String(b.birthDay).padStart(2,'0')}</span><span class="sn-bday-name">${escHtml(b.employeeName)}${b.birthDay===today?' 🎉':''}</span></div>
+  `).join('')}</div>`;
+}
+async function renderSelbNewsBlocks(prefix){
+  const newsCol=$(prefix+'NewsCol'),alertsCol=$(prefix+'AlertsCol'),bdaysCol=$(prefix+'BdaysCol');
+  if(!newsCol)return;
+  const {featured,secondary}=selbActiveNewsSorted();
+  const alerts=selbActiveAlertsSorted();
+  const bdays=selbCurrentMonthBirthdays();
+  // resolve todas as imagens necessárias ANTES de montar o HTML, pra nunca "piscar" sem imagem
+  const imgPaths=[featured,...secondary].filter(n=>n&&n.imagePath).map(n=>n.imagePath);
+  await Promise.all(imgPaths.map(resolveSelbImg));
+  newsCol.innerHTML=selbNewsColumnHtml(featured,secondary);
+  if(alertsCol)alertsCol.innerHTML=selbAlertsColumnHtml(alerts);
+  if(bdaysCol)bdaysCol.innerHTML=selbBdaysColumnHtml(bdays);
+}
+async function renderSelbNewsTv(){
+  if(!$('snNewsCol'))return;
+  await renderSelbNewsBlocks('sn');
+  selbNewsLastRefreshAt=Date.now();
+}
+function updateSnClock(prefix){
+  const now=new Date();
+  const clockEl=$(prefix+'Clock');
+  if(clockEl)clockEl.textContent=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const dateEl=$(prefix+'Date');
+  if(dateEl)dateEl.textContent=now.toLocaleDateString('pt-BR');
+}
+// escala o "canvas" de 1920×1080 pro tamanho real da janela/monitor via CSS zoom (não vw/vh — ver
+// comentário no bloco de CSS do SELBNEWS). Recalcula em resize; é barato e só faz algo em modo kiosk.
+function fitSelbNewsTvScale(){
+  if(!selbNewsKioskMode)return;
+  const wrap=$('snTvWrap');if(!wrap)return;
+  const scale=Math.min(window.innerWidth/1920,window.innerHeight/1080);
+  wrap.style.zoom=scale>0?scale:1;
+}
+window.addEventListener('resize',fitSelbNewsTvScale);
+
+function openSelbNewsTV(){
+  if(window.goDesktop&&window.goDesktop.isElectron){window.goDesktop.openSelbNewsWindow();return}
+  window.open(location.href.split('#')[0]+'#selbnewstv','_blank');
+}
+async function openSelbNewsPreview(){
+  openModal('selbNewsPreviewModal');
+  updateSnClock('snp');
+  await renderSelbNewsBlocks('snp');
+}
+
+async function refreshSelbNewsKioskData(){
+  try{
+    // dentro do app desktop, a pasta compartilhada é a fonte de verdade — relê ela direto (mesmo
+    // padrão de refreshKioskData/boot). Reescreve só os 3 blocos (renderSelbNewsTv), nunca a página toda.
+    if(window.goDesktop){
+      const remote=await window.goDesktop.readData();
+      if(remote&&remote.data){db=normalizeDb(remote.data);await renderSelbNewsTv()}
+      return;
+    }
+    const envelope=await idbGet(DBKEY);
+    if(!envelope)return;
+    if(envelope.format==='GO-DB-ENC'){
+      if(!currentPin)return;
+      db=normalizeDb(await decryptPayload(envelope,currentPin));
+    }else if(envelope.format==='GO-DB'){
+      db=normalizeDb(envelope.data);
+    }
+    await renderSelbNewsTv();
+  }catch(e){console.warn('Não foi possível atualizar os dados do SELBNEWS TV:',e)}
+}
+function enterSelbNewsKioskMode(){
+  document.body.classList.add('kiosk-mode');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+  activeView='selbNewsTv';
+  $('selbNewsTv').classList.add('active');
+  fitSelbNewsTvScale();
+  renderSelbNewsTv();
+  clearInterval(selbNewsKioskRefreshTimer);
+  // intervalo mais curto que o do Dashboard TV (60s): o usuário pediu explicitamente atualização "em
+  // poucos segundos" para o SELBNEWS, e o volume de dados aqui é pequeno o bastante pra sustentar isso.
+  selbNewsKioskRefreshTimer=setInterval(refreshSelbNewsKioskData,8000);
+  clearInterval(selbNewsKioskClockTimer);
+  selbNewsKioskClockTimer=setInterval(()=>updateSnClock('sn'),1000);
+  updateSnClock('sn');
   if(!window.goDesktop){
     try{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}
   }

@@ -20,7 +20,7 @@ const chokidar = require('chokidar');
 const ARRAY_COLLECTIONS = [
   'production', 'finance', 'expenses', 'losses', 'employees', 'absences', 'vacations',
   'suppliers', 'imports', 'history', 'activities', 'timesheets', 'manuals', 'news',
-  'alerts', 'dailyMessages'
+  'alerts', 'dailyMessages', 'selbNews', 'selbAlerts', 'selbBirthdays'
 ];
 // coleções tratadas como objeto-mapa { chave: registro } (mescladas por chave)
 const MAP_COLLECTIONS = ['sla'];

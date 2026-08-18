@@ -19,6 +19,11 @@ const DEFAULTS = {
     displayId: null,     // id do monitor onde a TV deve abrir (null = deixa o usuário escolher/posicionar)
     autoFullscreen: true
   },
+  // preferências da janela do SELBNEWS TV (independente da TV operacional acima)
+  selbnews: {
+    displayId: null,
+    autoFullscreen: true
+  },
   // verificação automática de atualização
   autoCheckUpdates: true,
   updateCheckIntervalMinutes: 60,
