@@ -640,9 +640,15 @@ body.kiosk-mode .dash-var{font-size:13px}
 .sn-news-featured-img img{width:100%;height:100%;object-fit:cover;display:block;animation:snSlowZoom 26s ease-in-out infinite alternate}
 @keyframes snSlowZoom{from{transform:scale(1)}to{transform:scale(1.06)}}
 .sn-news-featured-body{flex:0 0 auto;padding:26px 30px 30px;background:linear-gradient(180deg,rgba(4,16,12,0) 0%,rgba(3,14,10,.55) 100%)}
+/* nunca corta o texto (nem título, nem resumo): sem line-clamp — o tamanho da fonte encolhe conforme
+   o comprimento real (data-len, ver selbLenTier), então o texto inteiro sempre aparece. Como a caixa
+   da imagem logo acima tem flex:1.4;min-height:0, ela cede espaço sozinha quando o texto cresce. */
 .sn-news-featured-body h2{margin:10px 0 0;font-size:32px;line-height:1.22;font-weight:800;color:#fff}
-.sn-news-featured-body p{margin:12px 0 0;font-size:18px;line-height:1.4;color:#d7ecdf;
-  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sn-news-featured-body h2[data-len="medium"]{font-size:26px}
+.sn-news-featured-body h2[data-len="long"]{font-size:21px}
+.sn-news-featured-body p{margin:12px 0 0;font-size:18px;line-height:1.4;color:#d7ecdf}
+.sn-news-featured-body p[data-len="medium"]{font-size:15px;line-height:1.35}
+.sn-news-featured-body p[data-len="long"]{font-size:13px;line-height:1.3}
 .sn-news-cat{display:inline-block;padding:4px 12px;border-radius:999px;background:rgba(0,168,89,.22);
   color:#8fe3b8;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
 
@@ -654,16 +660,21 @@ body.kiosk-mode .dash-var{font-size:13px}
 .sn-news-fallback{background-image:linear-gradient(180deg,rgba(3,20,15,.2) 0%,rgba(1,18,12,.55) 100%),var(--bg-starfield);
   background-size:cover;background-position:center}
 .sn-news-sec-body{flex:0 0 auto;padding:14px 16px 16px;background:linear-gradient(180deg,rgba(4,16,12,0) 0%,rgba(3,14,10,.6) 100%)}
-.sn-news-sec-body h4{margin:6px 0 0;font-size:16px;line-height:1.3;font-weight:700;color:#fff;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sn-news-sec-body h4{margin:6px 0 0;font-size:16px;line-height:1.3;font-weight:700;color:#fff}
+.sn-news-sec-body h4[data-len="medium"]{font-size:13.5px;line-height:1.25}
+.sn-news-sec-body h4[data-len="long"]{font-size:11.5px;line-height:1.2}
 
 .sn-alerts-list{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px}
 .sn-alert-card{flex:1;min-height:0;border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;
   background:rgba(8,28,20,.62);border:1px solid rgba(143,227,184,.18);display:flex;flex-direction:column;gap:8px}
 .sn-alert-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px}
 .sn-alert-card b{font-size:18px;color:#fff;line-height:1.25}
-.sn-alert-card p{margin:0;font-size:14.5px;line-height:1.35;color:#cfe6da;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sn-alert-card b[data-len="medium"]{font-size:15.5px}
+.sn-alert-card b[data-len="long"]{font-size:13.5px}
+/* mesma técnica de nunca cortar: sem line-clamp, fonte encolhe conforme o texto cresce (data-len) */
+.sn-alert-card p{margin:0;font-size:14.5px;line-height:1.35;color:#cfe6da}
+.sn-alert-card p[data-len="medium"]{font-size:12.5px;line-height:1.3}
+.sn-alert-card p[data-len="long"]{font-size:11px;line-height:1.25}
 .sn-alert-badge{align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:.07em;padding:4px 10px;border-radius:999px}
 .sn-alert-info::before{background:#9fd6bb}
 .sn-alert-info .sn-alert-badge{background:rgba(159,214,187,.18);color:#9fd6bb}
@@ -1070,7 +1081,7 @@ body.kiosk-mode .dash-var{font-size:13px}
       <div class="selbnews-tabpane active" data-pane="overview">
         <div class="grid cards" id="selbOverviewCards"></div>
         <div class="panel"><h2>📡 Como o SELBNEWS aparece na TV</h2>
-          <p class="muted" style="margin:0 0 10px">O conteúdo cadastrado aqui aparece automaticamente dentro da mesma tela do <b>Dashboard TV</b>, revezando sozinho: 2 minutos de Dashboard TV, 1 minuto de SELBNEWS, se repetindo sem parar. Não precisa abrir nada separado — é a mesma janela/TV de sempre. Os aniversariantes são sincronizados automaticamente com o cadastro de colaboradores (RH) — sem nenhum cadastro manual aqui.</p>
+          <p class="muted" style="margin:0 0 10px">O conteúdo cadastrado aqui aparece automaticamente dentro da mesma tela do <b>Dashboard TV</b>, revezando sozinho: 2 minutos de Dashboard TV, 40 segundos de SELBNEWS, se repetindo sem parar. Não precisa abrir nada separado — é a mesma janela/TV de sempre. Os aniversariantes são sincronizados automaticamente com o cadastro de colaboradores (RH) — sem nenhum cadastro manual aqui.</p>
           <div class="toolbar">
             <button class="btn" onclick="switchView('dashboardTv')">📺 Ir para Dashboard TV</button>
             <button class="btn" onclick="openSelbNewsPreview()">👁️ Pré-visualizar SELBNEWS</button>
@@ -1689,7 +1700,7 @@ let kioskRefreshTimer=null,kioskClockTimer=null;
 // showKioskPhase/scheduleKioskRotation) — não são janelas/telas separadas.
 let kioskPhase='dashboard'; // 'dashboard' | 'selbnews'
 let kioskRotationTimer=null;
-const KIOSK_DASHBOARD_MS=2*60*1000, KIOSK_SELBNEWS_MS=1*60*1000;
+const KIOSK_DASHBOARD_MS=2*60*1000, KIOSK_SELBNEWS_MS=40*1000;
 let godbHandle=null, godbSaveTimer=null, godbLastSave=null, lastLocalSaveError=null;
 
 function normalizeVacation(v){
@@ -3816,6 +3827,13 @@ function renderSelbNewsOverview(){
 /* ---- Tela de TV: monta os 3 blocos (notícias/avisos/aniversariantes) escrevendo em
    #{prefix}NewsCol/AlertsCol/BdaysCol — usada tanto pela TV real ('sn') quanto pelo preview ('snp'),
    pra nunca divergir entre "como fica" e "como fica de verdade". ---- */
+// nunca corta texto no SELBNEWS: em vez de truncar com "...", reduz o tamanho da fonte conforme o
+// texto cresce (data-len + CSS), garantindo que o conteúdo completo sempre caiba na caixa — mesma
+// técnica já usada no app pra texto de tamanho variável numa altura fixa (nunca corta, nunca rola).
+function selbLenTier(text,shortMax,mediumMax){
+  const n=(text||'').length;
+  return n<=shortMax?'short':n<=mediumMax?'medium':'long';
+}
 function selbNewsImgTag(n,cls){
   const url=n.imagePath?(selbNewsImgUrlCache[n.imagePath]||''):'';
   if(url)return `<div class="${cls}"><img src="${url}" alt="${escHtml(n.title)}"></div>`;
@@ -3826,15 +3844,15 @@ function selbNewsColumnHtml(featured,secondary){
   const secHtml=secondary.length?secondary.map(n=>`
     <article class="sn-news-sec">
       ${selbNewsImgTag(n,'sn-news-sec-img')}
-      <div class="sn-news-sec-body"><span class="sn-news-cat">${escHtml(n.category||'')}</span><h4>${escHtml(n.title)}</h4></div>
+      <div class="sn-news-sec-body"><span class="sn-news-cat">${escHtml(n.category||'')}</span><h4 data-len="${selbLenTier(n.title,30,55)}">${escHtml(n.title)}</h4></div>
     </article>`).join(''):'';
   return `
     <article class="sn-news-featured">
       ${selbNewsImgTag(featured,'sn-news-featured-img')}
       <div class="sn-news-featured-body">
         <span class="sn-news-cat">${escHtml(featured.category||'')}</span>
-        <h2>${escHtml(featured.title)}</h2>
-        <p>${escHtml(featured.summary||'')}</p>
+        <h2 data-len="${selbLenTier(featured.title,40,70)}">${escHtml(featured.title)}</h2>
+        <p data-len="${selbLenTier(featured.summary,80,160)}">${escHtml(featured.summary||'')}</p>
       </div>
     </article>
     ${secHtml?`<div class="sn-news-secondary-list">${secHtml}</div>`:''}`;
@@ -3846,8 +3864,8 @@ function selbAlertsColumnHtml(alerts){
     const meta=SELB_PRIORITY_META[a.priority]||SELB_PRIORITY_META.NOTICE;
     return `<div class="sn-alert-card sn-alert-${a.priority.toLowerCase()}">
       <div class="sn-alert-badge">${meta.label}</div>
-      <b>${escHtml(a.title)}</b>
-      <p>${escHtml(a.description||'')}</p>
+      <b data-len="${selbLenTier(a.title,30,55)}">${escHtml(a.title)}</b>
+      <p data-len="${selbLenTier(a.description,80,160)}">${escHtml(a.description||'')}</p>
     </div>`;
   }).join('')}</div>`;
 }
