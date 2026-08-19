@@ -189,10 +189,10 @@ body.role-tv .view:not(#dashboardTv):not(#noticias){display:none!important}
 .desktop-only{display:none}
 
 /* ---- Dashboard TV: painel para exibição em televisão da operação, sem dados financeiros ----
-   Tela única (sem rodízio de slides) no estilo "parede de monitoramento": grade de KPIs, gráfico,
-   gauge de SLA, ranking e avisos sempre visíveis; só o card de notícias/aniversariantes reveza
-   sozinho (dashSpotStage), com o resto do fundo (campo de estrelas, planeta, mascote) reaproveitando
-   os mesmos recursos visuais já usados no resto do app. */
+   Tela única (sem rodízio interno) no estilo "parede de monitoramento": grade de KPIs, gráfico,
+   gauge de SLA e ranking sempre visíveis. Avisos e notícias/aniversariantes saíram daqui — viraram
+   o SELBNEWS, que reveza com esta tela na MESMA janela (ver showKioskPhase). O fundo (campo de
+   estrelas, planeta, mascote) reaproveita os mesmos recursos visuais já usados no resto do app. */
 .dash-kiosk-wrap{background:linear-gradient(160deg,#04160f 0%,#071f16 55%,#04140d 100%);border-radius:var(--radius);
   padding:26px 30px;color:#eaf6ef;position:relative;overflow:hidden;min-height:560px;box-shadow:var(--shadow-lg)}
 .dash-kiosk-wrap::before{content:"";position:absolute;inset:0;background-image:var(--bg-starfield);background-size:cover;
@@ -225,10 +225,10 @@ body.role-tv .view:not(#dashboardTv):not(#noticias){display:none!important}
 .dash-var.ok{color:#6fe6a0}
 .dash-var.bad{color:#ff9d9d}
 .dash-var.mut{color:#a9c4b7}
-/* corpo principal — três linhas flexíveis (KPIs · produção/SLA/ranking · avisos/destaque) mais o
-   ticker; cada linha usa flex:1/min-height:0 (ver overrides de kiosk mais abaixo), o mesmo padrão
-   que já resolveu o corte de conteúdo no resto do dashboard — nunca precisa adivinhar altura em
-   pixel pra caber em qualquer tela real. */
+/* corpo principal — duas linhas (KPIs · produção/SLA/ranking) mais o ticker; avisos e notícias/
+   aniversariantes saíram daqui (viraram o rodízio com o SELBNEWS, ver showKioskPhase) — a linha de
+   produção/SLA/ranking agora é a única flexível e absorve sozinha todo o espaço vertical que sobra,
+   sem precisar adivinhar altura em pixel pra caber em qualquer tela real. */
 .dash-board{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px}
 .dash-row{display:flex;gap:14px}
 @media (max-width:1150px){.dash-row{flex-wrap:wrap}}
@@ -262,12 +262,10 @@ body.kiosk-mode .dash-kpi-lbl{font-size:11px;margin-top:4px}
 body.kiosk-mode .dash-kpi-trend{font-size:10.5px;padding-top:6px}
 body.kiosk-mode .dash-kpi-yesterday b{font-size:18px}
 body.kiosk-mode .dash-kpi-yesterday small{font-size:10px}
-/* gráfico/gauge/ranking dividem a mesma linha; avisos/destaque dividem a linha seguinte */
+/* gráfico/gauge/ranking dividem a única linha flexível que sobrou (avisos/destaque saíram daqui) */
 .dash-tile-chart{flex:2;min-width:0}
 .dash-tile-gauge{flex:1;min-width:0}
 .dash-tile-rank{flex:1;min-width:0}
-.dash-tile-warn{flex:2;min-width:0}
-.dash-tile-spot{flex:1;min-width:0}
 .dash-bars{min-height:220px}
 .dash-bars .bar{background:linear-gradient(180deg,#8ff5b8,#0e9a55);box-shadow:0 0 14px rgba(111,230,160,.35)}
 .dash-bars .bar .value{color:#eaf6ef}
@@ -301,33 +299,14 @@ body.kiosk-mode .dash-linechart-goallabel{font-size:13px}
 .dash-gauge-ring-fg{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
 .dash-gauge-ring-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center}
 .dash-gauge-ring-center .big-pct{font-size:24px;font-weight:800;color:#fff;text-shadow:0 0 24px rgba(111,230,160,.4)}
-body.kiosk-mode .dash-gauge-ring-wrap{width:190px;height:190px}
-body.kiosk-mode .dash-gauge-ring-center .big-pct{font-size:32px}
-body.kiosk-mode .dash-tile-gauge .label{font-size:14px}
+body.kiosk-mode .dash-gauge-ring-wrap{width:260px;height:260px}
+body.kiosk-mode .dash-gauge-ring-center .big-pct{font-size:42px}
+body.kiosk-mode .dash-tile-gauge .label{font-size:15px}
 
-/* trilho de cor na lateral em vez do card inteiro tingido — mais legível à distância na TV; cada
-   aviso exibido divide igualmente a altura do widget (nunca corta um item pela metade) */
-.dash-alerts{display:flex;flex-direction:column;gap:10px;min-height:0;flex:1}
-.dash-alerts .alert-box{background:rgba(8,28,20,.62);border-color:rgba(143,227,184,.16);color:#eaf6ef;
-  margin-bottom:0;box-sizing:border-box;position:relative;padding-left:20px;overflow:hidden;flex:1;min-height:0;align-items:center}
-.dash-alerts .alert-box::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#6fe6a0}
-.dash-alerts .alert-box.warn::before{background:#ffcf7a}
-.dash-alerts .alert-box.bad::before{background:#ff6b6b}
-.dash-alerts .alert-box b{color:#fff}
-.dash-alerts .alert-box small{color:#c7ddd0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.alert-box-img{width:38px;height:38px;border-radius:8px;object-fit:contain;background:rgba(0,0,0,.25);flex:0 0 auto}
-body.kiosk-mode .alert-box-img{width:50px;height:50px}
-body.kiosk-mode .dash-alerts .alert-box b{font-size:16px}
-
-.dash-bday-item{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}
-.dash-bday-item:last-child{border-bottom:none}
-.dash-bday-item .day{background:var(--selbetti);color:#fff;font-weight:800;border-radius:8px;padding:6px 10px;font-size:14px;
-  min-width:34px;text-align:center;box-shadow:0 0 12px rgba(111,230,160,.5)}
-.dash-bday-item b{color:#fff}
-.dash-bday-item small{color:#dcefe4;display:block}
-body.kiosk-mode .dash-bday-item b{font-size:16px}
-body.kiosk-mode .dash-bday-item small{font-size:13px}
-
+/* com avisos/destaque removidos, produção·SLA·ranking viraram a única linha flexível — o ranking
+   (só 3 itens) ganhou muito mais altura sobrando; espalha os itens por toda a caixa em vez de
+   deixá-los agrupados no topo com um vão vazio embaixo. */
+#dashRankBestProd{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-around}
 .dash-rank-item{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px}
 .dash-rank-item:last-child{border-bottom:none}
 .dash-rank-item .row{display:flex;align-items:center;gap:10px}
@@ -338,39 +317,7 @@ body.kiosk-mode .dash-bday-item small{font-size:13px}
 .dash-rank-bar-track{height:5px;border-radius:999px;background:rgba(255,255,255,.1);margin-top:7px;overflow:hidden}
 .dash-rank-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#0e9a55,#8ff5b8)}
 .dash-rank-bar-fill.low{background:linear-gradient(90deg,#c98f00,#ffb37a)}
-body.kiosk-mode .dash-rank-item{font-size:16px}
-
-/* destaque que reveza sozinho entre notícia e aniversariantes (dashSpotStage) — o único canto do
-   painel que ainda "roda", agora restrito a um card só. Mesma regra de nunca cortar imagem/texto
-   do resto do dashboard: foto com object-fit:contain (aparece inteira) e texto sem line-clamp, com
-   o tamanho ajustado ao comprimento (data-len, mesma função dashNewsLenTier). */
-.dash-spot-stage{flex:1;min-height:0;position:relative}
-.dash-spot-news,.dash-spot-bdays{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0}
-.dash-spot-news{border-radius:10px;overflow:hidden;background:rgba(4,14,10,.7);border:1px solid rgba(143,227,184,.18)}
-.dash-spot-news .img-wrap{position:relative;flex:0 1 42%;min-height:56px;background:rgba(0,0,0,.22)}
-.dash-spot-news .img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
-.dash-spot-news.no-image .img-wrap{display:none}
-.dash-spot-news.no-image .txt{flex:1;display:flex;flex-direction:column;justify-content:center}
-.dash-spot-news .txt{flex:1;min-height:0;padding:12px 16px;overflow:hidden;display:flex;flex-direction:column}
-.dash-spot-news h3{margin:0 0 5px;color:#eafff2;font-weight:800;line-height:1.25}
-.dash-spot-news .text-wrap{flex:1;min-height:0;overflow:hidden}
-.dash-spot-news p{margin:0;color:#dcefe4;line-height:1.42}
-.dash-spot-news[data-len="short"] h3{font-size:16px}
-.dash-spot-news[data-len="short"] p{font-size:13px}
-.dash-spot-news[data-len="medium"] h3{font-size:14.5px}
-.dash-spot-news[data-len="medium"] p{font-size:12px}
-.dash-spot-news[data-len="long"] h3{font-size:13.5px}
-.dash-spot-news[data-len="long"] p{font-size:11px}
-.dash-spot-bdays{gap:10px;justify-content:center;overflow:hidden}
-body.kiosk-mode .dash-spot-news[data-len="short"] h3{font-size:21px}
-body.kiosk-mode .dash-spot-news[data-len="short"] p{font-size:16px}
-body.kiosk-mode .dash-spot-news[data-len="medium"] h3{font-size:18px}
-body.kiosk-mode .dash-spot-news[data-len="medium"] p{font-size:14.5px}
-body.kiosk-mode .dash-spot-news[data-len="long"] h3{font-size:16px}
-body.kiosk-mode .dash-spot-news[data-len="long"] p{font-size:13px}
-.dash-spot-dots{flex:0 0 auto;display:flex;gap:6px;justify-content:center;margin-top:10px}
-.dash-spot-dots .dot{width:6px;height:6px;border-radius:50%;background:rgba(143,227,184,.25);transition:background .2s,transform .2s}
-.dash-spot-dots .dot.active{background:#6fe6a0;transform:scale(1.2)}
+body.kiosk-mode .dash-rank-item{font-size:19px;padding:14px 0}
 
 /* mensagem do dia em ticker (rolagem horizontal contínua) no rodapé — antes ficava numa caixa
    estática; como agora tudo fica sempre visível na mesma tela, o ticker já é rotação suficiente
@@ -388,10 +335,10 @@ body.kiosk-mode .dash-ticker-track{font-size:16px}
 body.kiosk-mode .dash-ticker-label{font-size:12px}
 
 /* modo TV (kiosk): aberto em aba própria via #dashboard — tela cheia, sem menu, sem rodízio de
-   slides (só o card de notícias/aniversariantes reveza sozinho). As linhas do painel (KPIs ·
-   produção/SLA/ranking · avisos/destaque) usam flex:1/min-height:0 em cada nível — o mesmo padrão
-   que já resolveu corte de conteúdo no resto do dashboard — pra nunca estourar nem cortar em
-   qualquer altura de tela real, sem precisar adivinhar pixels. */
+   slides dentro deste painel (o rodízio agora é a janela inteira alternando com o SELBNEWS, ver
+   showKioskPhase). As linhas do painel (KPIs · produção/SLA/ranking) usam flex:1/min-height:0 em
+   cada nível — o mesmo padrão que já resolveu corte de conteúdo no resto do dashboard — pra nunca
+   estourar nem cortar em qualquer altura de tela real, sem precisar adivinhar pixels. */
 body.kiosk-mode .side{display:none!important}
 body.kiosk-mode .app{display:block}
 body.kiosk-mode .main{padding:0}
@@ -408,11 +355,11 @@ body.kiosk-mode .dash-board{flex:1;min-height:0;padding-top:130px}
    de propósito a ela (flex:0.75 numa tentativa anterior) fazia o valor/rótulo de cada card encolher
    até desaparecer — o título (que não encolhe) continuava visível sozinho, com o resto invisível.
    Como agora a tipografia dos KPIs já é bem mais compacta (ver .dash-kpi-val etc. abaixo), o
-   conteúdo natural da linha já é pequeno o bastante — só produção/SLA/ranking e avisos/destaque
-   dividem o que sobra, por flex-grow (nunca "auto"), então nunca estouram a tela. */
+   conteúdo natural da linha já é pequeno o bastante — produção/SLA/ranking é a única linha flexível
+   que sobrou e absorve sozinha todo o espaço disponível, por flex-grow (nunca "auto"), então nunca
+   estoura a tela. */
 body.kiosk-mode .dash-row-kpis{flex:0 0 auto}
-body.kiosk-mode .dash-row-main{flex:1.6;min-height:0}
-body.kiosk-mode .dash-row-secondary{flex:1;min-height:0}
+body.kiosk-mode .dash-row-main{flex:1;min-height:0}
 body.kiosk-mode .dash-tile{overflow:hidden;box-sizing:border-box;padding:10px 16px}
 body.kiosk-mode .dash-kpi{overflow:visible}
 body.kiosk-mode .dash-var{font-size:13px}
@@ -1022,7 +969,7 @@ body.kiosk-mode .dash-var{font-size:13px}
         </div>
         <div class="panel">
           <h2>Como usar na TV</h2>
-          <p class="muted" style="margin:0">Clique em "Abrir em modo TV" — abre uma janela própria, já sem menu, em tela cheia. Essa mesma janela reveza sozinha entre este Dashboard TV (5 minutos) e o <b>SELBNEWS</b> — o portal de notícias/avisos/aniversariantes cadastrado no menu "SELBNEWS" (2 minutos) — voltando pro Dashboard TV em seguida, sem parar. Dentro deste painel, só o card de notícias/aniversariantes do "Conteúdo TV" reveza sozinho a cada 7 segundos. Deixe a janela aberta no computador ligado à TV/monitor da operação (se a tela cheia automática não ativar, pressione F11). Se o banco tiver criptografia com PIN, ele será pedido uma única vez; sem criptografia, a TV abre direto, sem PIN. Os dados são atualizados sozinhos a cada 1 minuto.</p>
+          <p class="muted" style="margin:0">Clique em "Abrir em modo TV" — abre uma janela própria, já sem menu, em tela cheia. Essa mesma janela reveza sozinha entre este Dashboard TV e o <b>SELBNEWS</b> — o portal de notícias/avisos/aniversariantes cadastrado no menu "SELBNEWS" — voltando pro Dashboard TV em seguida, sem parar. Deixe a janela aberta no computador ligado à TV/monitor da operação (se a tela cheia automática não ativar, pressione F11). Se o banco tiver criptografia com PIN, ele será pedido uma única vez; sem criptografia, a TV abre direto, sem PIN. Os dados são atualizados sozinhos a cada 1 minuto.</p>
         </div>
       </div>
       <div class="dash-kiosk-wrap">
@@ -1081,15 +1028,6 @@ body.kiosk-mode .dash-var{font-size:13px}
             <div id="dashRankBestProd"></div></div>
           </div>
 
-          <div class="dash-row dash-row-secondary">
-          <div class="dash-tile dash-tile-warn"><div class="dash-tile-head"><span class="ic">🔔</span><h2>Avisos</h2></div>
-            <div class="dash-alerts" id="dashAlertsList"></div></div>
-
-          <div class="dash-tile dash-tile-spot"><div class="dash-tile-head"><span class="ic">✦</span><h2 id="dashSpotLabel">Notícias</h2></div>
-            <div class="dash-spot-stage" id="dashSpotStage"></div>
-            <div class="dash-spot-dots" id="dashSpotDots"></div></div>
-          </div>
-
           <div class="dash-tile dash-tile-ticker">
             <div class="dash-ticker-label">💬 Mensagem do dia</div>
             <div class="dash-ticker-mask"><div class="dash-ticker-track" id="dashDailyMessage"></div></div>
@@ -1127,13 +1065,12 @@ body.kiosk-mode .dash-var{font-size:13px}
         <button class="role-tab active" data-tab="overview" onclick="switchSelbNewsTab('overview')">Visão Geral</button>
         <button class="role-tab" data-tab="news" onclick="switchSelbNewsTab('news')">Notícias</button>
         <button class="role-tab" data-tab="alerts" onclick="switchSelbNewsTab('alerts')">Avisos</button>
-        <button class="role-tab" data-tab="birthdays" onclick="switchSelbNewsTab('birthdays')">Aniversariantes</button>
       </div>
 
       <div class="selbnews-tabpane active" data-pane="overview">
         <div class="grid cards" id="selbOverviewCards"></div>
         <div class="panel"><h2>📡 Como o SELBNEWS aparece na TV</h2>
-          <p class="muted" style="margin:0 0 10px">O conteúdo cadastrado aqui aparece automaticamente dentro da mesma tela do <b>Dashboard TV</b>, revezando sozinho: 5 minutos de Dashboard TV, 2 minutos de SELBNEWS, se repetindo sem parar. Não precisa abrir nada separado — é a mesma janela/TV de sempre.</p>
+          <p class="muted" style="margin:0 0 10px">O conteúdo cadastrado aqui aparece automaticamente dentro da mesma tela do <b>Dashboard TV</b>, revezando sozinho: 2 minutos de Dashboard TV, 1 minuto de SELBNEWS, se repetindo sem parar. Não precisa abrir nada separado — é a mesma janela/TV de sempre. Os aniversariantes são sincronizados automaticamente com o cadastro de colaboradores (RH) — sem nenhum cadastro manual aqui.</p>
           <div class="toolbar">
             <button class="btn" onclick="switchView('dashboardTv')">📺 Ir para Dashboard TV</button>
             <button class="btn" onclick="openSelbNewsPreview()">👁️ Pré-visualizar SELBNEWS</button>
@@ -1157,16 +1094,6 @@ body.kiosk-mode .dash-var{font-size:13px}
         </div>
       </div>
 
-      <div class="selbnews-tabpane" data-pane="birthdays">
-        <div class="panel"><div class="toolbar">
-            <button class="btn primary" onclick="openSelbBirthdayModal()">+ Novo aniversariante</button>
-            <button class="btn" onclick="importSelbBirthdaysFromEmployees()">📥 Importar do cadastro de RH</button>
-          </div>
-          <h2>🎂 Aniversariantes</h2>
-          <p class="muted" style="font-size:12px;margin-top:-6px">Sem foto e sem ano de nascimento — só dia e nome. A TV mostra automaticamente só quem faz aniversário no mês vigente.</p>
-          <div class="tablewrap"><table><thead><tr><th>Nome</th><th>Data</th><th>Status</th><th></th></tr></thead><tbody id="selbBirthdaysTable"></tbody></table></div>
-        </div>
-      </div>
     </section>
 
     <!-- SELBNEWS TV — tela única 1920×1080. Só fica "active" durante a fase SELBNEWS do rodízio da
@@ -1401,20 +1328,6 @@ body.kiosk-mode .dash-var{font-size:13px}
     </div>
   </div>
 </div><div class="actions"><button class="btn ghost" onclick="closeModal('selbAlertModal')">Cancelar</button><button class="btn primary" onclick="saveSelbAlertItem()">Salvar</button></div></div></div>
-
-<div class="modal" id="selbBirthdayModal"><div class="box"><h3 id="selbBirthdayModalTitle">Novo aniversariante</h3><div class="form wide">
-  <div><label>Nome completo<input id="selbBirthdayName" maxlength="80"></label></div>
-  <div class="form">
-    <div><label>Dia<input id="selbBirthdayDay" type="text" inputmode="numeric" maxlength="2" placeholder="1-31"></label></div>
-    <div><label>Mês<select id="selbBirthdayMonth">
-      <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
-      <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
-      <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
-      <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
-    </select></label></div>
-  </div>
-  <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="selbBirthdayActive" style="width:auto" checked> Ativo</label>
-</div><div class="actions"><button class="btn ghost" onclick="closeModal('selbBirthdayModal')">Cancelar</button><button class="btn primary" onclick="saveSelbBirthdayItem()">Salvar</button></div></div></div>
 
 <div class="modal" id="selbNewsPreviewModal"><div class="box" style="max-width:1000px;width:96vw">
   <h3>Pré-visualização — SELBNEWS TV</h3>
@@ -1776,7 +1689,7 @@ let kioskRefreshTimer=null,kioskClockTimer=null;
 // showKioskPhase/scheduleKioskRotation) — não são janelas/telas separadas.
 let kioskPhase='dashboard'; // 'dashboard' | 'selbnews'
 let kioskRotationTimer=null;
-const KIOSK_DASHBOARD_MS=5*60*1000, KIOSK_SELBNEWS_MS=2*60*1000;
+const KIOSK_DASHBOARD_MS=2*60*1000, KIOSK_SELBNEWS_MS=1*60*1000;
 let godbHandle=null, godbSaveTimer=null, godbLastSave=null, lastLocalSaveError=null;
 
 function normalizeVacation(v){
@@ -1809,7 +1722,6 @@ function normalizeDb(x){
     dailyMessages:Array.isArray(source.dailyMessages)?source.dailyMessages:[],
     selbNews:Array.isArray(source.selbNews)?source.selbNews.map(normalizeSelbNews):[],
     selbAlerts:Array.isArray(source.selbAlerts)?source.selbAlerts.map(normalizeSelbAlert):[],
-    selbBirthdays:Array.isArray(source.selbBirthdays)?source.selbBirthdays.map(normalizeSelbBirthday):[],
     config:{...db.config,...(source.config||{}),security:{...db.config.security,...((source.config||{}).security||{})}}
   };
 }
@@ -1825,11 +1737,6 @@ function normalizeSelbAlert(a){
     priority:['INFO','NOTICE','IMPORTANT','URGENT'].includes(a.priority)?a.priority:'NOTICE',
     startDate:a.startDate||'',endDate:a.endDate||'',isActive:a.isActive!==false,displayOrder:Number(a.displayOrder)||0,
     createdAt:a.createdAt||new Date().toISOString(),updatedAt:a.updatedAt||a.createdAt||new Date().toISOString()};
-}
-function normalizeSelbBirthday(b){
-  return {id:b.id||uid(),employeeName:b.employeeName||'',birthDay:Number(b.birthDay)||1,birthMonth:Number(b.birthMonth)||1,
-    isActive:b.isActive!==false,sourceEmployeeId:b.sourceEmployeeId||null,
-    createdAt:b.createdAt||new Date().toISOString(),updatedAt:b.updatedAt||b.createdAt||new Date().toISOString()};
 }
 /* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
    grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
@@ -1859,9 +1766,11 @@ function selbActiveAlertsSorted(){
     return (a.displayOrder||0)-(b.displayOrder||0);
   }).slice(0,4);
 }
+// sincronizado automaticamente com o cadastro de RH (mesma fonte que monthBirthdays() já usa no
+// Dashboard TV) — sem cadastro manual: qualquer colaborador ativo com data de nascimento no mês
+// vigente aparece sozinho, sempre em dia com admissões/desligamentos.
 function selbCurrentMonthBirthdays(){
-  const month=new Date().getMonth()+1;
-  return (db.selbBirthdays||[]).filter(b=>b.isActive&&b.birthMonth===month).sort((a,b)=>a.birthDay-b.birthDay);
+  return monthBirthdays().map(e=>({employeeName:e.name,birthDay:e.bDay,today:e.today}));
 }
 function normalizeManual(m){
   return {id:m.id||uid(),name:m.name||'',category:m.category||'',coverImage:m.coverImage||'',
@@ -3326,7 +3235,6 @@ function render(){
   renderSelbNewsOverview();
   renderSelbNewsAdminGrid();
   renderSelbAlertsAdminGrid();
-  renderSelbBirthdaysAdminTable();
   renderSelbNewsTv();
   if(currentProfileId)renderEmployeeProfile();
   if(currentManualId)renderManualDetail();
@@ -3521,12 +3429,6 @@ function renderRadialGauge(value,goodColor,badColor,isOk){
     <div class="dash-gauge-ring-center"><div class="big-pct" style="color:${color}">${pct(value)}</div></div>
   </div>`;
 }
-/* tamanho do texto do card de notícia conforme o comprimento real — notícia curta ganha letra maior
-   e mais destaque, notícia longa encolhe o bastante pra continuar cabendo inteira (sem cortar) */
-function dashNewsLenTier(text){
-  const n=(text||'').length;
-  return n<70?'short':n<150?'medium':'long';
-}
 function renderDashboardTv(){
   if(!$('dashboardTv'))return;
   // um erro aqui dentro nunca pode interromper o resto de render() (RH, Financeiro, perfil do
@@ -3586,23 +3488,6 @@ function renderDashboardTvInner(){
     <div class="label" style="margin-top:10px">${fmtNum(pIn)} dentro do prazo · ${fmtNum(pOut)} fora do prazo</div>
     <div style="margin-top:14px">${varBadge(cmpSla)}</div>`;
 
-  const absent=teamAbsenteeism();
-  const otherAlerts=[...vacationDeadlineAlerts(),...lossAlerts()];
-  // lista única de avisos (em vez de concatenar HTML de fontes com limites independentes, o que
-  // deixava a lista sem um teto real — com muitos alertas customizados cadastrados, o widget
-  // acabava tendo que cortar itens/imagens por overflow:hidden). Agora tudo entra numa única lista,
-  // com no máximo 6 avisos no total, e cada aviso exibido divide igualmente o espaço do widget.
-  const alertItems=[];
-  if(pIn+pOut&&pRate<db.config.slaGoal)alertItems.push({severity:'warn',icon:'⏱️',title:'SLA do mês abaixo da meta',detail:`${pct(pRate)} realizado, meta ${pct(db.config.slaGoal)}`});
-  if(absent.rate>5)alertItems.push({severity:absent.rate>10?'bad':'warn',icon:'📋',title:'Absenteísmo acima do esperado',detail:`${pct(absent.rate)} no período apurado`});
-  (db.alerts||[]).forEach(a=>alertItems.push({severity:a.severity||'warn',icon:'📢',image:a.image,title:a.title,detail:a.text||''}));
-  otherAlerts.forEach(a=>{
-    if(a.type==='ferias')alertItems.push({severity:a.severity,icon:'🏖️',title:a.text,detail:a.detail});
-    else alertItems.push({severity:a.severity,icon:'📉',title:`Perda de papel — ${monthLabel(a.x.ref)}`,detail:`Défice de ${a.m.defct.toFixed(2).replace('.',',')} resma(s)`});
-  });
-  const alertHtml=alertItems.slice(0,6).map(a=>`<div class="alert-box ${a.severity}">${a.image?`<img class="alert-box-img" src="${a.image}" alt="${escHtml(a.title)}">`:`<div class="ic">${a.icon}</div>`}<div><b>${escHtml(a.title)}</b><small>${escHtml(a.detail||'')}</small></div></div>`).join('');
-  $('dashAlertsList').innerHTML=alertHtml||'<p class="muted" style="color:#9fd6bb">Sem avisos no momento. Tudo em dia! ✅</p>';
-
   // ---- ranking do mês: melhores dias de produção ----
   const withProd=[...monthRows].filter(x=>x.prints>0);
   const bestDays=[...withProd].sort((a,b)=>b.prints-a.prints).slice(0,3);
@@ -3623,50 +3508,9 @@ function renderDashboardTvInner(){
   paceTrend.textContent=onTrack?'▲ acima do ritmo esperado':'▼ abaixo do ritmo esperado';
   paceTrend.className='dash-kpi-trend '+(onTrack?'up':'down');
 
-  // ---- destaque que reveza sozinho: notícias (uma por vez, texto completo) + aniversariantes ----
-  const bdays=monthBirthdays();
-  const news=[...(db.news||[])].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
-  dashSpotItems=[
-    ...news.map(n=>({type:'news',title:n.title,text:n.text,image:n.image})),
-    ...(bdays.length?[{type:'bday',list:bdays}]:[])
-  ];
-  if(dashSpotIndex>=dashSpotItems.length)dashSpotIndex=0;
-  renderDashSpotlight();
-
   const msg=todaysMessage();
   const tickerEl=$('dashDailyMessage');
   if(tickerEl)tickerEl.innerHTML=msg?`<span>💬 ${escHtml(msg.text)}</span><span>💬 ${escHtml(msg.text)}</span>`:'';
-}
-/* card de destaque que reveza sozinho entre as notícias (uma por vez, com texto completo — nunca
-   corta) e os aniversariantes do mês; dashSpotItems é remontado a cada renderDashboardTv(), mas o
-   índice/temporizador são geridos à parte (scheduleDashSpotRotate), só ativos no modo kiosk de
-   verdade — mesmo padrão do relógio (updateKioskClock/kioskClockTimer). */
-let dashSpotItems=[],dashSpotIndex=0,dashSpotTimer=null;
-function renderDashSpotlight(){
-  const stage=$('dashSpotStage'),dots=$('dashSpotDots'),label=$('dashSpotLabel');
-  if(!stage)return;
-  if(!dashSpotItems.length){
-    stage.innerHTML='<p class="muted" style="color:#9fd6bb">Sem notícias ou aniversariantes cadastrados.</p>';
-    if(dots)dots.innerHTML='';
-    return;
-  }
-  dashSpotIndex=dashSpotIndex%dashSpotItems.length;
-  const item=dashSpotItems[dashSpotIndex];
-  if(label)label.textContent=item.type==='bday'?'Aniversariantes':'Notícias';
-  if(item.type==='news'){
-    stage.innerHTML=`<div class="dash-spot-news${item.image?'':' no-image'}" data-len="${dashNewsLenTier(item.text)}">
-      ${item.image?`<div class="img-wrap"><img src="${item.image}" alt="${escHtml(item.title)}"></div>`:''}
-      <div class="txt"><h3>${escHtml(item.title)}</h3><div class="text-wrap"><p>${escHtml(item.text||'')}</p></div></div>
-    </div>`;
-  }else{
-    stage.innerHTML=`<div class="dash-spot-bdays">${item.list.map(e=>`<div class="dash-bday-item"><div class="day">${String(e.bDay).padStart(2,'0')}</div><div><b>${escHtml(e.name)}${e.today?' 🎉':''}</b><small>${escHtml(e.role||'')}</small></div></div>`).join('')}</div>`;
-  }
-  if(dots)dots.innerHTML=dashSpotItems.length>1?dashSpotItems.map((_,i)=>`<span class="dot${i===dashSpotIndex?' active':''}"></span>`).join(''):'';
-}
-function scheduleDashSpotRotate(){
-  clearInterval(dashSpotTimer);
-  if(dashSpotItems.length<=1)return;
-  dashSpotTimer=setInterval(()=>{try{dashSpotIndex=(dashSpotIndex+1)%dashSpotItems.length;renderDashSpotlight()}catch(e){console.warn('Falha ao revezar notícias/aniversariantes da TV:',e)}},7000);
 }
 function openDashboardTV(){
   if(window.goDesktop&&window.goDesktop.isElectron){window.goDesktop.openTvWindow();return}
@@ -3727,8 +3571,6 @@ function enterKioskMode(){
   document.body.classList.add('kiosk-mode');
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
   showKioskPhase('dashboard');
-  dashSpotIndex=0;renderDashSpotlight();
-  scheduleDashSpotRotate();
   clearInterval(kioskRefreshTimer);
   kioskRefreshTimer=setInterval(refreshKioskData,60000);
   clearInterval(kioskClockTimer);
@@ -3744,11 +3586,14 @@ function enterKioskMode(){
 
 /* ===================== SELBNEWS — portal de comunicação interna para TV =====================
    Área administrativa e dados independentes do "Conteúdo TV" antigo (db.news/db.alerts): coleções
-   próprias (db.selbNews/selbAlerts/selbBirthdays), sem nenhum dado operacional. A EXIBIÇÃO, porém,
-   não usa janela própria — aparece dentro da MESMA janela do Dashboard TV, revezando automaticamente
-   (ver showKioskPhase/scheduleKioskRotation, seção "9. DASHBOARD TV"). As funções puras de regra de
-   negócio (isSelbItemLive, selbActiveNewsSorted, selbActiveAlertsSorted, selbCurrentMonthBirthdays,
-   normalizeSelb*) ficam lá em cima, perto de normalizeDb — aqui só CRUD e renderização (admin + TV). */
+   próprias (db.selbNews/selbAlerts), sem nenhum dado operacional. Aniversariantes NÃO têm cadastro
+   próprio — selbCurrentMonthBirthdays() lê direto de db.employees (mesma fonte de monthBirthdays(),
+   usada pelo Dashboard TV), sempre em dia com admissões/desligamentos, sem sincronização manual.
+   A EXIBIÇÃO não usa janela própria — aparece dentro da MESMA janela do Dashboard TV, revezando
+   automaticamente (ver showKioskPhase/scheduleKioskRotation, seção "9. DASHBOARD TV"). As funções
+   puras de regra de negócio (isSelbItemLive, selbActiveNewsSorted, selbActiveAlertsSorted,
+   selbCurrentMonthBirthdays, normalizeSelb*) ficam lá em cima, perto de normalizeDb — aqui só CRUD
+   de notícias/avisos e renderização (admin + TV). */
 const SELB_PRIORITY_META={
   URGENT:{label:'URGENTE',color:'#ff6b6b'},
   IMPORTANT:{label:'IMPORTANTE',color:'#ffb37a'},
@@ -3955,70 +3800,6 @@ function renderSelbAlertsAdminGrid(){
   }).join('');
 }
 
-/* ---- CRUD: Aniversariantes ---- */
-let selbBirthdayDraft=null;
-function openSelbBirthdayModal(id){
-  const existing=id?(db.selbBirthdays||[]).find(b=>b.id===id):null;
-  selbBirthdayDraft=existing?{...existing}:normalizeSelbBirthday({});
-  $('selbBirthdayModalTitle').textContent=existing?'Editar aniversariante':'Novo aniversariante';
-  $('selbBirthdayName').value=selbBirthdayDraft.employeeName;
-  $('selbBirthdayDay').value=selbBirthdayDraft.birthDay;
-  $('selbBirthdayMonth').value=selbBirthdayDraft.birthMonth;
-  $('selbBirthdayActive').checked=selbBirthdayDraft.isActive;
-  openModal('selbBirthdayModal');
-}
-function saveSelbBirthdayItem(){
-  const name=val('selbBirthdayName').trim();
-  if(!name)return alert('Informe o nome.');
-  const day=Number(val('selbBirthdayDay')),month=Number(val('selbBirthdayMonth'));
-  if(!day||day<1||day>31)return alert('Informe um dia válido (1-31).');
-  selbBirthdayDraft.employeeName=name;
-  selbBirthdayDraft.birthDay=day;
-  selbBirthdayDraft.birthMonth=month;
-  selbBirthdayDraft.isActive=$('selbBirthdayActive').checked;
-  selbBirthdayDraft.updatedAt=new Date().toISOString();
-  db.selbBirthdays=db.selbBirthdays||[];
-  const idx=db.selbBirthdays.findIndex(b=>b.id===selbBirthdayDraft.id);
-  if(idx>=0)db.selbBirthdays[idx]=selbBirthdayDraft;else db.selbBirthdays.push(selbBirthdayDraft);
-  closeModal('selbBirthdayModal');
-  save();
-}
-function deleteSelbBirthdayItem(id){if(!confirm('Excluir este aniversariante?'))return;del('selbBirthdays',id)}
-function toggleSelbBirthdayActive(id){
-  const item=(db.selbBirthdays||[]).find(b=>b.id===id);if(!item)return;
-  item.isActive=!item.isActive;item.updatedAt=new Date().toISOString();save();
-}
-function renderSelbBirthdaysAdminTable(){
-  const tbl=$('selbBirthdaysTable');if(!tbl)return;
-  const list=[...(db.selbBirthdays||[])].sort((a,b)=>a.birthMonth-b.birthMonth||a.birthDay-b.birthDay);
-  const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  tbl.innerHTML=list.map(b=>`<tr>
-    <td>${escHtml(b.employeeName)}</td>
-    <td>${String(b.birthDay).padStart(2,'0')}/${MESES[b.birthMonth-1]||''}</td>
-    <td><span class="pill ${b.isActive?'ok':'mut'}">${b.isActive?'Ativo':'Inativo'}</span></td>
-    <td>
-      <button class="btn" style="padding:5px 9px" onclick="openSelbBirthdayModal('${b.id}')">Editar</button>
-      <button class="btn" style="padding:5px 9px" onclick="toggleSelbBirthdayActive('${b.id}')">${b.isActive?'Desativar':'Ativar'}</button>
-      <button class="btn danger" style="padding:5px 9px" onclick="deleteSelbBirthdayItem('${b.id}')">✕</button>
-    </td>
-  </tr>`).join('')||'<tr><td colspan="4" class="muted">Nenhum aniversariante cadastrado ainda.</td></tr>';
-}
-/* importa a partir do cadastro de RH (db.employees[].birthDate) — pula quem já foi importado antes
-   (sourceEmployeeId), pra poder rodar de novo depois sem duplicar */
-function importSelbBirthdaysFromEmployees(){
-  const existingSourceIds=new Set((db.selbBirthdays||[]).map(b=>b.sourceEmployeeId).filter(Boolean));
-  const candidates=(db.employees||[]).filter(e=>e.status!=='Inativo'&&e.birthDate&&!existingSourceIds.has(e.id));
-  if(!candidates.length)return alert('Nenhum colaborador novo com data de nascimento para importar.');
-  if(!confirm(`Importar ${candidates.length} colaborador(es) do cadastro de RH como aniversariantes?`))return;
-  db.selbBirthdays=db.selbBirthdays||[];
-  candidates.forEach(e=>{
-    const d=new Date(e.birthDate+'T12:00:00');
-    if(isNaN(d))return;
-    db.selbBirthdays.push(normalizeSelbBirthday({employeeName:e.name,birthDay:d.getDate(),birthMonth:d.getMonth()+1,sourceEmployeeId:e.id}));
-  });
-  save();
-}
-
 /* ---- Visão Geral / status ---- */
 let selbNewsLastRefreshAt=null;
 function renderSelbNewsOverview(){
@@ -4072,11 +3853,10 @@ function selbAlertsColumnHtml(alerts){
 }
 function selbBdaysColumnHtml(bdays){
   const title='<h3 class="sn-col-title">🎂 Aniversariantes</h3>';
-  if(!bdays.length)return title+'<div class="sn-empty">Nenhum aniversariante cadastrado neste mês.</div>';
+  if(!bdays.length)return title+'<div class="sn-empty">Nenhum aniversariante neste mês.</div>';
   const cols=bdays.length>10?3:bdays.length>5?2:1;
-  const today=new Date().getDate();
   return title+`<div class="sn-bdays-grid" style="column-count:${cols}">${bdays.map(b=>`
-    <div class="sn-bday-row${b.birthDay===today?' today':''}"><span class="sn-bday-day">${String(b.birthDay).padStart(2,'0')}</span><span class="sn-bday-name">${escHtml(b.employeeName)}${b.birthDay===today?' 🎉':''}</span></div>
+    <div class="sn-bday-row${b.today?' today':''}"><span class="sn-bday-day">${String(b.birthDay).padStart(2,'0')}</span><span class="sn-bday-name">${escHtml(b.employeeName)}${b.today?' 🎉':''}</span></div>
   `).join('')}</div>`;
 }
 async function renderSelbNewsBlocks(prefix){
