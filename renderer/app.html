@@ -1022,7 +1022,7 @@ body.kiosk-mode .dash-var{font-size:13px}
         </div>
         <div class="panel">
           <h2>Como usar na TV</h2>
-          <p class="muted" style="margin:0">Clique em "Abrir em modo TV" — abre uma aba nova, já sem menu, com tudo numa tela só (sem rodízio) — só o card de notícias/aniversariantes reveza sozinho a cada 7 segundos. Deixe essa aba aberta no computador ligado à TV/monitor da operação (se a tela cheia automática não ativar, pressione F11 no navegador). Se o banco tiver criptografia com PIN, ele será pedido uma única vez; sem criptografia, a TV abre direto, sem PIN. Os dados são atualizados sozinhos a cada 1 minuto.</p>
+          <p class="muted" style="margin:0">Clique em "Abrir em modo TV" — abre uma janela própria, já sem menu, em tela cheia. Essa mesma janela reveza sozinha entre este Dashboard TV (5 minutos) e o <b>SELBNEWS</b> — o portal de notícias/avisos/aniversariantes cadastrado no menu "SELBNEWS" (2 minutos) — voltando pro Dashboard TV em seguida, sem parar. Dentro deste painel, só o card de notícias/aniversariantes do "Conteúdo TV" reveza sozinho a cada 7 segundos. Deixe a janela aberta no computador ligado à TV/monitor da operação (se a tela cheia automática não ativar, pressione F11). Se o banco tiver criptografia com PIN, ele será pedido uma única vez; sem criptografia, a TV abre direto, sem PIN. Os dados são atualizados sozinhos a cada 1 minuto.</p>
         </div>
       </div>
       <div class="dash-kiosk-wrap">
@@ -1118,23 +1118,24 @@ body.kiosk-mode .dash-var{font-size:13px}
       </div>
     </section>
 
-    <!-- SELBNEWS — portal de comunicação interna para a TV (independente do Dashboard TV operacional) -->
+    <!-- SELBNEWS — conteúdo de comunicação interna exibido dentro do rodízio da MESMA TV que já existe
+         (Dashboard TV): 5 min de Dashboard TV, 2 min de SELBNEWS, sem parar. Não é uma tela/janela
+         separada — só a área administrativa (cadastro de notícias/avisos/aniversariantes) fica aqui. -->
     <section class="view" id="selbnews">
-      <div class="top"><div><h1>SELBNEWS</h1><p>Portal de notícias corporativas para a TV — comunicação interna Selbetti. Sem dados operacionais.</p></div></div>
+      <div class="top"><div><h1>SELBNEWS</h1><p>Conteúdo de comunicação interna exibido dentro do rodízio automático da TV — sem dados operacionais.</p></div></div>
       <div class="role-tabs selbnews-tabs" id="selbnewsTabs">
         <button class="role-tab active" data-tab="overview" onclick="switchSelbNewsTab('overview')">Visão Geral</button>
         <button class="role-tab" data-tab="news" onclick="switchSelbNewsTab('news')">Notícias</button>
         <button class="role-tab" data-tab="alerts" onclick="switchSelbNewsTab('alerts')">Avisos</button>
         <button class="role-tab" data-tab="birthdays" onclick="switchSelbNewsTab('birthdays')">Aniversariantes</button>
-        <button class="role-tab" data-tab="settings" onclick="switchSelbNewsTab('settings')">Configurações</button>
       </div>
 
       <div class="selbnews-tabpane active" data-pane="overview">
         <div class="grid cards" id="selbOverviewCards"></div>
-        <div class="panel"><h2>📡 Tela SELBNEWS</h2>
-          <p class="muted" style="margin:0 0 10px">Status da TV: <span id="selbScreenStatus">—</span></p>
+        <div class="panel"><h2>📡 Como o SELBNEWS aparece na TV</h2>
+          <p class="muted" style="margin:0 0 10px">O conteúdo cadastrado aqui aparece automaticamente dentro da mesma tela do <b>Dashboard TV</b>, revezando sozinho: 5 minutos de Dashboard TV, 2 minutos de SELBNEWS, se repetindo sem parar. Não precisa abrir nada separado — é a mesma janela/TV de sempre.</p>
           <div class="toolbar">
-            <button class="btn primary" onclick="openSelbNewsTV()">🖥️ Abrir SELBNEWS na TV (tela cheia)</button>
+            <button class="btn" onclick="switchView('dashboardTv')">📺 Ir para Dashboard TV</button>
             <button class="btn" onclick="openSelbNewsPreview()">👁️ Pré-visualizar SELBNEWS</button>
           </div>
         </div>
@@ -1166,22 +1167,10 @@ body.kiosk-mode .dash-var{font-size:13px}
           <div class="tablewrap"><table><thead><tr><th>Nome</th><th>Data</th><th>Status</th><th></th></tr></thead><tbody id="selbBirthdaysTable"></tbody></table></div>
         </div>
       </div>
-
-      <div class="selbnews-tabpane" data-pane="settings">
-        <div class="panel"><h2>🖥️ Monitor da TV do SELBNEWS</h2>
-          <p class="muted">Escolha em qual monitor o SELBNEWS deve abrir quando "Abrir SELBNEWS na TV" for clicado — independente do monitor usado pelo Dashboard TV.</p>
-          <div class="form">
-            <div><label>Monitor<select id="selbNewsMonitorSelect"></select></label></div>
-          </div>
-          <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px">
-            <input type="checkbox" id="selbNewsAutoFullscreen" style="width:auto"> Abrir automaticamente em tela cheia
-          </label>
-          <button class="btn primary" style="margin-top:14px" onclick="saveSelbNewsSettings()">Salvar configurações</button>
-        </div>
-      </div>
     </section>
 
-    <!-- SELBNEWS TV — tela única 1920×1080, só alcançável via hash #selbnewstv (janela kiosk dedicada) -->
+    <!-- SELBNEWS TV — tela única 1920×1080. Só fica "active" durante a fase SELBNEWS do rodízio da
+         MESMA janela do Dashboard TV (ver showKioskPhase) — nunca é aberta como janela/rota separada. -->
     <section class="view" id="selbNewsTv">
       <div class="sn-tv-viewport">
         <div class="sn-tv-wrap" id="snTvWrap">
@@ -1783,8 +1772,11 @@ let currentRole=null; // 'gestor' | 'operador' — define o que aparece na naveg
 let currentOperatorId=null; // id do colaborador logado quando currentRole==='operador'
 let kioskMode=false; // true quando a aba foi aberta com #dashboard — modo TV, tela cheia, sem PIN se o banco não estiver criptografado
 let kioskRefreshTimer=null,kioskClockTimer=null;
-let selbNewsKioskMode=false; // true quando a aba foi aberta com #selbnewstv — TV do SELBNEWS, independente do Dashboard TV
-let selbNewsKioskRefreshTimer=null,selbNewsKioskClockTimer=null;
+// dentro do modo kiosk, a MESMA janela reveza sozinha entre o Dashboard TV e o SELBNEWS (ver
+// showKioskPhase/scheduleKioskRotation) — não são janelas/telas separadas.
+let kioskPhase='dashboard'; // 'dashboard' | 'selbnews'
+let kioskRotationTimer=null;
+const KIOSK_DASHBOARD_MS=5*60*1000, KIOSK_SELBNEWS_MS=2*60*1000;
 let godbHandle=null, godbSaveTimer=null, godbLastSave=null, lastLocalSaveError=null;
 
 function normalizeVacation(v){
@@ -2012,11 +2004,10 @@ async function boot(){
   // no navegador da TV, ou pela janela de TV independente do app desktop). Pula a trava de acesso
   // sempre que possível (banco não criptografado).
   kioskMode=location.hash==='#dashboard';
-  selbNewsKioskMode=location.hash==='#selbnewstv';
   await initDesktopIntegration();
   // rodando dentro do app desktop e ainda sem pasta compartilhada configurada neste PC: bloqueia
   // o uso até escolher a pasta de rede, para nunca operar "sozinho" com uma base local divergente.
-  if(window.goDesktop&&!kioskMode&&!selbNewsKioskMode&&!(window.__desktopSettings&&window.__desktopSettings.sharedFolder)){
+  if(window.goDesktop&&!kioskMode&&!(window.__desktopSettings&&window.__desktopSettings.sharedFolder)){
     $('sharedFolderGate').style.display='flex';
     return;
   }
@@ -2048,7 +2039,7 @@ async function boot(){
     }catch(e){console.warn('Não foi possível ler os dados da pasta compartilhada, usando cópia local:',e)}
   }
   if(envelope&&envelope.format==='GO-DB'){db=normalizeDb(envelope.data)}
-  if(kioskMode||selbNewsKioskMode){
+  if(kioskMode){
     // banco não criptografado: a TV entra direto, sem pedir PIN — o PIN de gestor aqui
     // controla o acesso de edição dentro do app, não a exibição somente-leitura da TV.
     currentRole='gestor';currentOperatorId=null;currentPin=null;
@@ -2175,7 +2166,6 @@ async function afterUnlock(){
   }
   render();applyRoleUI();updateDbStatus();updateMoneyToggleUI();
   if(kioskMode)enterKioskMode();
-  else if(selbNewsKioskMode)enterSelbNewsKioskMode();
 }
 const NAV_VIEWS_BY_ROLE={
   operador:['operadorHome','producao','manuais','dashboardTv'],
@@ -3687,9 +3677,11 @@ async function refreshKioskData(){
     // dentro do app desktop, a pasta compartilhada é a fonte de verdade — relê ela direto (igual ao
     // boot()). Reler o cache local do IndexedDB aqui sobrescrevia com dados antigos os dados que já
     // tinham chegado atualizados via evento de mudança externa (window.goDesktop.onDataChangedExternally).
+    // Atualiza os dois conteúdos (Dashboard TV e SELBNEWS) mesmo o que não está visível agora — assim
+    // já chega pronto quando o rodízio trocar de fase, sem esperar mais um ciclo de atualização.
     if(window.goDesktop){
       const remote=await window.goDesktop.readData();
-      if(remote&&remote.data){db=normalizeDb(remote.data);renderDashboardTv()}
+      if(remote&&remote.data){db=normalizeDb(remote.data);renderDashboardTv();renderSelbNewsTv()}
       return;
     }
     const envelope=await idbGet(DBKEY);
@@ -3701,21 +3693,40 @@ async function refreshKioskData(){
     }else if(envelope.format==='GO-DB'){
       db=normalizeDb(envelope.data);
     }
-    renderDashboardTv();
-  }catch(e){console.warn('Não foi possível atualizar os dados do Dashboard TV:',e)}
+    renderDashboardTv();renderSelbNewsTv();
+  }catch(e){console.warn('Não foi possível atualizar os dados da TV:',e)}
 }
 function updateKioskClock(){
   const now=new Date();
   const clockEl=$('kioskClock');if(clockEl)clockEl.textContent=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   const dateEl=$('kioskDate');if(dateEl)dateEl.textContent=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  updateSnClock('sn');
+}
+/* ---- rodízio automático da MESMA janela de TV entre Dashboard TV e SELBNEWS: 5min de Dashboard TV,
+   2min de SELBNEWS, se repetindo sem parar enquanto a janela ficar aberta. Nunca são duas telas/
+   janelas separadas — é a troca de qual .view fica com a classe "active" dentro do mesmo kiosk. ---- */
+function showKioskPhase(phase){
+  kioskPhase=phase;
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+  if(phase==='selbnews'){
+    activeView='selbNewsTv';
+    $('selbNewsTv').classList.add('active');
+    fitSelbNewsTvScale();
+    renderSelbNewsTv();
+  }else{
+    activeView='dashboardTv';
+    $('dashboardTv').classList.add('active');
+    renderDashboardTv();
+  }
+  clearTimeout(kioskRotationTimer);
+  kioskRotationTimer=setTimeout(()=>{
+    showKioskPhase(kioskPhase==='dashboard'?'selbnews':'dashboard');
+  },phase==='dashboard'?KIOSK_DASHBOARD_MS:KIOSK_SELBNEWS_MS);
 }
 function enterKioskMode(){
   document.body.classList.add('kiosk-mode');
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
-  activeView='dashboardTv';
-  $('dashboardTv').classList.add('active');
-  renderDashboardTv();
+  showKioskPhase('dashboard');
   dashSpotIndex=0;renderDashSpotlight();
   scheduleDashSpotRotate();
   clearInterval(kioskRefreshTimer);
@@ -3732,11 +3743,12 @@ function enterKioskMode(){
 }
 
 /* ===================== SELBNEWS — portal de comunicação interna para TV =====================
-   Módulo independente do "Conteúdo TV"/Dashboard TV acima: coleções próprias (db.selbNews/selbAlerts/
-   selbBirthdays), janela de TV própria (window.goDesktop.openSelbNewsWindow, hash #selbnewstv) e
-   nenhum dado operacional. As funções puras de regra de negócio (isSelbItemLive, selbActiveNewsSorted,
-   selbActiveAlertsSorted, selbCurrentMonthBirthdays, normalizeSelb*) ficam lá em cima, perto de
-   normalizeDb — aqui só CRUD, renderização (admin + TV) e o "modo kiosk" do SELBNEWS. */
+   Área administrativa e dados independentes do "Conteúdo TV" antigo (db.news/db.alerts): coleções
+   próprias (db.selbNews/selbAlerts/selbBirthdays), sem nenhum dado operacional. A EXIBIÇÃO, porém,
+   não usa janela própria — aparece dentro da MESMA janela do Dashboard TV, revezando automaticamente
+   (ver showKioskPhase/scheduleKioskRotation, seção "9. DASHBOARD TV"). As funções puras de regra de
+   negócio (isSelbItemLive, selbActiveNewsSorted, selbActiveAlertsSorted, selbCurrentMonthBirthdays,
+   normalizeSelb*) ficam lá em cima, perto de normalizeDb — aqui só CRUD e renderização (admin + TV). */
 const SELB_PRIORITY_META={
   URGENT:{label:'URGENTE',color:'#ff6b6b'},
   IMPORTANT:{label:'IMPORTANTE',color:'#ffb37a'},
@@ -3748,8 +3760,6 @@ const SELB_PRIORITY_META={
 function switchSelbNewsTab(tab){
   document.querySelectorAll('#selbnewsTabs .role-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   document.querySelectorAll('#selbnews .selbnews-tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===tab));
-  if(tab==='settings')renderSelbNewsSettingsTab();
-  if(tab==='overview')renderSelbScreenStatus();
 }
 
 /* ---- imagens: caminho relativo salvo no registro -> URL exibível (file:// via IPC, ou a própria
@@ -4022,43 +4032,6 @@ function renderSelbNewsOverview(){
     <div class="card accent-indigo"><div class="k">Aniversariantes do mês</div><div class="v">${bdays}</div></div>
     <div class="card"><div class="k">Última atualização da TV</div><div class="v" style="font-size:15px">${selbNewsLastRefreshAt?new Date(selbNewsLastRefreshAt).toLocaleTimeString('pt-BR'):'—'}</div></div>`;
 }
-async function renderSelbScreenStatus(){
-  const el=$('selbScreenStatus');if(!el)return;
-  if(!window.goDesktop||!window.goDesktop.isElectron){el.textContent='Disponível só no app desktop.';return}
-  try{
-    const open=await window.goDesktop.isSelbNewsWindowOpen();
-    el.innerHTML=open?'<span class="pill ok">● Aberta</span>':'<span class="pill mut">○ Fechada</span>';
-  }catch(e){el.textContent='—'}
-}
-
-/* ---- Configurações: monitor dedicado do SELBNEWS (independente do monitor do Dashboard TV) ---- */
-async function renderSelbNewsSettingsTab(){
-  const sel=$('selbNewsMonitorSelect');if(!sel)return;
-  if(!window.goDesktop||!window.goDesktop.isElectron){
-    sel.innerHTML='<option value="">Disponível só no app desktop</option>';
-    return;
-  }
-  try{
-    const displays=await window.goDesktop.getDisplays();
-    const current=(window.__desktopSettings&&window.__desktopSettings.selbnews)||{};
-    sel.innerHTML='<option value="">Automático (prefere o monitor secundário)</option>'+
-      displays.map(d=>`<option value="${d.id}" ${current.displayId===d.id?'selected':''}>${d.isPrimary?'Principal — ':''}${d.bounds.width}×${d.bounds.height}</option>`).join('');
-    $('selbNewsAutoFullscreen').checked=current.autoFullscreen!==false;
-  }catch(e){sel.innerHTML='<option value="">Não foi possível listar os monitores</option>'}
-}
-async function saveSelbNewsSettings(){
-  if(!window.goDesktop||!window.goDesktop.isElectron)return alert('Disponível só no app desktop.');
-  const sel=$('selbNewsMonitorSelect');
-  const displayId=sel.value?Number(sel.value):null;
-  const autoFullscreen=$('selbNewsAutoFullscreen').checked;
-  // sempre espalha o objeto "selbnews" atual antes de salvar: settingsStore.set() faz merge RASO,
-  // então mandar só {displayId} apagaria o resto (ex: autoFullscreen) do objeto aninhado.
-  const current=(window.__desktopSettings&&window.__desktopSettings.selbnews)||{};
-  const updated=await window.goDesktop.setSettings({selbnews:{...current,displayId,autoFullscreen}});
-  window.__desktopSettings=updated;
-  alert('Configurações do SELBNEWS salvas.');
-}
-
 /* ---- Tela de TV: monta os 3 blocos (notícias/avisos/aniversariantes) escrevendo em
    #{prefix}NewsCol/AlertsCol/BdaysCol — usada tanto pela TV real ('sn') quanto pelo preview ('snp'),
    pra nunca divergir entre "como fica" e "como fica de verdade". ---- */
@@ -4132,63 +4105,20 @@ function updateSnClock(prefix){
   if(dateEl)dateEl.textContent=now.toLocaleDateString('pt-BR');
 }
 // escala o "canvas" de 1920×1080 pro tamanho real da janela/monitor via CSS zoom (não vw/vh — ver
-// comentário no bloco de CSS do SELBNEWS). Recalcula em resize; é barato e só faz algo em modo kiosk.
+// comentário no bloco de CSS do SELBNEWS). Recalcula em resize; é barato e só faz algo em modo kiosk
+// (a fase SELBNEWS do rodízio pode nem estar visível no momento — nesse caso é um no-op inofensivo).
 function fitSelbNewsTvScale(){
-  if(!selbNewsKioskMode)return;
+  if(!kioskMode)return;
   const wrap=$('snTvWrap');if(!wrap)return;
   const scale=Math.min(window.innerWidth/1920,window.innerHeight/1080);
   wrap.style.zoom=scale>0?scale:1;
 }
 window.addEventListener('resize',fitSelbNewsTvScale);
 
-function openSelbNewsTV(){
-  if(window.goDesktop&&window.goDesktop.isElectron){window.goDesktop.openSelbNewsWindow();return}
-  window.open(location.href.split('#')[0]+'#selbnewstv','_blank');
-}
 async function openSelbNewsPreview(){
   openModal('selbNewsPreviewModal');
   updateSnClock('snp');
   await renderSelbNewsBlocks('snp');
-}
-
-async function refreshSelbNewsKioskData(){
-  try{
-    // dentro do app desktop, a pasta compartilhada é a fonte de verdade — relê ela direto (mesmo
-    // padrão de refreshKioskData/boot). Reescreve só os 3 blocos (renderSelbNewsTv), nunca a página toda.
-    if(window.goDesktop){
-      const remote=await window.goDesktop.readData();
-      if(remote&&remote.data){db=normalizeDb(remote.data);await renderSelbNewsTv()}
-      return;
-    }
-    const envelope=await idbGet(DBKEY);
-    if(!envelope)return;
-    if(envelope.format==='GO-DB-ENC'){
-      if(!currentPin)return;
-      db=normalizeDb(await decryptPayload(envelope,currentPin));
-    }else if(envelope.format==='GO-DB'){
-      db=normalizeDb(envelope.data);
-    }
-    await renderSelbNewsTv();
-  }catch(e){console.warn('Não foi possível atualizar os dados do SELBNEWS TV:',e)}
-}
-function enterSelbNewsKioskMode(){
-  document.body.classList.add('kiosk-mode');
-  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
-  activeView='selbNewsTv';
-  $('selbNewsTv').classList.add('active');
-  fitSelbNewsTvScale();
-  renderSelbNewsTv();
-  clearInterval(selbNewsKioskRefreshTimer);
-  // intervalo mais curto que o do Dashboard TV (60s): o usuário pediu explicitamente atualização "em
-  // poucos segundos" para o SELBNEWS, e o volume de dados aqui é pequeno o bastante pra sustentar isso.
-  selbNewsKioskRefreshTimer=setInterval(refreshSelbNewsKioskData,8000);
-  clearInterval(selbNewsKioskClockTimer);
-  selbNewsKioskClockTimer=setInterval(()=>updateSnClock('sn'),1000);
-  updateSnClock('sn');
-  if(!window.goDesktop){
-    try{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}
-  }
 }
 
 /* ---- Meu Painel: tela inicial do operador — produção da equipe (sem faturamento), banco de horas próprio e avisos ---- */

@@ -14,14 +14,10 @@ const DEFAULTS = {
   dataFileName: 'gestao_operacional.json',
   // subpasta onde ficam os instaladores/versão mais recente
   updatesSubfolder: 'atualizacoes',
-  // preferências da janela da TV
+  // preferências da janela da TV — mostra tanto o Dashboard TV quanto o SELBNEWS, revezando dentro
+  // da mesma janela/monitor (ver enterKioskMode em renderer/app.html)
   tv: {
     displayId: null,     // id do monitor onde a TV deve abrir (null = deixa o usuário escolher/posicionar)
-    autoFullscreen: true
-  },
-  // preferências da janela do SELBNEWS TV (independente da TV operacional acima)
-  selbnews: {
-    displayId: null,
     autoFullscreen: true
   },
   // verificação automática de atualização

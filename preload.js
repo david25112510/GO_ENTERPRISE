@@ -34,16 +34,11 @@ contextBridge.exposeInMainWorld('goDesktop', {
     return () => ipcRenderer.removeListener('data:changedExternally', listener);
   },
 
-  // ---- janela da TV (independente da janela principal) ----
+  // ---- janela da TV (independente da janela principal). Mostra tanto o Dashboard TV quanto o
+  // SELBNEWS, revezando dentro da MESMA janela (ver enterKioskMode em app.html) ----
   openTvWindow: () => ipcRenderer.invoke('tv:open'),
   closeTvWindow: () => ipcRenderer.invoke('tv:close'),
   isTvWindow: () => ipcRenderer.invoke('tv:isSelf'),
-
-  // ---- janela do SELBNEWS TV (independente da janela principal e da Dashboard TV) ----
-  openSelbNewsWindow: () => ipcRenderer.invoke('selbnews:open'),
-  closeSelbNewsWindow: () => ipcRenderer.invoke('selbnews:close'),
-  isSelbNewsWindow: () => ipcRenderer.invoke('selbnews:isSelf'),
-  isSelbNewsWindowOpen: () => ipcRenderer.invoke('selbnews:isOpen'),
 
   // ---- mídia do SELBNEWS (upload salvo como arquivo na pasta compartilhada) ----
   saveSelbNewsImage: (dataUrl, subfolder) => ipcRenderer.invoke('selbnews:saveImage', dataUrl, subfolder),
