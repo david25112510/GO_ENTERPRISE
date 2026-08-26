@@ -4270,21 +4270,24 @@ function renderOperadorHome(prods){
   const maxDay=Math.max(1,...pRows.map(x=>x.prints));
   $('opHomeChart').innerHTML=pRows.map(p=>`<div class="bar" style="height:${Math.max(2,p.prints/maxDay*100)}%" title="${p.date.split('-').reverse().join('/')} • ${fmtNum(p.prints)} impressões"><span class="value">${fmtNum(p.prints)}</span><small>${p.date.slice(8,10)}/${p.date.slice(5,7)}</small></div>`).join('')||'<p class="muted">Sem produção neste mês ainda.</p>';
 
-  if(e&&e.hourBank){
-    $('opHourBank').innerHTML=`<div class="metricline"><span>Saldo atual</span><strong style="color:${e.hourBank.sign<0?'var(--red)':'var(--selbetti-dark)'}">${fmtSaldoHM(e.hourBank)}</strong></div>
-      <div class="metricline"><span>Atualizado em</span><strong>${e.hourBank.asOf?e.hourBank.asOf.split('-').reverse().join('/'):'—'}</strong></div>
-      <p class="muted" style="font-size:12px;margin-top:8px">Saldo informado pela gestão através da planilha de banco de horas da equipe.</p>`;
+  const jhPeriod=latestJornadaPeriod();
+  const jhRec=e?findJornadaEmployeeRecord(jhPeriod,e.id):null;
+  if(jhRec){
+    $('opHourBank').innerHTML=`<div class="metricline"><span>Saldo atual</span><strong style="color:${(jhRec.bhSaldoTotalMin||0)<0?'var(--red)':'var(--selbetti-dark)'}">${fmtSignedMin(jhRec.bhSaldoTotalMin)}</strong></div>
+      <div class="metricline"><span>Horas extras do período</span><strong>${fmtDurationMin(jhRec.horasExtraMin)}</strong></div>
+      <div class="metricline"><span>Período</span><strong>${jhPeriod.periodoIni.split('-').reverse().join('/')} a ${jhPeriod.periodoFim.split('-').reverse().join('/')}</strong></div>
+      <p class="muted" style="font-size:12px;margin-top:8px">Saldo e HE informados pela gestão através do módulo Jornada/HE.</p>`;
   }else{
     $('opHourBank').innerHTML='<p class="muted">Seu banco de horas ainda não foi informado pela gestão.</p>';
   }
 
   const alerts=[{severity:'warn',text:'Feedz e PDI em dia?',detail:'Não esqueça de acessar o Feedz e manter seu Plano de Desenvolvimento Individual (PDI) atualizado.'}];
   if(e){
-    if(!e.hourBank||!e.hourBank.asOf){
-      alerts.push({severity:'warn',text:'Seu banco de horas ainda não foi informado.',detail:'A gestão atualiza esse saldo periodicamente pela planilha de banco de horas da equipe.'});
+    if(!jhRec){
+      alerts.push({severity:'warn',text:'Seu banco de horas ainda não foi informado.',detail:'A gestão atualiza esse saldo periodicamente pelo módulo Jornada/HE.'});
     }else{
-      const ageDays=Math.floor((now-new Date(e.hourBank.asOf+'T12:00:00'))/86400000);
-      if(ageDays>45)alerts.push({severity:'warn',text:'Seu banco de horas está desatualizado.',detail:`Último saldo informado há ${ageDays} dia(s) (${e.hourBank.asOf.split('-').reverse().join('/')}).`});
+      const ageDays=Math.floor((now-new Date(jhPeriod.periodoFim+'T12:00:00'))/86400000);
+      if(ageDays>45)alerts.push({severity:'warn',text:'Seu banco de horas está desatualizado.',detail:`Último período informado há ${ageDays} dia(s) (${jhPeriod.periodoFim.split('-').reverse().join('/')}).`});
     }
     if(e.admission){
       let cycleStart=e.admission,cycleEnd=addMonths(e.admission,12),lastCompleted=null;
