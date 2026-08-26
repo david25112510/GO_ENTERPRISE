@@ -2414,6 +2414,57 @@ async function importHourBank(file){
   }catch(e){alert('Falha ao importar planilha de banco de horas: '+e.message)}
 }
 
+/* ---- Jornada/HE: importador da planilha de saldo (mesmo formato que importHourBank já lê —
+   reaproveita os mesmos helpers — mas grava num período do histórico em vez de sobrescrever
+   emp.hourBank). A planilha não tem data de período, só a data de geração do relatório: o período
+   criado por este import é "impreciso" (upsertJornadaEmployeeRecord com precise=false) — se depois
+   a Listagem de HE for importada pro mesmo mês, ela corrige periodoIni/periodoFim com o valor certo. ---- */
+async function importJornadaSaldoPlanilha(file){
+  if(!file)return;
+  try{
+    const rows=await readFirstSheet(file);
+    const hIdx=findHeaderRow(rows),h=rows[hIdx]||[];
+    let reportDate='';
+    for(let i=0;i<hIdx;i++){const d=parsePtBrReportDate(rows[i]&&rows[i][0]);if(d){reportDate=d;break}}
+    const ix={reg:findCol(h,'Matricula','Matrícula'),name:findCol(h,'Nome'),
+      saldoAnt:findCol(h,'Saldo Anterior'),
+      saldoPer:findCol(h,'Saldo do Período','Saldo do Periodo','Saldo Período','Saldo Periodo'),
+      saldoTot:findCol(h,'Total Banco','Banco Total','Saldo Total','Total do Banco','Total do Banco de Horas',
+        'Banco de Horas','Banco De Horas','Saldo','Saldo Atual','Saldo Banco de Horas','Saldo do Banco de Horas')};
+    if(ix.saldoTot<0){alert('Coluna com o saldo total do banco de horas não encontrada na planilha (ex.: "Total Banco" ou "Saldo").');return}
+    if(ix.reg<0&&ix.name<0){alert('Informe ao menos a coluna "Matrícula" ou "Nome" para identificar cada colaborador.');return}
+    const today=new Date().toISOString().slice(0,10);
+    const periodoIni=reportDate||today,periodoFim=reportDate||today;
+    const periodId=jornadaPeriodId(periodoFim);
+    let updated=0,notFound=0,skipped=0;const misses=[];
+    for(const r of rows.slice(hIdx+1)){
+      const reg=ix.reg>=0?String(r[ix.reg]??'').trim():'';
+      const name=ix.name>=0?String(r[ix.name]??'').trim():'';
+      if(!reg&&!name)continue;
+      const totParsed=parseHourBankCell(r[ix.saldoTot]);
+      if(!totParsed){skipped++;continue}
+      let emp=reg?db.employees.find(x=>x.reg&&norm(x.reg)===norm(reg)):null;
+      if(!emp&&name)emp=db.employees.find(x=>normName(x.name)===normName(name));
+      if(!emp){notFound++;misses.push(name||reg);continue}
+      const antParsed=ix.saldoAnt>=0?parseHourBankCell(r[ix.saldoAnt]):null;
+      const perParsed=ix.saldoPer>=0?parseHourBankCell(r[ix.saldoPer]):null;
+      upsertJornadaEmployeeRecord(periodId,periodoIni,periodoFim,false,emp.id,reg,name,{
+        bhSaldoAnteriorMin:antParsed?antParsed.minutes*antParsed.sign:null,
+        bhSaldoPeriodoMin:perParsed?perParsed.minutes*perParsed.sign:null,
+        bhSaldoTotalMin:totParsed.minutes*totParsed.sign
+      });
+      updated++;
+    }
+    db.imports.unshift({at:new Date().toLocaleString('pt-BR'),file:file.name,total:rows.length-hIdx-1,added:0,updated,same:skipped,errors:notFound});
+    db.imports=db.imports.slice(0,30);
+    await save(true);
+    let msg=`Jornada/HE — planilha de saldo importada: ${updated} colaborador(es) (período ${periodId}).`;
+    if(notFound)msg+=` ${notFound} não encontrado(s) na equipe${misses.length?' ('+misses.slice(0,5).join(', ')+(misses.length>5?'…':'')+')':''}.`;
+    if(skipped)msg+=` ${skipped} linha(s) com saldo inválido ignorada(s).`;
+    alert(msg);
+  }catch(e){alert('Falha ao importar planilha de saldo: '+e.message)}
+}
+
 function prepareAbsenceModal(){
   if(!db.employees.length){alert('Cadastre pelo menos um colaborador antes de registrar uma falta.');return}
   $('aEmployee').innerHTML=db.employees.map(x=>`<option value="${x.id}">${escHtml(x.name)}</option>`).join('');
