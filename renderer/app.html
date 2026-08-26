@@ -3102,6 +3102,69 @@ function parseDiasSemana(str){
   for(let i=0;i<7;i++){days.add(d);if(d===endJs)break;d=(d+1)%7}
   return days;
 }
+/* ===================== JORNADA/HE — parser do PDF "Listagem de HE, FA, AT e AB" =====================
+   Layout validado contra o arquivo real (F:\Projetos DEV\Modulo RH\Listagem_de_HE_FA_AT_e_AB_Portal_MEU_RH.pdf):
+   cada linha de dado tem seus fragmentos de texto quase na MESMA posição X do cabeçalho da coluna
+   correspondente (±2pt de folga pela métrica da fonte) — não usa caractere separador como o Cartão
+   de Ponto (que usa "|"), então a classificação de coluna é só por proximidade de X. */
+const LISTAGEM_HE_COLS=[
+  {key:'chapa',x:34.3},{key:'nome',x:84.6},{key:'horario',x:254.1},
+  {key:'horasBaseMin',x:425.6},{key:'horasTrabMin',x:467.9},{key:'horasAtrasoMin',x:510.1},
+  {key:'horasFaltaMin',x:553.2},{key:'horasAbonoMin',x:595.4},{key:'horasExtraMin',x:637.9},
+  {key:'horasAdNoturnoMin',x:680.7},{key:'intrajornadaMin',x:722.7},{key:'interjornadaMin',x:765.6}
+];
+function listagemHeClassifyCol(x){
+  let best=null,bestDist=Infinity;
+  for(const c of LISTAGEM_HE_COLS){const d=Math.abs(x-c.x);if(d<bestDist){bestDist=d;best=c}}
+  return bestDist<=4?best.key:null;
+}
+// "193:36:00" (HH:MM:SS) -> minutos. Nesta tabela os valores são sempre positivos (são durações
+// acumuladas no período, não saldos com sinal como na planilha de banco de horas).
+function parseDurationHms(raw){
+  const m=String(raw||'').trim().match(/^(\d{1,4}):(\d{2})(?::(\d{2}))?$/);
+  if(!m)return null;
+  return (+m[1])*60+(+m[2])+Math.round((+(m[3]||0))/60);
+}
+function pdfDateBrToIso(br){
+  const m=String(br||'').match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+  if(!m)return '';
+  const y=m[3].length===2?'20'+m[3]:m[3];
+  return `${y}-${m[2]}-${m[1]}`;
+}
+function parseListagemHeFragments(frags){
+  const periodoLabel=frags.find(f=>f.s.indexOf('Periodo Ativo do Ponto')>=0);
+  if(!periodoLabel)throw new Error('Layout da Listagem de HE não reconhecido (rótulo de período não encontrado).');
+  const dateFrags=frags.filter(f=>Math.abs(f.y-periodoLabel.y)<3&&/^\d{2}\/\d{2}\/\d{2,4}$/.test(f.s)).sort((a,b)=>a.x-b.x);
+  if(dateFrags.length<2)throw new Error('Não foi possível ler o período ativo do ponto.');
+  const periodoIni=pdfDateBrToIso(dateFrags[0].s),periodoFim=pdfDateBrToIso(dateFrags[1].s);
+
+  const headerFrag=frags.find(f=>f.s==='Chapa');
+  if(!headerFrag)throw new Error('Layout da Listagem de HE não reconhecido (cabeçalho "Chapa" não encontrado).');
+  const dataFrags=frags.filter(f=>f.y<headerFrag.y-3);
+
+  const rowsByY=new Map();
+  dataFrags.forEach(f=>{
+    const yKey=Math.round(f.y*2)/2;
+    let bucket=null;
+    for(const k of rowsByY.keys())if(Math.abs(k-yKey)<1){bucket=k;break}
+    if(bucket===null){bucket=yKey;rowsByY.set(bucket,[])}
+    rowsByY.get(bucket).push(f);
+  });
+  const employees=[];
+  [...rowsByY.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,rowFrags])=>{
+    const rec={};
+    rowFrags.forEach(f=>{
+      const col=listagemHeClassifyCol(f.x);
+      if(!col)return;
+      if(col==='chapa')rec.chapa=f.s;
+      else if(col==='nome')rec.nome=f.s;
+      else if(col==='horario')rec.horario=f.s;
+      else rec[col]=parseDurationHms(f.s);
+    });
+    if(rec.chapa)employees.push(rec);
+  });
+  return {periodoIni,periodoFim,employees};
+}
 function parseHorarioRaw(raw){
   if(!raw)return null;
   const m=String(raw).match(/^(\S+)\s+([\d:\-\/]+)\s*(.*)$/);
