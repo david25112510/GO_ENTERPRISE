@@ -3329,9 +3329,12 @@ function countScheduledDaysInRange(startDate,endDate,daysSet){
   }
   return n;
 }
-/* valor a receber estimado: salário base + banco de horas (saldo já fechado pelo sistema de ponto,
-   ledger contínuo entre competências) + horas intra/interjornada sempre pagas a 65% de adicional −
-   faltas não justificadas. Divisor de horas dinâmico = dias programados no período × jornada diária. */
+/* valor a receber estimado: salário base + banco de horas + horas intra/interjornada (65% de
+   adicional) − faltas. Divisor de horas dinâmico = dias programados no período × jornada diária.
+   Banco de horas / intra-interjornada / falta agora vêm do módulo Jornada/HE (db.jornadaPeriods,
+   casado pelo mês da competência), não mais de ts.saldoAtual/ts.rubricas/ts.rows — ts (Cartão de
+   Ponto) continua servindo pro horário e pra tabela diária. HE (horasExtraMin) NÃO entra aqui —
+   só alimenta o banco de horas, só vira pagamento quando fechado pela regra dos 180 dias (Fase 2). */
 function computeTimesheetPayroll(emp,ts){
   const sched=parseHorarioRaw(ts.horarioRaw)||{dailyMinutes:0};
   const dailyMinutes=sched.dailyMinutes||528;
@@ -3340,22 +3343,25 @@ function computeTimesheetPayroll(emp,ts){
   const divisorHoras=scheduledDays*(dailyMinutes/60);
   const hourlyRate=divisorHoras>0?(+emp.salary||0)/divisorHoras:0;
 
-  const saldoAtual=pontoSaldoParse(ts.saldoAtual);
-  const bancoMinutes=saldoAtual.minutes*saldoAtual.sign;
+  const jhPeriod=jornadaPeriodByMonthId(jornadaPeriodId(pdfDateToIso(ts.periodoFim||ts.periodEnd)));
+  const jhRec=findJornadaEmployeeRecord(jhPeriod,emp.id);
+
+  const bancoSignedMin=jhRec&&jhRec.bhSaldoPeriodoMin!=null?jhRec.bhSaldoPeriodoMin:0;
+  const saldoAtual={minutes:Math.abs(bancoSignedMin),sign:bancoSignedMin<0?-1:1};
+  const bancoMinutes=bancoSignedMin;
   const bancoValor=bancoMinutes/60*hourlyRate;
 
-  const rubricas=(ts.rubricas||[]).map(r=>typeof r==='string'?pontoRubricaParse(r):r);
-  const extras65=rubricas.filter(r=>/intrajornada|interjornada/i.test(r.description||''));
-  const extras65Minutes=extras65.reduce((s,r)=>s+(r.minutes||0),0);
+  const extras65Minutes=jhRec?((jhRec.intrajornadaMin||0)+(jhRec.interjornadaMin||0)):0;
   const extras65Valor=extras65Minutes/60*hourlyRate*1.65;
 
-  const faltaMinutes=(ts.rows||[]).reduce((s,r)=>s+sumPontoCell(r.falta),0);
+  const faltaMinutes=jhRec&&jhRec.horasFaltaMin!=null?jhRec.horasFaltaMin:0;
   const faltaValor=faltaMinutes/60*hourlyRate;
 
+  const rubricas=(ts.rubricas||[]).map(r=>typeof r==='string'?pontoRubricaParse(r):r);
   const salarioBase=+emp.salary||0;
   const total=salarioBase+bancoValor+extras65Valor-faltaValor;
 
-  return {sched,dailyMinutes,scheduledDays,divisorHoras,hourlyRate,saldoAtual,bancoMinutes,bancoValor,
+  return {sched,dailyMinutes,scheduledDays,divisorHoras,hourlyRate,jhPeriod,jhRec,saldoAtual,bancoMinutes,bancoValor,
     rubricas,extras65Minutes,extras65Valor,faltaMinutes,faltaValor,salarioBase,total};
 }
 function pdfDateToIso(br){if(!br)return '';const [d,m,y]=br.split('/');return y&&m&&d?`${y}-${m}-${d}`:''}
@@ -4553,7 +4559,7 @@ function renderProfileTimesheets(e){
       ${p.rubricas.map(r=>`<div class="metricline"><span>${escHtml(r.description)}${r.code?' ('+escHtml(r.code)+')':''}</span><strong>${String(Math.floor(r.minutes/60)).padStart(2,'0')}:${String(r.minutes%60).padStart(2,'0')}</strong></div>`).join('')}`:''}
     ${currentRole==='operador'?'':`
     <h3 style="margin:16px 0 6px">Resumo de pagamento (estimado)</h3>
-    <p class="muted" style="font-size:11px;margin-top:-4px">Estimativa com base no saldo já fechado pelo sistema de ponto nesta competência (ledger contínuo entre importações). Divisor: ${p.scheduledDays} dia(s) programado(s) × ${(p.dailyMinutes/60).toFixed(2).replace('.',',')}h/dia = ${p.divisorHoras.toFixed(2).replace('.',',')}h. Valor da hora: ${fmtBRL(p.hourlyRate)}. O banco de horas é apenas o saldo corrente apurado pelo ponto (crédito ou débito acumulado, só vira pagamento/desconto efetivo quando fechado pela regra dos 180 dias). Já as horas intra/interjornada são sempre pagas com adicional de 65% (1,65×) no próprio período. Faltas são descontadas à parte.</p>
+    <p class="muted" style="font-size:11px;margin-top:-4px">Estimativa com base nos dados do módulo Jornada/HE para esta competência${p.jhRec?'':' — nenhum dado do Jornada/HE encontrado pra esse mês ainda; valores de banco de horas/intra-interjornada/falta abaixo estão zerados'}. Divisor: ${p.scheduledDays} dia(s) programado(s) × ${(p.dailyMinutes/60).toFixed(2).replace('.',',')}h/dia = ${p.divisorHoras.toFixed(2).replace('.',',')}h. Valor da hora: ${fmtBRL(p.hourlyRate)}. O banco de horas é o movimento do período (crédito ou débito), só vira pagamento/desconto efetivo quando fechado pela regra dos 180 dias. Horas extras (HE) não entram aqui pelo mesmo motivo. Já as horas intra/interjornada são sempre pagas com adicional de 65% (1,65×) no próprio período. Faltas são descontadas à parte.</p>
     <div class="metricline"><span>Salário base</span><strong>${fmtBRL(p.salarioBase)}</strong></div>
     <div class="metricline"><span>Banco de horas — saldo (${fmtSaldoHM(p.saldoAtual)})</span><strong style="color:${tileColor(p.saldoAtual)}">${fmtBRL(p.bancoValor)}</strong></div>
     <div class="metricline"><span>Horas intra/interjornada — a pagar (65%)</span><strong style="color:var(--selbetti-dark)">${fmtBRL(p.extras65Valor)}</strong></div>
