@@ -789,11 +789,6 @@ body.kiosk-mode .dash-var{font-size:13px}
       <div class="grid cards executive-cards" id="homeCards"></div>
       <div class="executive-pulse" id="executivePulse"></div>
       <div class="panel" id="alertsPanel"><h2>⚠️ Central de alertas</h2><div id="alertsList"></div></div>
-      <div class="panel"><div class="toolbar"><h2 style="margin:0">🕒 Banco de horas da equipe</h2>
-        <label class="btn primary file" style="font-size:12px">⬆ Importar planilha de banco de horas<input type="file" accept=".xlsx" onchange="importHourBank(this.files[0]);this.value=''"></label></div>
-        <p class="muted" style="margin:0 0 8px;font-size:12px">Saldo atual (crédito ou débito) por colaborador, atualizado pela planilha de banco de horas enviada pela gestão.</p>
-        <div id="teamHourBank"></div>
-      </div>
       <div class="grid" style="grid-template-columns:1.4fr 1fr">
         <div class="panel chart-panel"><h2>Evolução diária de impressões (mês atual)</h2><div class="bars" id="homeChart"></div></div>
         <div class="panel"><h2>Resumo operacional</h2><div id="summary"></div></div>
@@ -3625,14 +3620,6 @@ function renderHome(prods,months){
   $('executiveStatus').className='insight-status '+status;
   $('executiveStatusValue').textContent=pace?pct(pace):'—';
   $('executiveStatusNote').textContent=pace>=100?'Operação acima do ritmo esperado':pace>=90?'Operação próxima da meta':'Operação abaixo do ritmo esperado';
-
-  const bankList=db.employees.filter(x=>x.status!=='Inativo'&&x.hourBank).sort((a,b)=>Math.abs(b.hourBank.minutes)-Math.abs(a.hourBank.minutes));
-  const bankTotalMin=bankList.reduce((s,x)=>s+x.hourBank.minutes*x.hourBank.sign,0);
-  $('teamHourBank').innerHTML=bankList.length?`
-    <div class="metricline"><span><b>Saldo líquido da equipe</b></span><strong style="color:${bankTotalMin<0?'var(--red)':'var(--selbetti-dark)'}">${fmtSaldoHM({minutes:Math.abs(bankTotalMin),sign:bankTotalMin<0?-1:1})}</strong></div>
-    <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Colaborador</th><th>Cargo</th><th>Saldo</th><th>Apurado em</th></tr></thead><tbody>
-      ${bankList.map(x=>`<tr><td>${escHtml(x.name)}</td><td>${escHtml(x.role||'—')}</td><td style="color:${x.hourBank.sign<0?'var(--red)':'var(--selbetti-dark)'};font-weight:700">${fmtSaldoHM(x.hourBank)}</td><td>${x.hourBank.asOf?x.hourBank.asOf.split('-').reverse().join('/'):'—'}</td></tr>`).join('')}
-    </tbody></table></div>`:'<p class="muted">Nenhum saldo de banco de horas apurado ainda. Importe as folhas de ponto no perfil de cada colaborador.</p>';
 
   const alerts=[...vacationDeadlineAlerts(),...financeDueAlerts(),...lossAlerts()];
   $('alertsList').innerHTML=alerts.length?alerts.map(a=>{
