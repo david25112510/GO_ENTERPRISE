@@ -3241,6 +3241,63 @@ function switchJornadaHeTab(tab){
   document.querySelectorAll('#jornadaHeTabs .role-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   document.querySelectorAll('#jornadaHe .jornadaHe-tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===tab));
 }
+function fmtSignedMin(min){
+  if(min===null||min===undefined)return '—';
+  const sign=min<0?'-':'';
+  const abs=Math.abs(min);
+  return `${sign}${String(Math.floor(abs/60)).padStart(2,'0')}:${String(abs%60).padStart(2,'0')}`;
+}
+function fmtDurationMin(min){
+  if(min===null||min===undefined)return '—';
+  return `${String(Math.floor(min/60)).padStart(2,'0')}:${String(min%60).padStart(2,'0')}`;
+}
+function renderJornadaHe(){
+  const el=$('jornadaHeOverviewCards');if(!el)return;
+  const period=latestJornadaPeriod();
+  if(!period){
+    el.innerHTML='<p class="muted">Nenhum período importado ainda.</p>';
+    $('jornadaHeBancoTable').innerHTML='<tr><td colspan="4" class="muted">Nenhum período importado ainda.</td></tr>';
+    $('jornadaHeExtrasTable').innerHTML='<tr><td colspan="6" class="muted">Nenhum período importado ainda.</td></tr>';
+    $('jornadaHeHistoricoTable').innerHTML='<tr><td colspan="4" class="muted">Nenhum período importado ainda.</td></tr>';
+    return;
+  }
+  const activeEmployees=period.employees.filter(e=>e.employeeId);
+  const saldoLiquido=activeEmployees.reduce((s,e)=>s+(e.bhSaldoTotalMin||0),0);
+  const negativos=activeEmployees.filter(e=>(e.bhSaldoTotalMin||0)<0).length;
+  const heTotalMin=activeEmployees.reduce((s,e)=>s+(e.horasExtraMin||0),0);
+  el.innerHTML=`
+    <div class="card ${saldoLiquido<0?'accent-red':'accent-teal'}"><div class="k">Saldo líquido da equipe</div><div class="v">${fmtSignedMin(saldoLiquido)}</div></div>
+    <div class="card accent-amber"><div class="k">Colaboradores com saldo negativo</div><div class="v">${negativos}</div></div>
+    <div class="card accent-indigo"><div class="k">HE total do período</div><div class="v">${fmtDurationMin(heTotalMin)}</div></div>
+    <div class="card"><div class="k">Período</div><div class="v" style="font-size:15px">${period.periodoIni.split('-').reverse().join('/')} a ${period.periodoFim.split('-').reverse().join('/')}</div></div>`;
+
+  const byName=[...activeEmployees].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  $('jornadaHeBancoTable').innerHTML=byName.map(e=>`<tr><td>${escHtml(e.nome)}</td>
+    <td style="color:${(e.bhSaldoAnteriorMin||0)<0?'var(--red)':'inherit'}">${fmtSignedMin(e.bhSaldoAnteriorMin)}</td>
+    <td style="color:${(e.bhSaldoPeriodoMin||0)<0?'var(--red)':'inherit'}">${fmtSignedMin(e.bhSaldoPeriodoMin)}</td>
+    <td style="font-weight:700;color:${(e.bhSaldoTotalMin||0)<0?'var(--red)':'var(--selbetti-dark)'}">${fmtSignedMin(e.bhSaldoTotalMin)}</td></tr>`).join('')
+    ||'<tr><td colspan="4" class="muted">Nenhum colaborador neste período.</td></tr>';
+
+  $('jornadaHeExtrasTable').innerHTML=byName.map(e=>`<tr><td>${escHtml(e.nome)}</td>
+    <td style="font-weight:700">${fmtDurationMin(e.horasExtraMin)}</td>
+    <td>${fmtDurationMin(e.horasAtrasoMin)}</td><td>${fmtDurationMin(e.horasFaltaMin)}</td>
+    <td>${fmtDurationMin(e.horasAbonoMin)}</td><td>${fmtDurationMin(e.horasAdNoturnoMin)}</td></tr>`).join('')
+    ||'<tr><td colspan="6" class="muted">Nenhum colaborador neste período.</td></tr>';
+
+  const periods=[...(db.jornadaPeriods||[])].sort((a,b)=>b.id.localeCompare(a.id));
+  $('jornadaHeHistoricoTable').innerHTML=periods.map((p,i)=>{
+    const prev=periods[i+1];
+    const total=p.employees.reduce((s,e)=>s+(e.bhSaldoTotalMin||0),0);
+    let deltaTxt='—';
+    if(prev){
+      const prevTotal=prev.employees.reduce((s,e)=>s+(e.bhSaldoTotalMin||0),0);
+      const delta=total-prevTotal;
+      deltaTxt=`${delta>=0?'▲':'▼'} ${fmtSignedMin(Math.abs(delta))}`;
+    }
+    return `<tr><td>${p.periodoIni.split('-').reverse().join('/')} a ${p.periodoFim.split('-').reverse().join('/')}</td>
+      <td>${p.employees.length}</td><td>${fmtSignedMin(total)}</td><td>${deltaTxt}</td></tr>`;
+  }).join('')||'<tr><td colspan="4" class="muted">Nenhum período importado ainda.</td></tr>';
+}
 function parseHorarioRaw(raw){
   if(!raw)return null;
   const m=String(raw).match(/^(\S+)\s+([\d:\-\/]+)\s*(.*)$/);
@@ -3482,6 +3539,7 @@ function render(){
   renderProducao(prods);
   renderFinanceiro();
   renderRH();
+  renderJornadaHe();
   renderFornecedores();
   renderAdmin();
   renderManuais();
