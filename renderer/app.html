@@ -589,6 +589,8 @@ body.kiosk-mode .dash-var{font-size:13px}
 .selbnews-tabs{max-width:680px}
 .selbnews-tabpane{display:none}
 .selbnews-tabpane.active{display:block;animation:fade .2s ease}
+.jornadaHe-tabpane{display:none}
+.jornadaHe-tabpane.active{display:block;animation:fade .2s ease}
 
 .sn-tv-viewport{position:fixed;inset:0;background:#010b07;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:1}
 .sn-tv-wrap{width:1920px;height:1080px;flex:0 0 auto;position:relative;overflow:hidden;box-sizing:border-box;
@@ -758,6 +760,7 @@ body.kiosk-mode .dash-var{font-size:13px}
       <button data-view="producao">🖨️ <span>Produção</span></button>
       <button data-view="financeiro" data-role="gestor">💰 <span>Financeiro</span></button>
       <button data-view="rh">👥 <span>Colaboradores</span></button>
+      <button data-view="jornadaHe" data-role="gestor">🕒 <span>Jornada/HE</span></button>
       <button data-view="manuais">📘 <span>Manuais</span></button>
       <button data-view="dashboardTv" data-role="gestor">📺 <span>Dashboard TV</span></button>
       <button data-view="noticias" data-role="gestor">📰 <span>Conteúdo TV</span></button>
@@ -909,6 +912,46 @@ body.kiosk-mode .dash-var{font-size:13px}
       <div class="panel">
         <div class="toolbar"><div><h2 style="margin-bottom:2px">🎂 Aniversários da equipe</h2><p class="muted" style="margin:0;font-size:12px">Data de nascimento de cada colaborador — quem faz aniversário no mês aparece automaticamente no Dashboard TV.</p></div></div>
         <div class="tablewrap"><table><thead><tr><th>Colaborador</th><th>Cargo</th><th>Data de nascimento</th></tr></thead><tbody id="birthdayTable"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- JORNADA/HE — banco de horas + HE, Fase 1. Sem tela própria de aging 180d/intra-interjornada/
+         assinaturas pendentes ainda (Fase 2, fora deste plano). -->
+    <section class="view" id="jornadaHe">
+      <div class="top"><div><h1>Jornada/HE</h1><p>Banco de horas e horas extras da equipe.</p></div></div>
+      <div class="role-tabs" id="jornadaHeTabs">
+        <button class="role-tab active" data-tab="overview" onclick="switchJornadaHeTab('overview')">Visão Geral</button>
+        <button class="role-tab" data-tab="banco" onclick="switchJornadaHeTab('banco')">Banco de Horas</button>
+        <button class="role-tab" data-tab="he" onclick="switchJornadaHeTab('he')">HE do período</button>
+        <button class="role-tab" data-tab="historico" onclick="switchJornadaHeTab('historico')">Histórico</button>
+      </div>
+
+      <div class="jornadaHe-tabpane active" data-pane="overview">
+        <div class="grid cards" id="jornadaHeOverviewCards"></div>
+        <div class="panel"><div class="toolbar">
+            <label class="btn primary file">⬆ Importar planilha de saldo<input type="file" accept=".xlsx" onchange="importJornadaSaldoPlanilha(this.files[0]);this.value=''"></label>
+            <label class="btn primary file">⬆ Importar Listagem de HE (PDF)<input type="file" accept=".pdf" onchange="importJornadaListagemHe(this.files[0]);this.value=''"></label>
+          </div>
+          <p class="muted" style="font-size:12px;margin-top:-6px">Os dois arquivos são independentes — pode importar só um, o outro, ou os dois, em qualquer ordem.</p>
+        </div>
+      </div>
+
+      <div class="jornadaHe-tabpane" data-pane="banco">
+        <div class="panel"><h2>Banco de horas — período mais recente</h2>
+          <div class="tablewrap"><table><thead><tr><th>Colaborador</th><th>Saldo anterior</th><th>Movimento do período</th><th>Saldo total</th></tr></thead><tbody id="jornadaHeBancoTable"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="jornadaHe-tabpane" data-pane="he">
+        <div class="panel"><h2>HE do período mais recente</h2>
+          <div class="tablewrap"><table><thead><tr><th>Colaborador</th><th>Horas extras</th><th>Atraso</th><th>Falta</th><th>Abono</th><th>Ad. noturno</th></tr></thead><tbody id="jornadaHeExtrasTable"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="jornadaHe-tabpane" data-pane="historico">
+        <div class="panel"><h2>Períodos importados</h2>
+          <div class="tablewrap"><table><thead><tr><th>Período</th><th>Colaboradores</th><th>Saldo líquido</th><th>vs. período anterior</th></tr></thead><tbody id="jornadaHeHistoricoTable"></tbody></table></div>
+        </div>
       </div>
     </section>
 
@@ -2146,7 +2189,7 @@ async function afterUnlock(){
 const NAV_VIEWS_BY_ROLE={
   operador:['operadorHome','producao','manuais','dashboardTv'],
   tv:['dashboardTv','noticias'],
-  gestor:['home','producao','financeiro','rh','manuais','dashboardTv','fornecedores','admin','noticias','selbnews']
+  gestor:['home','producao','financeiro','rh','jornadaHe','manuais','dashboardTv','fornecedores','admin','noticias','selbnews']
 };
 function applyRoleUI(){
   const isOp=currentRole==='operador',isTv=currentRole==='tv';
@@ -3193,6 +3236,10 @@ async function importJornadaListagemHe(file){
     if(notFound)msg+=` ${notFound} não encontrado(s) na equipe${misses.length?' ('+misses.slice(0,5).join(', ')+(misses.length>5?'…':'')+')':''}.`;
     alert(msg);
   }catch(e){alert('Falha ao importar Listagem de HE: '+e.message)}
+}
+function switchJornadaHeTab(tab){
+  document.querySelectorAll('#jornadaHeTabs .role-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('#jornadaHe .jornadaHe-tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===tab));
 }
 function parseHorarioRaw(raw){
   if(!raw)return null;
