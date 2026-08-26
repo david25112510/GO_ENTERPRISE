@@ -1733,6 +1733,7 @@ function normalizeDb(x){
     dailyMessages:Array.isArray(source.dailyMessages)?source.dailyMessages:[],
     selbNews:Array.isArray(source.selbNews)?source.selbNews.map(normalizeSelbNews):[],
     selbAlerts:Array.isArray(source.selbAlerts)?source.selbAlerts.map(normalizeSelbAlert):[],
+    jornadaPeriods:Array.isArray(source.jornadaPeriods)?source.jornadaPeriods.map(normalizeJornadaPeriod):[],
     config:{...db.config,...(source.config||{}),security:{...db.config.security,...((source.config||{}).security||{})}}
   };
 }
@@ -1748,6 +1749,61 @@ function normalizeSelbAlert(a){
     priority:['INFO','NOTICE','IMPORTANT','URGENT'].includes(a.priority)?a.priority:'NOTICE',
     startDate:a.startDate||'',endDate:a.endDate||'',isActive:a.isActive!==false,displayOrder:Number(a.displayOrder)||0,
     createdAt:a.createdAt||new Date().toISOString(),updatedAt:a.updatedAt||a.createdAt||new Date().toISOString()};
+}
+/* ===================== JORNADA/HE — banco de horas + HE, Fase 1 =====================
+   Coleção própria db.jornadaPeriods[]: um registro por período/competência (nunca sobrescrito por
+   um período diferente — reimportar o MESMO período atualiza aquele registro). Os dois importadores
+   (planilha de saldo, Listagem de HE) convergem pro mesmo período automaticamente porque o id do
+   período é sempre derivado do mês-calendário do FIM da competência ("YYYY-MM"), não de correspondência
+   fuzzy de datas — funciona em qualquer ordem de importação. */
+function jornadaPeriodId(dateIso){ return String(dateIso||'').slice(0,7) }
+
+function normalizeJornadaEmployeeRecord(e){
+  return {
+    employeeId:e.employeeId||null, chapa:e.chapa||'', nome:e.nome||'',
+    bhSaldoAnteriorMin:e.bhSaldoAnteriorMin??null, bhSaldoPeriodoMin:e.bhSaldoPeriodoMin??null, bhSaldoTotalMin:e.bhSaldoTotalMin??null,
+    horario:e.horario||'', horasBaseMin:e.horasBaseMin??null, horasTrabMin:e.horasTrabMin??null,
+    horasAtrasoMin:e.horasAtrasoMin??null, horasFaltaMin:e.horasFaltaMin??null, horasAbonoMin:e.horasAbonoMin??null,
+    horasExtraMin:e.horasExtraMin??null, horasAdNoturnoMin:e.horasAdNoturnoMin??null,
+    intrajornadaMin:e.intrajornadaMin??null, interjornadaMin:e.interjornadaMin??null
+  };
+}
+function normalizeJornadaPeriod(p){
+  return {
+    id:p.id||'', periodoIni:p.periodoIni||'', periodoFim:p.periodoFim||'',
+    importedAt:p.importedAt||new Date().toISOString(), updatedAt:p.updatedAt||p.importedAt||new Date().toISOString(),
+    employees:Array.isArray(p.employees)?p.employees.map(normalizeJornadaEmployeeRecord):[]
+  };
+}
+function latestJornadaPeriod(){
+  const list=db.jornadaPeriods||[];
+  if(!list.length)return null;
+  return [...list].sort((a,b)=>b.id.localeCompare(a.id))[0];
+}
+function jornadaPeriodByMonthId(id){ return (db.jornadaPeriods||[]).find(p=>p.id===id)||null }
+function findJornadaEmployeeRecord(period,employeeId){
+  if(!period||!employeeId)return null;
+  return period.employees.find(e=>e.employeeId===employeeId)||null;
+}
+// cria/atualiza o registro de um colaborador dentro de um período. "precise" indica se periodoIni/
+// periodoFim deste import são a fonte confiável (true = veio do PDF, que traz "Periodo Ativo do
+// Ponto"; false = veio da planilha, que só tem a data de geração do relatório) — só sobrescreve as
+// datas do período se for preciso, ou se o período ainda não tiver data nenhuma.
+function upsertJornadaEmployeeRecord(periodId,periodoIni,periodoFim,precise,employeeId,chapa,nome,patch){
+  db.jornadaPeriods=db.jornadaPeriods||[];
+  let period=db.jornadaPeriods.find(p=>p.id===periodId);
+  if(!period){
+    period=normalizeJornadaPeriod({id:periodId,periodoIni,periodoFim,importedAt:new Date().toISOString()});
+    db.jornadaPeriods.push(period);
+  }else if(precise||!period.periodoIni){
+    period.periodoIni=periodoIni;period.periodoFim=periodoFim;
+  }
+  let rec=period.employees.find(e=>e.employeeId===employeeId);
+  if(!rec){rec=normalizeJornadaEmployeeRecord({employeeId,chapa,nome});period.employees.push(rec)}
+  Object.assign(rec,patch);
+  if(chapa)rec.chapa=chapa;
+  if(nome)rec.nome=nome;
+  period.updatedAt=new Date().toISOString();
 }
 /* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
    grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
