@@ -2145,6 +2145,68 @@ async function importJornadaSintetico180(file){
     alert(msg);
   }catch(e){alert('Falha ao importar Sintético de 180 dias: '+e.message)}
 }
+/* ===================== JORNADA/HE — Fase 2: parser do Analítico de 180 dias =====================
+   Layout validado contra o arquivo real (4 páginas). Cada colaborador: linha "chapa NOME ... 180
+   dias do Banco DD/MM/YY a DD/MM/YY" + sub-cabeçalho "Data/Data Limite/Evento/Tipo/Valor" + 0..N
+   linhas de evento + linha "Horas a PAGAR/DESCONTAR HH:MM". RISCO CONHECIDO: nenhum colaborador do
+   arquivo de exemplo tem evento real (todos "00:00" sem eventos) — a leitura de uma linha de
+   evento é inferida pela posição dos rótulos do sub-cabeçalho, sem confirmação com dado real
+   populado. Reconfirmar assim que houver um arquivo real com eventos. O rótulo "Periodo Ativo do
+   Ponto" se repete uma vez por página — usado como marcador de página pra segmentar os fragmentos
+   e evitar colisão de Y entre páginas (o eixo Y do PDF reinicia a cada página). */
+const ANALITICO180_COLS=[
+  {key:'chapa',x:43.4},{key:'nome',x:118.4},{key:'janelaLabel',x:512.9},{key:'janelaIni',x:607.3},{key:'janelaFim',x:669.6},
+  {key:'col1',x:46.4},{key:'dataLimite',x:112.4},{key:'evento',x:179.9},{key:'tipo',x:414.4},{key:'valor',x:474.0},
+  {key:'totalLabel',x:365.6}
+];
+function analitico180ClassifyCol(x){
+  let best=null,bestDist=Infinity;
+  for(const c of ANALITICO180_COLS){const d=Math.abs(x-c.x);if(d<bestDist){bestDist=d;best=c}}
+  return bestDist<=6?best.key:null;
+}
+function parseAnalitico180Fragments(frags){
+  const pageMarkers=frags.filter(f=>f.s.indexOf('Periodo Ativo do Ponto')>=0);
+  if(!pageMarkers.length)throw new Error('Layout do Analítico de 180 dias não reconhecido (rótulo de período não encontrado).');
+  if(!frags.some(f=>f.s==='180 dias do Banco'))throw new Error('Layout do Analítico de 180 dias não reconhecido (rótulo "180 dias do Banco" não encontrado).');
+  const windows=new Map();
+  pageMarkers.forEach((marker,pi)=>{
+    const startIdx=frags.indexOf(marker);
+    const nextMarker=pageMarkers[pi+1];
+    const endIdx=nextMarker?frags.indexOf(nextMarker):frags.length;
+    const pageFrags=frags.slice(startIdx,endIdx);
+    const rowsByY=new Map();
+    pageFrags.forEach(f=>{
+      const yKey=Math.round(f.y*2)/2;
+      let bucket=null;
+      for(const k of rowsByY.keys())if(Math.abs(k-yKey)<1){bucket=k;break}
+      if(bucket===null){bucket=yKey;rowsByY.set(bucket,[])}
+      rowsByY.get(bucket).push(f);
+    });
+    let current=null;
+    [...rowsByY.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,rowFrags])=>{
+      const rec={};
+      rowFrags.forEach(f=>{const col=analitico180ClassifyCol(f.x);if(col)rec[col]=f.s});
+      if(rec.janelaLabel==='180 dias do Banco'){
+        const janelaIni=pdfDateBrToIso(rec.janelaIni),janelaFim=pdfDateBrToIso(rec.janelaFim);
+        const windowId=jornada180WindowId(janelaFim);
+        if(!windows.has(windowId))windows.set(windowId,{janelaIni,janelaFim,employees:[]});
+        current={chapa:rec.chapa||'',nome:rec.nome||'',valorPagarDescontarMin:0,eventos:[]};
+        windows.get(windowId).employees.push(current);
+        return;
+      }
+      if(rec.totalLabel==='Horas a PAGAR/DESCONTAR'){
+        if(current){const parsed=parseHourBankCell(rec.valor);current.valorPagarDescontarMin=parsed?parsed.minutes*parsed.sign:0}
+        return;
+      }
+      if(rec.col1==='Data')return;
+      if(current&&rec.col1&&/^\d{2}\/\d{2}\/\d{2,4}$/.test(rec.col1)){
+        const parsed=parseHourBankCell(rec.valor);
+        current.eventos.push({data:pdfDateBrToIso(rec.col1),dataLimite:pdfDateBrToIso(rec.dataLimite),evento:rec.evento||'',tipo:rec.tipo||'',valorMin:parsed?parsed.minutes*parsed.sign:null});
+      }
+    });
+  });
+  return {windows:[...windows.entries()].map(([id,w])=>({id,...w}))};
+}
 /* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
    grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
 function isSelbItemLive(item){
