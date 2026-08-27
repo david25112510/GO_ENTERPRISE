@@ -1883,6 +1883,56 @@ function upsertJornada180EmployeeRecord(windowId,janelaIni,janelaFim,employeeId,
   if(nome)rec.nome=nome;
   win.updatedAt=new Date().toISOString();
 }
+/* ===================== JORNADA/HE — Fase 2: parser do "Espelho de Ponto PENDENTE Assinatura" =====================
+   Layout validado contra o arquivo real. Colaborador e documento pendente usam as MESMAS 3
+   colunas de posição X — a distinção é pelo conteúdo da 3ª coluna: "Satus Assinatura" é o
+   sub-cabeçalho (ignora), texto começando com "Doc." é uma linha de documento, qualquer outra
+   coisa (padrão de horário, ex. "08:00-12:00/13:12-18:00 2ª/6ª") é uma nova linha de colaborador.
+   O relatório real é paginado: cada página repete o cabeçalho "Chapa/Nome/Horario/Total de Doc."
+   nas MESMAS coordenadas Y da página anterior (o eixo Y do PDF reinicia a cada página), então o
+   parser processa os fragmentos em segmentos — um por ocorrência de "Chapa", na ordem em que
+   aparecem no array — em vez de assumir um único cabeçalho global. Isso também cobre o caso de
+   uma única página (um único segmento). */
+const ESPELHO_PENDENTE_COLS=[{key:'c1',x:33.6},{key:'c2',x:84.6},{key:'c3',x:254.1},{key:'total',x:424.0}];
+function espelhoPendenteClassifyCol(x){
+  let best=null,bestDist=Infinity;
+  for(const c of ESPELHO_PENDENTE_COLS){const d=Math.abs(x-c.x);if(d<bestDist){bestDist=d;best=c}}
+  return bestDist<=6?best.key:null;
+}
+function parseEspelhoPendenteFragments(frags){
+  const headerFrags=frags.filter(f=>f.s==='Chapa');
+  if(!headerFrags.length)throw new Error('Layout do Espelho de Ponto Pendente não reconhecido (cabeçalho "Chapa" não encontrado).');
+  const employees=[];
+  headerFrags.forEach((headerFrag,hi)=>{
+    const startIdx=frags.indexOf(headerFrag);
+    const nextHeader=headerFrags[hi+1];
+    const endIdx=nextHeader?frags.indexOf(nextHeader):frags.length;
+    const pageFrags=frags.slice(startIdx,endIdx);
+    const dataFrags=pageFrags.filter(f=>f.y<headerFrag.y-3);
+    const rowsByY=new Map();
+    dataFrags.forEach(f=>{
+      const yKey=Math.round(f.y*2)/2;
+      let bucket=null;
+      for(const k of rowsByY.keys())if(Math.abs(k-yKey)<1){bucket=k;break}
+      if(bucket===null){bucket=yKey;rowsByY.set(bucket,[])}
+      rowsByY.get(bucket).push(f);
+    });
+    let current=null;
+    [...rowsByY.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,rowFrags])=>{
+      const rec={};
+      rowFrags.forEach(f=>{const col=espelhoPendenteClassifyCol(f.x);if(col)rec[col]=f.s});
+      if(!rec.c3)return;
+      if(rec.c3==='Satus Assinatura')return;
+      if(rec.c3.startsWith('Doc.')){
+        if(current)current.docs.push({id:rec.c1||'',arquivo:rec.c2||'',status:rec.c3});
+        return;
+      }
+      current={chapa:rec.c1||'',nome:rec.c2||'',docs:[]};
+      employees.push(current);
+    });
+  });
+  return {employees};
+}
 /* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
    grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
 function isSelbItemLive(item){
