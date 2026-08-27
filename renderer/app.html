@@ -961,7 +961,7 @@ body.kiosk-mode .dash-var{font-size:13px}
       <div class="panel">
         <div class="toolbar"><h2 style="margin:0">🕒 Folha de Ponto</h2>
           <label class="btn primary file">⬆ Importar folha de ponto (PDF)<input type="file" accept=".pdf" onchange="importTimesheet(this)"></label></div>
-        <p class="muted" style="font-size:12px;margin-top:-6px">Ao importar, turno, horário de trabalho, localização e período são atualizados automaticamente no cadastro, e o valor a receber estimado abaixo usa o saldo apurado nesta folha. O Banco de horas exibido no painel do colaborador não vem mais daqui — é atualizado pela planilha de banco de horas da equipe (Visão Geral).</p>
+        <p class="muted" style="font-size:12px;margin-top:-6px">Ao importar, turno, horário de trabalho, localização e período são atualizados automaticamente no cadastro. O Banco de horas exibido no painel do colaborador e usado no valor a receber estimado abaixo não vem mais daqui — é atualizado pelo módulo Jornada/HE.</p>
         <div id="profileTsControls"></div>
         <div id="profileTsSummary"></div>
       </div>
@@ -2474,6 +2474,23 @@ async function importJornadaSaldoPlanilha(file){
     const today=new Date().toISOString().slice(0,10);
     const periodoIni=reportDate||today,periodoFim=reportDate||today;
     const periodId=jornadaPeriodId(periodoFim);
+    // F1 (revisão final): a planilha só tem a data de GERAÇÃO do relatório, não a competência real —
+    // se o gestor exportar fora da janela de convergência com o PDF (últimos dias do mês da competência),
+    // os dados caem num período diferente do que o PDF já criou, silenciosamente. Avisa quando isso
+    // parece ter acontecido, em vez de tentar adivinhar o período certo (adivinhar erra pra outro lado
+    // em alguns casos e seria pior que separar).
+    let periodMismatchWarning='';
+    if(reportDate){
+      const reportDateObj=new Date(reportDate+'T12:00:00');
+      const nearbyPrecise=(db.jornadaPeriods||[]).find(p=>{
+        if(p.id===periodId||p.periodoIni===p.periodoFim||!p.periodoFim)return false;
+        const diffDays=(reportDateObj-new Date(p.periodoFim+'T12:00:00'))/86400000;
+        return diffDays>=0&&diffDays<=40;
+      });
+      if(nearbyPrecise){
+        periodMismatchWarning=` ⚠ Atenção: existe um período com dados do PDF (Listagem de HE) para a competência ${nearbyPrecise.periodoIni.split('-').reverse().join('/')} a ${nearbyPrecise.periodoFim.split('-').reverse().join('/')} (id ${nearbyPrecise.id}) próximo da data desta planilha — pode ser o período correto. Esta importação foi registrada em ${periodId}. Confira a aba Histórico e, se necessário, avise a TI.`;
+      }
+    }
     let updated=0,notFound=0,skipped=0;const misses=[];
     for(const r of rows.slice(hIdx+1)){
       const reg=ix.reg>=0?String(r[ix.reg]??'').trim():'';
@@ -2499,6 +2516,7 @@ async function importJornadaSaldoPlanilha(file){
     let msg=`Jornada/HE — planilha de saldo importada: ${updated} colaborador(es) (período ${periodId}).`;
     if(notFound)msg+=` ${notFound} não encontrado(s) na equipe${misses.length?' ('+misses.slice(0,5).join(', ')+(misses.length>5?'…':'')+')':''}.`;
     if(skipped)msg+=` ${skipped} linha(s) com saldo inválido ignorada(s).`;
+    msg+=periodMismatchWarning;
     alert(msg);
   }catch(e){alert('Falha ao importar planilha de saldo: '+e.message)}
 }
@@ -4540,7 +4558,7 @@ function renderProfileTimesheets(e){
     <div class="profile-info-grid">
       <div class="profile-info-item"><div class="k">Banco de horas · saldo anterior</div><div class="v" style="color:${tileColor(saldoAnt)}">${fmtSaldoHM(saldoAnt)}</div></div>
       <div class="profile-info-item"><div class="k">Banco de horas · movimento do período</div><div class="v" style="color:${tileColor(saldoPer)}">${fmtSaldoHM(saldoPer)}</div></div>
-      <div class="profile-info-item"><div class="k">Banco de horas · saldo atual</div><div class="v" style="color:${tileColor(p.saldoAtual)}">${fmtSaldoHM(p.saldoAtual)}</div></div>
+      <div class="profile-info-item"><div class="k">Banco de horas · movimento do período (Jornada/HE)</div><div class="v" style="color:${tileColor(p.saldoAtual)}">${fmtSaldoHM(p.saldoAtual)}</div></div>
     </div>
     ${p.rubricas.length?`<div class="metricline"><span><b>Rubricas do período — pagas normalmente</b></span><span></span></div>
       ${p.rubricas.map(r=>`<div class="metricline"><span>${escHtml(r.description)}${r.code?' ('+escHtml(r.code)+')':''}</span><strong>${String(Math.floor(r.minutes/60)).padStart(2,'0')}:${String(r.minutes%60).padStart(2,'0')}</strong></div>`).join('')}`:''}
@@ -4548,7 +4566,7 @@ function renderProfileTimesheets(e){
     <h3 style="margin:16px 0 6px">Resumo de pagamento (estimado)</h3>
     <p class="muted" style="font-size:11px;margin-top:-4px">Estimativa com base nos dados do módulo Jornada/HE para esta competência${p.jhRec?'':' — nenhum dado do Jornada/HE encontrado pra esse mês ainda; valores de banco de horas/intra-interjornada/falta abaixo estão zerados'}. Divisor: ${p.scheduledDays} dia(s) programado(s) × ${(p.dailyMinutes/60).toFixed(2).replace('.',',')}h/dia = ${p.divisorHoras.toFixed(2).replace('.',',')}h. Valor da hora: ${fmtBRL(p.hourlyRate)}. O banco de horas é o movimento do período (crédito ou débito), só vira pagamento/desconto efetivo quando fechado pela regra dos 180 dias. Horas extras (HE) não entram aqui pelo mesmo motivo. Já as horas intra/interjornada são sempre pagas com adicional de 65% (1,65×) no próprio período. Faltas são descontadas à parte.</p>
     <div class="metricline"><span>Salário base</span><strong>${fmtBRL(p.salarioBase)}</strong></div>
-    <div class="metricline"><span>Banco de horas — saldo (${fmtSaldoHM(p.saldoAtual)})</span><strong style="color:${tileColor(p.saldoAtual)}">${fmtBRL(p.bancoValor)}</strong></div>
+    <div class="metricline"><span>Banco de horas — movimento do período (${fmtSaldoHM(p.saldoAtual)})</span><strong style="color:${tileColor(p.saldoAtual)}">${fmtBRL(p.bancoValor)}</strong></div>
     <div class="metricline"><span>Horas intra/interjornada — a pagar (65%)</span><strong style="color:var(--selbetti-dark)">${fmtBRL(p.extras65Valor)}</strong></div>
     <div class="metricline"><span>Faltas a descontar</span><strong style="color:var(--red)">${fmtBRL(-p.faltaValor)}</strong></div>
     <div class="metricline" style="font-size:16px;border-top:2px solid var(--line2);padding-top:10px;margin-top:6px"><span><b>Total estimado a receber</b></span><strong>${fmtBRL(p.total)}</strong></div>`}
