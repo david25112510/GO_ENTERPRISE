@@ -772,6 +772,19 @@ body.kiosk-mode .dash-var{font-size:13px}
 .jh-offrow b{margin-left:auto;font-weight:700}
 .jh-offrow b.bad{color:var(--red)}
 @media(max-width:900px){.jh-minis,.jh-off3{grid-template-columns:1fr}}
+.jh-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.jh-card{border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;border-left:4px solid #079149;transition:box-shadow .15s}
+.jh-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.10)}
+.jh-card-bad{border-left-color:var(--red)}
+.jh-card-hd{display:flex;gap:10px;align-items:center}
+.jh-card-hd b{font-size:12px;display:block}
+.jh-card-hd small{font-size:10px;color:var(--muted);display:block}
+.jh-card-mini{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;margin-top:10px;font-size:11px}
+.jh-card-mini span{color:var(--muted)}
+.jh-card-mini b{text-align:right}
+.jh-card-mini b.bad{color:var(--red)}
+@media(max-width:1100px){.jh-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.jh-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -3967,7 +3980,17 @@ function renderJornadaHe(){
   jhRenderOfensores(period);  // Task 4
   jhRenderGrid(period);  // Task 5
 }
-function jhAvatar(e,size){const src=(e&&e.photo)||DEFAULT_AVATAR;return `<img class="jh-av jh-av-${size||'sm'}" src="${src}" alt="">`;}
+function jhEmpLookup(employeeId){
+  const cad=(db.employees||[]).find(x=>x.id===employeeId)||{};
+  return {
+    id:employeeId, photo:cad.photo||'', role:cad.role||'', costCenter:cad.costCenter||'',
+    admission:cad.admission||''
+  };
+}
+function jhAvatar(e,size){
+  const src=(e&&e.photo)||(e&&e.employeeId&&jhEmpLookup(e.employeeId).photo)||DEFAULT_AVATAR;
+  return `<img class="jh-av jh-av-${size||'sm'}" src="${src||DEFAULT_AVATAR}" alt="" onerror="this.src='${DEFAULT_AVATAR}'">`;
+}
 function jhRenderEvolucao(){
   const el=$('jhEvolucao');if(!el)return;
   const s=jhEvolucaoSeries();
@@ -4002,7 +4025,30 @@ function jhRenderOfensores(period){
     col('Horas extras',o.he,fmtDurationMin,'Sem horas extras no período.')+
     col('Intra + interjornada',o.intraInter,fmtDurationMin,'Sem ocorrências no período.');
 }
-function jhRenderGrid(){}
+function jhRenderGrid(period){
+  const el=$('jhGrid');if(!el)return;
+  const sort=($('jhGridSort')||{}).value||'nome';
+  let list=period.employees.filter(e=>e.employeeId);
+  if(sort==='nome')list=list.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  else if(sort==='saldo')list=list.sort((a,b)=>(a.bhSaldoTotalMin||0)-(b.bhSaldoTotalMin||0));
+  else if(sort==='fora')list=list.sort((a,b)=>{
+    const fa=jhMetaStatus(a.bhSaldoTotalMin)==='dentro'?1:0, fb=jhMetaStatus(b.bhSaldoTotalMin)==='dentro'?1:0;
+    return fa-fb || Math.abs(b.bhSaldoTotalMin||0)-Math.abs(a.bhSaldoTotalMin||0);
+  });
+  el.innerHTML=list.map(e=>{
+    const cad=jhEmpLookup(e.employeeId), st=jhMetaStatus(e.bhSaldoTotalMin);
+    const sub=[cad.role,cad.costCenter].filter(Boolean).join(' · ')||'—';
+    return `<div class="jh-card jh-card-${st==='dentro'?'ok':'bad'}" onclick="openJhEmployeeDrawer('${e.employeeId}')">
+      <div class="jh-card-hd">${jhAvatar(e,'lg')}<div><b>${escHtml(e.nome)}</b><small>${escHtml(sub)}</small></div></div>
+      <div class="jh-card-mini">
+        <span>Saldo BH</span><b class="${(e.bhSaldoTotalMin||0)<0?'bad':''}">${fmtSignedMin(e.bhSaldoTotalMin)}</b>
+        <span>HE</span><b>${fmtDurationMin(e.horasExtraMin)}</b>
+        <span>Intra</span><b>${fmtDurationMin(e.intrajornadaMin)}</b>
+        <span>Inter</span><b>${fmtDurationMin(e.interjornadaMin)}</b>
+      </div>
+    </div>`;
+  }).join('')||'<p class="muted">Nenhum colaborador ativo neste período.</p>';
+}
 function renderJornada180Pendencias(){
   const tbl180=$('jornada180Table'),tblPend=$('jornadaPendenciasTable');
   if(!tbl180||!tblPend)return;
