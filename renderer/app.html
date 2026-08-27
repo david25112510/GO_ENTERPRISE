@@ -2117,6 +2117,34 @@ function parseSintetico180Fragments(frags){
   });
   return {periodoIni,periodoFim,employees};
 }
+/* Importador do Sintético de 180 dias (Fase 2): grava só `vencimentos180d` (projeção informativa —
+   não entra em computeTimesheetPayroll). O PDF traz "Periodo Ativo do Ponto", então precise=true e
+   o registro casa com o mesmo período de db.jornadaPeriods. */
+async function importJornadaSintetico180(file){
+  if(!file)return;
+  try{
+    const buf=await file.arrayBuffer();
+    const frags=await extractPdfFragments(buf);
+    const {periodoIni,periodoFim,employees}=parseSintetico180Fragments(frags);
+    const periodId=jornadaPeriodId(periodoFim);
+    let updated=0,notFound=0;const misses=[];
+    employees.forEach(row=>{
+      let emp=row.chapa?db.employees.find(x=>x.reg&&norm(x.reg)===norm(row.chapa)):null;
+      if(!emp&&row.nome)emp=db.employees.find(x=>normName(x.name)===normName(row.nome));
+      if(!emp){notFound++;misses.push(row.nome||row.chapa);return}
+      upsertJornadaEmployeeRecord(periodId,periodoIni,periodoFim,true,emp.id,row.chapa,row.nome,{
+        vencimentos180d:row.vencimentos
+      });
+      updated++;
+    });
+    db.imports.unshift({at:new Date().toLocaleString('pt-BR'),file:file.name,total:employees.length,added:0,updated,same:0,errors:notFound});
+    db.imports=db.imports.slice(0,30);
+    await save(true);
+    let msg=`Jornada/HE — projeção de vencimento (180 dias) importada: ${updated} colaborador(es) (período ${periodoIni.split('-').reverse().join('/')} a ${periodoFim.split('-').reverse().join('/')}).`;
+    if(notFound)msg+=` ${notFound} não encontrado(s) na equipe${misses.length?' ('+misses.slice(0,5).join(', ')+(misses.length>5?'…':'')+')':''}.`;
+    alert(msg);
+  }catch(e){alert('Falha ao importar Sintético de 180 dias: '+e.message)}
+}
 /* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
    grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
 function isSelbItemLive(item){
