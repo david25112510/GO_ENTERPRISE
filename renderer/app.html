@@ -3677,6 +3677,101 @@ function fmtDurationMin(min){
   if(min===null||min===undefined)return '—';
   return `${String(Math.floor(min/60)).padStart(2,'0')}:${String(min%60).padStart(2,'0')}`;
 }
+/* ===================== JORNADA/HE — Fase 3: dashboard executivo =====================
+   Funções puras de métrica (não gravam nada) + render da aba "Visão Geral" como painel
+   para a diretoria. Meta do banco de horas fixa em ±10h (±600 min). */
+function jhMetaStatus(saldoMin){
+  const v=saldoMin||0;
+  if(v>600)return 'acima';
+  if(v<-600)return 'abaixo';
+  return 'dentro';
+}
+function jhPeriodLabel(id){
+  const M=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const [y,mo]=String(id||'').split('-');
+  return `${M[(+mo||1)-1]}/${String(y||'').slice(2)}`;
+}
+function jhTeamMetrics(period){
+  const ativos=((period&&period.employees)||[]).filter(e=>e.employeeId);
+  const n=ativos.length;
+  const dentro=ativos.filter(e=>jhMetaStatus(e.bhSaldoTotalMin)==='dentro').length;
+  const faixaKey=v=>{
+    v=v||0;
+    if(v<-1200)return 'ltMinus20';
+    if(v<-600)return 'minus20to10';
+    if(v<=600)return 'dentro';
+    if(v<=1200)return 'plus10to20';
+    return 'gtPlus20';
+  };
+  const defs=[
+    {key:'ltMinus20',label:'abaixo de −20h',tone:'bad'},
+    {key:'minus20to10',label:'−20h a −10h',tone:'warn'},
+    {key:'dentro',label:'dentro de ±10h',tone:'ok'},
+    {key:'plus10to20',label:'+10h a +20h',tone:'warn'},
+    {key:'gtPlus20',label:'acima de +20h',tone:'bad'}
+  ];
+  return {
+    ativos, n,
+    pctDentro:n?Math.round(dentro/n*100):0,
+    heTotalMin:ativos.reduce((s,e)=>s+(e.horasExtraMin||0),0),
+    intraInterMin:ativos.reduce((s,e)=>s+(e.intrajornadaMin||0)+(e.interjornadaMin||0),0),
+    faixas:defs.map(d=>({...d,employees:ativos.filter(e=>faixaKey(e.bhSaldoTotalMin)===d.key)}))
+  };
+}
+function jhOfensores(period){
+  const ativos=((period&&period.employees)||[]).filter(e=>e.employeeId);
+  const rank=val=>ativos
+    .map(e=>({employeeId:e.employeeId,nome:e.nome,valorMin:val(e)}))
+    .filter(x=>x.valorMin)
+    .sort((a,b)=>Math.abs(b.valorMin)-Math.abs(a.valorMin))
+    .slice(0,5);
+  return {
+    bancoHoras:ativos
+      .filter(e=>jhMetaStatus(e.bhSaldoTotalMin)!=='dentro')
+      .map(e=>({employeeId:e.employeeId,nome:e.nome,valorMin:e.bhSaldoTotalMin||0}))
+      .sort((a,b)=>Math.abs(b.valorMin)-Math.abs(a.valorMin))
+      .slice(0,5),
+    he:rank(e=>e.horasExtraMin||0),
+    intraInter:rank(e=>(e.intrajornadaMin||0)+(e.interjornadaMin||0))
+  };
+}
+function jhEvolucaoSeries(){
+  return [...((db&&db.jornadaPeriods)||[])]
+    .sort((a,b)=>a.id.localeCompare(b.id))
+    .map(p=>{
+      const ativos=(p.employees||[]).filter(e=>e.employeeId);
+      return {
+        periodId:p.id,
+        label:jhPeriodLabel(p.id),
+        saldoLiquidoMin:ativos.reduce((s,e)=>s+(e.bhSaldoTotalMin||0),0),
+        heTotalMin:ativos.reduce((s,e)=>s+(e.horasExtraMin||0),0),
+        foraMeta:ativos.filter(e=>jhMetaStatus(e.bhSaldoTotalMin)!=='dentro').length
+      };
+    });
+}
+/* mini-gráfico de linha em SVG (viewBox 0..100), puro — retorna string, não toca no DOM.
+   Aceita number[] ou [{v}]. Desenha linha de zero quando a série cruza zero. */
+function jhSparkline(values,opts){
+  opts=opts||{};
+  const vals=(values||[]).map(v=>typeof v==='number'?v:((v&&v.v)||0));
+  const n=vals.length;
+  if(!n)return '<div class="jh-spark jh-spark-empty"></div>';
+  const min=Math.min(...vals),max=Math.max(...vals),flat=max===min;
+  const span=flat?1:(max-min);
+  const padTop=12,padBottom=12,h=100-padTop-padBottom;
+  const yOf=v=>flat?50:padTop+h*(1-(v-min)/span);
+  const pts=vals.map((v,i)=>({x:n>1?i/(n-1)*100:50,y:yOf(v)}));
+  const d=pts.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
+  const dots=pts.map(p=>`<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="2.4" class="jh-spark-dot"/>`).join('');
+  const zeroY=(!flat&&min<0&&max>0)?yOf(0):null;
+  return `<div class="jh-spark">
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      ${zeroY!=null?`<line x1="0" y1="${zeroY.toFixed(2)}" x2="100" y2="${zeroY.toFixed(2)}" class="jh-spark-zero" vector-effect="non-scaling-stroke"/>`:''}
+      <path d="${d}" class="jh-spark-line" fill="none" vector-effect="non-scaling-stroke"/>
+      ${dots}
+    </svg>
+  </div>`;
+}
 function renderJornadaHe(){
   const el=$('jornadaHeOverviewCards');if(!el)return;
   const period=latestJornadaPeriod();
