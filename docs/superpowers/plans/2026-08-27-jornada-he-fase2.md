@@ -385,7 +385,12 @@ function interIntraClassifyCol(x){
 function parseInterIntraFragments(frags){
   const periodoLabels=frags.filter(f=>f.s.indexOf('Periodo Ativo do Ponto')>=0);
   if(!periodoLabels.length)throw new Error('Layout da Listagem de Interjornada/Intrajornada não reconhecido (rótulo de período não encontrado).');
-  const dateFrags=frags.filter(f=>Math.abs(f.y-periodoLabels[0].y)<3&&/^\d{2}\/\d{2}\/\d{2,4}$/.test(f.s)).sort((a,b)=>a.x-b.x);
+  // o rótulo se repete em todas as páginas na MESMA posição Y (o eixo Y reinicia por página) —
+  // buscar a data só dentro do segmento da 1a página evita pegar fragmentos de data duplicados
+  // de outras páginas (o período é o mesmo em todas, então a 1a página já basta).
+  const page1EndIdx=periodoLabels[1]?frags.indexOf(periodoLabels[1]):frags.length;
+  const page1Frags=frags.slice(frags.indexOf(periodoLabels[0]),page1EndIdx);
+  const dateFrags=page1Frags.filter(f=>Math.abs(f.y-periodoLabels[0].y)<3&&/^\d{2}\/\d{2}\/\d{2,4}$/.test(f.s)).sort((a,b)=>a.x-b.x);
   if(dateFrags.length<2)throw new Error('Não foi possível ler o período ativo do ponto.');
   const periodoIni=pdfDateBrToIso(dateFrags[0].s),periodoFim=pdfDateBrToIso(dateFrags[1].s);
 
