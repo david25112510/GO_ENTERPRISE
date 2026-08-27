@@ -726,6 +726,31 @@ body.kiosk-mode .dash-var{font-size:13px}
 .jh-drawer-close{position:absolute;top:14px;right:14px;border:none;background:#eef1f4;width:30px;height:30px;
   border-radius:50%;font-size:14px;cursor:pointer}
 @media(max-width:900px){.jh-kpis{grid-template-columns:repeat(2,1fr)}.jh-two{grid-template-columns:1fr}}
+.jh-av{border-radius:50%;object-fit:cover;background:#eef1f4;flex:0 0 auto}
+.jh-av-xs{width:16px;height:16px}
+.jh-av-sm{width:24px;height:24px}
+.jh-av-lg{width:64px;height:64px;border:3px solid var(--selbetti-soft)}
+.jh-ruler{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:6px 0 14px}
+.jh-ruler-cell{border:1px solid var(--line);border-radius:10px;padding:10px 8px;text-align:center}
+.jh-ruler-cell.jh-tone-ok{background:#ecfdf3;border-color:#abefc6}
+.jh-ruler-cell.jh-tone-warn{background:#fffaeb;border-color:#fedf89}
+.jh-ruler-cell.jh-tone-bad{background:#fef3f2;border-color:#fecdca}
+.jh-ruler-n{font-size:20px;font-weight:800}
+.jh-ruler-lbl{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.2}
+.jh-ruler-avs{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;margin-top:6px;min-height:16px}
+.jh-more{font-size:10px;color:var(--muted);font-weight:700}
+.jh-metabars{display:flex;flex-direction:column;gap:4px}
+.jh-metabar{display:grid;grid-template-columns:150px 1fr 64px;align-items:center;gap:10px;cursor:pointer;padding:2px 4px;border-radius:6px}
+.jh-metabar:hover{background:#f8fafc}
+.jh-metabar-nm{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jh-metabar-track{position:relative;height:18px;background:#f1f5f9;border-radius:4px}
+.jh-metabar-zone{position:absolute;top:0;bottom:0;background:#dcfae6;border-left:1px dashed #86c9a3;border-right:1px dashed #86c9a3}
+.jh-metabar-zero{position:absolute;top:-3px;bottom:-3px;left:50%;width:2px;background:#94a3b8}
+.jh-metabar-fill{position:absolute;top:2px;bottom:2px;border-radius:3px;background:var(--selbetti)}
+.jh-metabar-fill.ok{background:#079149}
+.jh-metabar-fill.bad{background:var(--red)}
+.jh-metabar-val{font-size:12px;font-weight:700;text-align:right}
+.jh-metabar-val.bad{color:var(--red)}
 </style>
 </head>
 <body>
@@ -3845,52 +3870,57 @@ function renderJhImportLog(){
     :'<tr><td colspan="5" class="muted">Nenhuma importação do Jornada/HE ainda.</td></tr>';
 }
 function renderJornadaHe(){
-  const el=$('jornadaHeOverviewCards');if(!el)return;
+  const empty=$('jhEmpty'),dash=$('jhDashboard');
+  if(!empty||!dash)return;
   const period=latestJornadaPeriod();
   if(!period){
-    el.innerHTML='<p class="muted">Nenhum período importado ainda.</p>';
-    $('jornadaHeBancoTable').innerHTML='<tr><td colspan="4" class="muted">Nenhum período importado ainda.</td></tr>';
-    $('jornadaHeExtrasTable').innerHTML='<tr><td colspan="6" class="muted">Nenhum período importado ainda.</td></tr>';
-    $('jornadaHeHistoricoTable').innerHTML='<tr><td colspan="4" class="muted">Nenhum período importado ainda.</td></tr>';
+    empty.style.display='';dash.style.display='none';
     return;
   }
-  const activeEmployees=period.employees.filter(e=>e.employeeId);
-  const saldoLiquido=activeEmployees.reduce((s,e)=>s+(e.bhSaldoTotalMin||0),0);
-  const negativos=activeEmployees.filter(e=>(e.bhSaldoTotalMin||0)<0).length;
-  const heTotalMin=activeEmployees.reduce((s,e)=>s+(e.horasExtraMin||0),0);
-  el.innerHTML=`
-    <div class="card ${saldoLiquido<0?'accent-red':'accent-teal'}"><div class="k">Saldo líquido da equipe</div><div class="v">${fmtSignedMin(saldoLiquido)}</div></div>
-    <div class="card accent-amber"><div class="k">Colaboradores com saldo negativo</div><div class="v">${negativos}</div></div>
-    <div class="card accent-indigo"><div class="k">HE total do período</div><div class="v">${fmtDurationMin(heTotalMin)}</div></div>
-    <div class="card"><div class="k">Período</div><div class="v" style="font-size:15px">${period.periodoIni.split('-').reverse().join('/')} a ${period.periodoFim.split('-').reverse().join('/')}</div></div>`;
+  empty.style.display='none';dash.style.display='';
+  const tm=jhTeamMetrics(period);
 
-  const byName=[...activeEmployees].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-  $('jornadaHeBancoTable').innerHTML=byName.map(e=>`<tr><td>${escHtml(e.nome)}</td>
-    <td style="color:${(e.bhSaldoAnteriorMin||0)<0?'var(--red)':'inherit'}">${fmtSignedMin(e.bhSaldoAnteriorMin)}</td>
-    <td style="color:${(e.bhSaldoPeriodoMin||0)<0?'var(--red)':'inherit'}">${fmtSignedMin(e.bhSaldoPeriodoMin)}</td>
-    <td style="font-weight:700;color:${(e.bhSaldoTotalMin||0)<0?'var(--red)':'var(--selbetti-dark)'}">${fmtSignedMin(e.bhSaldoTotalMin)}</td></tr>`).join('')
-    ||'<tr><td colspan="4" class="muted">Nenhum colaborador neste período.</td></tr>';
+  // ---- KPIs ----
+  const periodo=`${period.periodoIni.split('-').reverse().join('/')} a ${period.periodoFim.split('-').reverse().join('/')}`;
+  $('jhKpis').innerHTML=`
+    <div class="jh-kpi ${tm.pctDentro>=70?'':'warn'}"><div class="k">Dentro da meta ±10h</div><div class="v">${tm.pctDentro}%</div></div>
+    <div class="jh-kpi"><div class="k">HE do período</div><div class="v">${fmtDurationMin(tm.heTotalMin)}</div></div>
+    <div class="jh-kpi"><div class="k">Intra + interjornada</div><div class="v">${fmtDurationMin(tm.intraInterMin)}</div></div>
+    <div class="jh-kpi"><div class="k">Período</div><div class="v" style="font-size:15px">${periodo}</div></div>`;
 
-  $('jornadaHeExtrasTable').innerHTML=byName.map(e=>`<tr><td>${escHtml(e.nome)}</td>
-    <td style="font-weight:700">${fmtDurationMin(e.horasExtraMin)}</td>
-    <td>${fmtDurationMin(e.horasAtrasoMin)}</td><td>${fmtDurationMin(e.horasFaltaMin)}</td>
-    <td>${fmtDurationMin(e.horasAbonoMin)}</td><td>${fmtDurationMin(e.horasAdNoturnoMin)}</td></tr>`).join('')
-    ||'<tr><td colspan="6" class="muted">Nenhum colaborador neste período.</td></tr>';
+  // ---- Régua de distribuição (5 faixas) ----
+  $('jhMetaRuler').innerHTML=tm.faixas.map(f=>`
+    <div class="jh-ruler-cell jh-tone-${f.tone}">
+      <div class="jh-ruler-n">${f.employees.length}</div>
+      <div class="jh-ruler-lbl">${f.label}</div>
+      <div class="jh-ruler-avs">${f.employees.slice(0,8).map(e=>jhAvatar(e,'xs')).join('')}${f.employees.length>8?`<span class="jh-more">+${f.employees.length-8}</span>`:''}</div>
+    </div>`).join('');
 
-  const periods=[...(db.jornadaPeriods||[])].sort((a,b)=>b.id.localeCompare(a.id));
-  $('jornadaHeHistoricoTable').innerHTML=periods.map((p,i)=>{
-    const prev=periods[i+1];
-    const total=p.employees.reduce((s,e)=>s+(e.bhSaldoTotalMin||0),0);
-    let deltaTxt='—';
-    if(prev){
-      const prevTotal=prev.employees.reduce((s,e)=>s+(e.bhSaldoTotalMin||0),0);
-      const delta=total-prevTotal;
-      deltaTxt=`${delta>=0?'▲':'▼'} ${fmtSignedMin(Math.abs(delta))}`;
-    }
-    return `<tr><td>${p.periodoIni.split('-').reverse().join('/')} a ${p.periodoFim.split('-').reverse().join('/')}</td>
-      <td>${p.employees.length}</td><td>${fmtSignedMin(total)}</td><td>${deltaTxt}</td></tr>`;
-  }).join('')||'<tr><td colspan="4" class="muted">Nenhum período importado ainda.</td></tr>';
+  // ---- Barras horizontais ordenadas (devedor -> credor) ----
+  const bars=[...tm.ativos].sort((a,b)=>(a.bhSaldoTotalMin||0)-(b.bhSaldoTotalMin||0));
+  const escala=Math.max(1200,...bars.map(e=>Math.abs(e.bhSaldoTotalMin||0)));
+  $('jhMetaBars').innerHTML=bars.map(e=>{
+    const v=e.bhSaldoTotalMin||0, st=jhMetaStatus(v), pct=Math.min(100,Math.abs(v)/escala*100)/2;
+    const metaPct=600/escala*100/2;
+    return `<div class="jh-metabar" onclick="openJhEmployeeDrawer('${e.employeeId}')">
+      <div class="jh-metabar-nm">${jhAvatar(e,'sm')}<span>${escHtml(e.nome)}</span></div>
+      <div class="jh-metabar-track">
+        <span class="jh-metabar-zone" style="left:${(50-metaPct).toFixed(2)}%;width:${(metaPct*2).toFixed(2)}%"></span>
+        <span class="jh-metabar-zero"></span>
+        <span class="jh-metabar-fill ${st==='dentro'?'ok':'bad'}" style="${v<0?`right:50%;width:${pct.toFixed(2)}%`:`left:50%;width:${pct.toFixed(2)}%`}"></span>
+      </div>
+      <div class="jh-metabar-val ${st==='dentro'?'':'bad'}">${fmtSignedMin(v)}</div>
+    </div>`;
+  }).join('')||'<p class="muted">Nenhum colaborador ativo neste período.</p>';
+
+  jhRenderEvolucao();   // Task 4
+  jhRenderOfensores(period);  // Task 4
+  jhRenderGrid(period);  // Task 5
 }
+function jhAvatar(e,size){const src=(e&&e.photo)||DEFAULT_AVATAR;return `<img class="jh-av jh-av-${size||'sm'}" src="${src}" alt="">`;}
+function jhRenderEvolucao(){}
+function jhRenderOfensores(){}
+function jhRenderGrid(){}
 function renderJornada180Pendencias(){
   const tbl180=$('jornada180Table'),tblPend=$('jornadaPendenciasTable');
   if(!tbl180||!tblPend)return;
