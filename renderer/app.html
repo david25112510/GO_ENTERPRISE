@@ -3062,58 +3062,61 @@ function parseToUnicodeMap(streamText){
 async function extractPdfFragments(arrayBuffer){
   const u8=new Uint8Array(arrayBuffer);
   const objs=parsePdfObjects(u8);
-  const pageNum=Object.keys(objs).find(n=>/\/Type\s*\/Page\b(?!s)/.test(objs[n].dict));
-  if(!pageNum)throw new Error('Não foi possível localizar a página do PDF.');
-  const page=objs[pageNum];
+  const pageNums=Object.keys(objs).filter(n=>/\/Type\s*\/Page\b(?!s)/.test(objs[n].dict));
+  if(!pageNums.length)throw new Error('Não foi possível localizar a página do PDF.');
 
-  let resText=pdfDictGet(page.dict,'Resources');
-  let resObj=pdfResolveRef(objs,resText);
-  const resourcesDict=resObj?resObj.dict:(resText||'');
-  let fontsText=pdfDictGet(resourcesDict,'Font');
-  let fontsObj=pdfResolveRef(objs,fontsText);
-  const fontsDict=fontsObj?fontsObj.dict:(fontsText||'');
+  const allFrags=[];
+  for(const pageNum of pageNums){
+    const page=objs[pageNum];
 
-  const fontMaps={};
-  const fontRe=/\/(\w+)\s+(\d+)\s+0\s+R/g;let fm;
-  while((fm=fontRe.exec(fontsDict))){
-    const fontName='/'+fm[1],fontObj=objs[+fm[2]];
-    if(!fontObj){fontMaps[fontName]={};continue}
-    const tuRefText=pdfDictGet(fontObj.dict,'ToUnicode');
-    const tuObj=pdfResolveRef(objs,tuRefText);
-    if(tuObj){
-      const tuBytes=await pdfGetStreamBytes(tuObj);
-      fontMaps[fontName]=parseToUnicodeMap(bytesToLatin1(tuBytes));
-    }else fontMaps[fontName]={};
-  }
+    let resText=pdfDictGet(page.dict,'Resources');
+    let resObj=pdfResolveRef(objs,resText);
+    const resourcesDict=resObj?resObj.dict:(resText||'');
+    let fontsText=pdfDictGet(resourcesDict,'Font');
+    let fontsObj=pdfResolveRef(objs,fontsText);
+    const fontsDict=fontsObj?fontsObj.dict:(fontsText||'');
 
-  let contentsText=pdfDictGet(page.dict,'Contents');
-  let contentBytesList=[];
-  if(contentsText&&contentsText.startsWith('[')){
-    const refRe=/(\d+)\s+0\s+R/g;let rm;
-    while((rm=refRe.exec(contentsText))){const o=objs[+rm[1]];if(o)contentBytesList.push(await pdfGetStreamBytes(o))}
-  }else{
-    const o=pdfResolveRef(objs,contentsText);
-    if(o)contentBytesList.push(await pdfGetStreamBytes(o));
-  }
-  const contentText=contentBytesList.map(b=>bytesToLatin1(b)).join('\n');
+    const fontMaps={};
+    const fontRe=/\/(\w+)\s+(\d+)\s+0\s+R/g;let fm;
+    while((fm=fontRe.exec(fontsDict))){
+      const fontName='/'+fm[1],fontObj=objs[+fm[2]];
+      if(!fontObj){fontMaps[fontName]={};continue}
+      const tuRefText=pdfDictGet(fontObj.dict,'ToUnicode');
+      const tuObj=pdfResolveRef(objs,tuRefText);
+      if(tuObj){
+        const tuBytes=await pdfGetStreamBytes(tuObj);
+        fontMaps[fontName]=parseToUnicodeMap(bytesToLatin1(tuBytes));
+      }else fontMaps[fontName]={};
+    }
 
-  const tokenRe=/(?<bt>\bBT\b)|\/(?<font>[\w+.-]+)\s+[\d.]+\s+Tf|(?<tx>-?[\d.]+)\s+(?<ty>-?[\d.]+)\s+Td|<(?<hex>[0-9A-Fa-f]+)>\s*Tj/g;
-  let curFont=null,accX=0,accY=0;
-  const frags=[];
-  let mm;
-  while((mm=tokenRe.exec(contentText))){
-    const g=mm.groups;
-    if(g.bt){accX=0;accY=0}
-    else if(g.font){curFont='/'+g.font}
-    else if(g.tx!==undefined){accX+=parseFloat(g.tx);accY+=parseFloat(g.ty)}
-    else if(g.hex!==undefined){
-      const hex=g.hex,map=fontMaps[curFont]||{};
-      let s='';
-      for(let i=0;i+4<=hex.length;i+=4){const cid=parseInt(hex.slice(i,i+4),16);s+=map[cid]!==undefined?map[cid]:''}
-      if(s)frags.push({x:accX,y:accY,s});
+    let contentsText=pdfDictGet(page.dict,'Contents');
+    let contentBytesList=[];
+    if(contentsText&&contentsText.startsWith('[')){
+      const refRe=/(\d+)\s+0\s+R/g;let rm;
+      while((rm=refRe.exec(contentsText))){const o=objs[+rm[1]];if(o)contentBytesList.push(await pdfGetStreamBytes(o))}
+    }else{
+      const o=pdfResolveRef(objs,contentsText);
+      if(o)contentBytesList.push(await pdfGetStreamBytes(o));
+    }
+    const contentText=contentBytesList.map(b=>bytesToLatin1(b)).join('\n');
+
+    const tokenRe=/(?<bt>\bBT\b)|\/(?<font>[\w+.-]+)\s+[\d.]+\s+Tf|(?<tx>-?[\d.]+)\s+(?<ty>-?[\d.]+)\s+Td|<(?<hex>[0-9A-Fa-f]+)>\s*Tj/g;
+    let curFont=null,accX=0,accY=0;
+    let mm;
+    while((mm=tokenRe.exec(contentText))){
+      const g=mm.groups;
+      if(g.bt){accX=0;accY=0}
+      else if(g.font){curFont='/'+g.font}
+      else if(g.tx!==undefined){accX+=parseFloat(g.tx);accY+=parseFloat(g.ty)}
+      else if(g.hex!==undefined){
+        const hex=g.hex,map=fontMaps[curFont]||{};
+        let s='';
+        for(let i=0;i+4<=hex.length;i+=4){const cid=parseInt(hex.slice(i,i+4),16);s+=map[cid]!==undefined?map[cid]:''}
+        if(s)allFrags.push({x:accX,y:accY,s});
+      }
     }
   }
-  return frags;
+  return allFrags;
 }
 
 const PONTO_WEEKDAYS=new Set(['DOM','SEG','TER','QUA','QUI','SEX','SAB']);
