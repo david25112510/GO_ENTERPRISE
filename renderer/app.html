@@ -3724,6 +3724,28 @@ function renderJornadaHe(){
       <td>${p.employees.length}</td><td>${fmtSignedMin(total)}</td><td>${deltaTxt}</td></tr>`;
   }).join('')||'<tr><td colspan="4" class="muted">Nenhum período importado ainda.</td></tr>';
 }
+function renderJornada180Pendencias(){
+  const tbl180=$('jornada180Table'),tblPend=$('jornadaPendenciasTable');
+  if(!tbl180||!tblPend)return;
+  const windows=[...(db.jornada180Windows||[])].sort((a,b)=>a.id.localeCompare(b.id));
+  const oldest=windows[0];
+  const period=latestJornadaPeriod();
+  if(!oldest||!oldest.employees.filter(e=>e.employeeId).length){
+    tbl180.innerHTML='<tr><td colspan="4" class="muted">Nenhum dado de 180 dias importado ainda.</td></tr>';
+  }else{
+    const byName=[...oldest.employees].filter(e=>e.employeeId).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    tbl180.innerHTML=byName.map(e=>{
+      const rec=period?findJornadaEmployeeRecord(period,e.employeeId):null;
+      const venc=(rec&&rec.vencimentos180d||[]).map(v=>`${v.competenciaId}: ${fmtSignedMin(v.valorMin)}`).join(', ')||'—';
+      return `<tr><td>${escHtml(e.nome)}</td><td>${oldest.janelaIni.split('-').reverse().join('/')} a ${oldest.janelaFim.split('-').reverse().join('/')}</td>
+        <td style="color:${(e.valorPagarDescontarMin||0)<0?'var(--red)':'inherit'}">${fmtSignedMin(e.valorPagarDescontarMin)}</td><td style="font-size:12px">${venc}</td></tr>`;
+    }).join('')||'<tr><td colspan="4" class="muted">Nenhum colaborador nesta janela.</td></tr>';
+  }
+  const pendentes=period?period.employees.filter(e=>e.employeeId&&(e.pendingSignatureDocs||[]).length):[];
+  tblPend.innerHTML=pendentes.length?[...pendentes].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(e=>
+    `<tr><td>${escHtml(e.nome)}</td><td>${e.pendingSignatureDocs.map(d=>escHtml(d.arquivo)).join('<br>')}</td></tr>`
+  ).join(''):'<tr><td colspan="2" class="muted">Nenhuma assinatura pendente.</td></tr>';
+}
 function parseHorarioRaw(raw){
   if(!raw)return null;
   const m=String(raw).match(/^(\S+)\s+([\d:\-\/]+)\s*(.*)$/);
@@ -3972,6 +3994,7 @@ function render(){
   renderFinanceiro();
   renderRH();
   renderJornadaHe();
+  renderJornada180Pendencias();
   renderFornecedores();
   renderAdmin();
   renderManuais();
