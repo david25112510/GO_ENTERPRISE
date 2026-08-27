@@ -47,7 +47,7 @@ Os 4 PDFs já foram explorados fragmento a fragmento (mesma técnica da Fase 1: 
   - `normalizeJornada180Window(w) -> {id,janelaIni,janelaFim,importedAt,updatedAt,employees}`
   - `upsertJornada180EmployeeRecord(windowId,janelaIni,janelaFim,employeeId,chapa,nome,patch)`
 
-- [ ] **Step 1: Registrar a coleção no merge entre PCs**
+- [x] **Step 1: Registrar a coleção no merge entre PCs**
 
 Em `src/dataStore.js`, trocar:
 ```js
@@ -66,7 +66,7 @@ const ARRAY_COLLECTIONS = [
 ];
 ```
 
-- [ ] **Step 2: Estender `normalizeJornadaEmployeeRecord` com os 3 campos novos**
+- [x] **Step 2: Estender `normalizeJornadaEmployeeRecord` com os 3 campos novos**
 
 Localizar (`renderer/app.html`, buscar `function normalizeJornadaEmployeeRecord`):
 ```js
@@ -99,7 +99,7 @@ function normalizeJornadaEmployeeRecord(e){
 }
 ```
 
-- [ ] **Step 3: Helpers da coleção `db.jornada180Windows`**
+- [x] **Step 3: Helpers da coleção `db.jornada180Windows`**
 
 Logo após `function upsertJornadaEmployeeRecord(...){...}` (Fase 1, procurar por `period.updatedAt=new Date().toISOString();` seguido do fechamento da função), inserir:
 
@@ -141,7 +141,7 @@ function upsertJornada180EmployeeRecord(windowId,janelaIni,janelaFim,employeeId,
 }
 ```
 
-- [ ] **Step 4: `normalizeDb` — registrar a coleção**
+- [x] **Step 4: `normalizeDb` — registrar a coleção**
 
 Localizar em `normalizeDb()` a linha (Fase 1):
 ```js
@@ -152,7 +152,7 @@ Logo abaixo dela, adicionar:
 jornada180Windows:Array.isArray(source.jornada180Windows)?source.jornada180Windows.map(normalizeJornada180Window):[],
 ```
 
-- [ ] **Step 5: Verificar sintaxe**
+- [x] **Step 5: Verificar sintaxe**
 
 ```bash
 node -e "
@@ -165,7 +165,7 @@ node --check "$TEMP/check.js"
 ```
 Expected: sem saída.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/dataStore.js renderer/app.html
@@ -185,7 +185,7 @@ git commit -m "Adiciona modelo de dados da Fase 2 do Jornada/HE (180 dias, assin
 
 Layout real validado (`Espelho_de_Ponto_PENDENTE_Assinatura_Portal_MEU_RH.pdf`): tabela de 3 colunas visíveis (Chapa/Nome/Horario/Total de Doc.), com um bloco por colaborador seguido, quando há pendência, de um sub-cabeçalho "Id/Nome Arquivo/Satus Assinatura" e N linhas de documento — todos usando as MESMAS posições X que o bloco do colaborador (chapa≈33.6/id≈33.6 na mesma coluna; nome≈84.6/arquivo≈84.6; horario≈254.1/status≈254.1). A distinção entre "linha de colaborador" e "linha de documento" é pelo CONTEÚDO da 3ª coluna, não pela posição.
 
-- [ ] **Step 1: Escrever o parser**
+- [x] **Step 1: Escrever o parser**
 
 ```js
 /* ===================== JORNADA/HE — Fase 2: parser do "Espelho de Ponto PENDENTE Assinatura" =====================
@@ -229,12 +229,12 @@ function parseEspelhoPendenteFragments(frags){
 }
 ```
 
-- [ ] **Step 2: Verificar sintaxe**
+- [x] **Step 2: Verificar sintaxe**
 
 Run: mesmo comando de extração + `node --check` (Task 1, Step 5).
 Expected: sem saída.
 
-- [ ] **Step 3: Testar contra o PDF real**
+- [x] **Step 3: Testar contra o PDF real**
 
 Criar um script standalone temporário (`.mjs`) juntando as funções de baixo nível (`renderer/app.html:2898-3027`) + `parseEspelhoPendenteFragments` desta task:
 
@@ -279,7 +279,7 @@ Expected: `OK — todas as asserções do parser do Espelho de Ponto Pendente pa
 
 Se falhar, o mais provável é a tolerância `bestDist<=6` em `espelhoPendenteClassifyCol` ou o agrupamento de linha (`Math.abs(k-yKey)<1`) — ajustar e rodar de novo.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add renderer/app.html
@@ -299,7 +299,7 @@ git commit -m "Adiciona parser do Espelho de Ponto Pendente de Assinatura"
 
 **Decisão de design importante**: este PDF não traz data de período próprio (só Chapa/Nome/Horario/Total de Doc.) — não dá pra criar um período novo a partir dele. O importador anexa ao período **mais recente já existente** em `db.jornadaPeriods` (criado pela planilha de saldo ou pela Listagem de HE da Fase 1). Se ainda não existir nenhum período, aborta com uma mensagem clara em vez de inventar um período sem data.
 
-- [ ] **Step 1: Escrever o importador**
+- [x] **Step 1: Escrever o importador**
 
 ```js
 async function importJornadaEspelhoPendente(file){
@@ -330,12 +330,12 @@ async function importJornadaEspelhoPendente(file){
 }
 ```
 
-- [ ] **Step 2: Verificar sintaxe**
+- [x] **Step 2: Verificar sintaxe**
 
 Run: mesmo comando de extração + `node --check`.
 Expected: sem saída.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add renderer/app.html
@@ -359,7 +359,7 @@ Layout real validado: cabeçalho "Periodo Ativo do Ponto" com as duas datas (igu
 
 **Correção aplicada após a Task 2 (ruling do controlador)**: `extractPdfFragments` (função compartilhada de Fase 1) tinha um bug de páginas — usava `.find()` no primeiro `/Type/Page`, retornando só a página 1 do PDF. O arquivo real desta task tem **2 páginas**. A Task 2 descobriu isso e o controlador corrigiu `extractPdfFragments` na raiz (agora itera todas as páginas, concatenando os fragmentos na ordem do documento — mudança retrocompatível, verificada contra o PDF de exemplo da Listagem de HE da Fase 1, que é de 1 página só). Como o array de fragmentos agora pode conter mais de uma página concatenada, e o rótulo "Periodo Ativo do Ponto" se repete **uma vez por página** (mesmo texto, mesmo Y, em cada página), o parser abaixo processa os fragmentos em segmentos — um por ocorrência do rótulo — evitando que linhas de páginas diferentes colidam no mesmo bucket de Y (o eixo Y do PDF reinicia a cada página).
 
-- [ ] **Step 1: Escrever o parser**
+- [x] **Step 1: Escrever o parser**
 
 ```js
 /* ===================== JORNADA/HE — Fase 2: parser da Listagem de INTERJORNADA e INTRAJORNADA (detalhado) =====================
@@ -432,12 +432,12 @@ function parseInterIntraFragments(frags){
 }
 ```
 
-- [ ] **Step 2: Verificar sintaxe**
+- [x] **Step 2: Verificar sintaxe**
 
 Run: mesmo comando + `node --check`.
 Expected: sem saída.
 
-- [ ] **Step 3: Testar contra o PDF real**
+- [x] **Step 3: Testar contra o PDF real**
 
 Mesma técnica de script standalone (Task 2, Step 3), agora com `parseInterIntraFragments`:
 
@@ -476,7 +476,7 @@ Expected: `OK — ...`, sem `Assertion failed`.
 
 Se falhar, ajustar `bestDist<=8` em `interIntraClassifyCol` ou o agrupamento de linha.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add renderer/app.html
@@ -496,7 +496,7 @@ git commit -m "Adiciona parser detalhado de Interjornada/Intrajornada"
 
 Esta importação **só grava `interIntraEvents`** — não recalcula `intrajornadaMin`/`interjornadaMin` (que continuam vindo da Listagem de HE da Fase 1, conforme decisão do usuário).
 
-- [ ] **Step 1: Escrever o importador**
+- [x] **Step 1: Escrever o importador**
 
 ```js
 async function importJornadaInterIntraDetalhado(file){
@@ -526,12 +526,12 @@ async function importJornadaInterIntraDetalhado(file){
 }
 ```
 
-- [ ] **Step 2: Verificar sintaxe**
+- [x] **Step 2: Verificar sintaxe**
 
 Run: mesmo comando + `node --check`.
 Expected: sem saída.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add renderer/app.html
@@ -553,7 +553,7 @@ Layout real validado: cabeçalho "Periodo Ativo do Ponto" com as datas; tabela c
 
 **Caso real de dado ausente (não é bug)**: o colaborador 090464 não tem nenhum fragmento de SLD TOT BH no PDF real (só NEG ATU e POS ATU) — mesmo padrão de lacuna real de dado já visto na Fase 1 (chapa 090401 na Listagem de HE). Como esta task não usa a coluna SLD TOT BH mesmo, isso não afeta o resultado, mas documentar a lacuna evita confusão numa investigação futura.
 
-- [ ] **Step 1: Escrever o parser**
+- [x] **Step 1: Escrever o parser**
 
 ```js
 /* ===================== JORNADA/HE — Fase 2: parser do Sintético de 180 dias (só a projeção) =====================
@@ -618,12 +618,12 @@ function parseSintetico180Fragments(frags){
 }
 ```
 
-- [ ] **Step 2: Verificar sintaxe**
+- [x] **Step 2: Verificar sintaxe**
 
 Run: mesmo comando + `node --check`.
 Expected: sem saída.
 
-- [ ] **Step 3: Testar contra o PDF real**
+- [x] **Step 3: Testar contra o PDF real**
 
 ```js
 const buf=await readFile(String.raw`F:\Projetos DEV\Modulo RH\Bco_Horas_Selbetti_Sintetico_Portal_MEU_RH.pdf`);
@@ -660,7 +660,7 @@ Expected: `OK — ...`, sem `Assertion failed`.
 
 Se falhar, ajustar a tolerância `bestDist<=6`/`bestDist<=8`, ou a distância `<10` no casamento "VL REF"↔"N/YYYY".
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add renderer/app.html
@@ -678,7 +678,7 @@ git commit -m "Adiciona parser da projecao de vencimento (Sintetico 180 dias)"
 - Consumes: `parseSintetico180Fragments`, `jornadaPeriodId`, `upsertJornadaEmployeeRecord`, `norm`, `normName`.
 - Produces: `importJornadaSintetico180(file)`.
 
-- [ ] **Step 1: Escrever o importador**
+- [x] **Step 1: Escrever o importador**
 
 ```js
 async function importJornadaSintetico180(file){
@@ -708,12 +708,12 @@ async function importJornadaSintetico180(file){
 }
 ```
 
-- [ ] **Step 2: Verificar sintaxe**
+- [x] **Step 2: Verificar sintaxe**
 
 Run: mesmo comando + `node --check`.
 Expected: sem saída.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add renderer/app.html
@@ -737,7 +737,7 @@ Layout real validado: bloco por colaborador ("chapa NOME ... 180 dias do Banco D
 
 **Correção aplicada após a Task 2 (ruling do controlador)**: mesma correção de `extractPdfFragments` (agora retorna todas as páginas concatenadas, ver Task 4). O arquivo real desta task tem **4 páginas**. O rótulo "Periodo Ativo do Ponto" se repete uma vez por página (mesmo Y em todas), usado aqui como marcador de página pra segmentar os fragmentos e nunca misturar linhas de páginas diferentes no mesmo agrupamento por Y.
 
-- [ ] **Step 1: Escrever o parser**
+- [x] **Step 1: Escrever o parser**
 
 ```js
 /* ===================== JORNADA/HE — Fase 2: parser do Analítico de 180 dias =====================
@@ -804,12 +804,12 @@ function parseAnalitico180Fragments(frags){
 }
 ```
 
-- [ ] **Step 2: Verificar sintaxe**
+- [x] **Step 2: Verificar sintaxe**
 
 Run: mesmo comando + `node --check`.
 Expected: sem saída.
 
-- [ ] **Step 3: Testar contra o PDF real**
+- [x] **Step 3: Testar contra o PDF real**
 
 ```js
 const buf=await readFile(String.raw`F:\Projetos DEV\Modulo RH\Bco_Horas_Selbetti_Analitico_Portal_MEU_RH.pdf`);
@@ -836,7 +836,7 @@ console.log('OK — todas as asserções do parser do Analítico de 180 dias pas
 Run: `node <script>.mjs`
 Expected: `OK — ...`, sem `Assertion failed`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add renderer/app.html
@@ -854,7 +854,7 @@ git commit -m "Adiciona parser de eventos do Analitico 180 dias"
 - Consumes: `parseAnalitico180Fragments`, `upsertJornada180EmployeeRecord` (Task 1), `norm`, `normName`.
 - Produces: `importJornadaAnalitico180(file)`.
 
-- [ ] **Step 1: Escrever o importador**
+- [x] **Step 1: Escrever o importador**
 
 ```js
 async function importJornadaAnalitico180(file){
@@ -887,12 +887,12 @@ async function importJornadaAnalitico180(file){
 }
 ```
 
-- [ ] **Step 2: Verificar sintaxe**
+- [x] **Step 2: Verificar sintaxe**
 
 Run: mesmo comando + `node --check`.
 Expected: sem saída.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add renderer/app.html
@@ -910,7 +910,7 @@ git commit -m "Adiciona importador de eventos do Analitico 180 dias"
 - Consumes: `importJornadaAnalitico180`, `importJornadaSintetico180`, `importJornadaEspelhoPendente`, `importJornadaInterIntraDetalhado` (Tasks 3, 5, 7, 9), `switchJornadaHeTab` (Fase 1, já genérico por `data-tab`/`data-pane`, não precisa mudar).
 - Produces: botão de aba `data-tab="pendencias"`, elementos DOM `#jornada180Table`, `#jornadaPendenciasTable` (consumidos pela Task 11).
 
-- [ ] **Step 1: Botão da aba nova**
+- [x] **Step 1: Botão da aba nova**
 
 Localizar (buscar `data-tab="historico"`):
 ```html
@@ -924,7 +924,7 @@ Trocar por:
       </div>
 ```
 
-- [ ] **Step 2: Botões de importação novos na Visão Geral**
+- [x] **Step 2: Botões de importação novos na Visão Geral**
 
 Localizar (buscar `Importar Listagem de HE`):
 ```html
@@ -945,7 +945,7 @@ Trocar por:
           <p class="muted" style="font-size:12px;margin-top:-6px">Os arquivos são independentes — pode importar qualquer combinação deles, em qualquer ordem.</p>
 ```
 
-- [ ] **Step 3: Painel da aba nova**
+- [x] **Step 3: Painel da aba nova**
 
 Localizar o fechamento da aba `historico` (buscar `id="jornadaHeHistoricoTable"`, o `</div></div>` que fecha aquele painel, seguido do `</section>` do Jornada/HE):
 ```html
@@ -976,7 +976,7 @@ Trocar por:
     </section>
 ```
 
-- [ ] **Step 4: Verificar sintaxe e balanceamento**
+- [x] **Step 4: Verificar sintaxe e balanceamento**
 
 ```bash
 node -e "
@@ -997,7 +997,7 @@ console.log('section:',(htmlPart.match(/<section[\s>]/g)||[]).length,(htmlPart.m
 ```
 Expected: `node --check` sem saída; `div`/`section` com os dois números de cada par iguais.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add renderer/app.html
@@ -1015,7 +1015,7 @@ git commit -m "Adiciona botoes de importacao e aba 180 dias/Pendencias"
 - Consumes: `db.jornada180Windows`, `latestJornadaPeriod`, `findJornadaEmployeeRecord`, `fmtSignedMin`, `escHtml` (Fase 1).
 - Produces: `renderJornada180Pendencias()` — chamada de dentro de `render()`.
 
-- [ ] **Step 1: Função de renderização**
+- [x] **Step 1: Função de renderização**
 
 Logo após `renderJornadaHe(){...}` (Fase 1, buscar o `}` que fecha essa função, antes de `function parseHorarioRaw`), inserir:
 
@@ -1044,19 +1044,19 @@ function renderJornada180Pendencias(){
 }
 ```
 
-- [ ] **Step 2: Wiring dentro de `render()`**
+- [x] **Step 2: Wiring dentro de `render()`**
 
 Localizar `renderJornadaHe();` dentro de `render()` (buscar `grep -n "renderJornadaHe();" renderer/app.html`). Logo depois dessa linha, adicionar:
 ```js
   renderJornada180Pendencias();
 ```
 
-- [ ] **Step 3: Verificar sintaxe**
+- [x] **Step 3: Verificar sintaxe**
 
 Run: mesmo comando + `node --check`.
 Expected: sem saída.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add renderer/app.html
@@ -1074,7 +1074,7 @@ git commit -m "Adiciona renderizacao da aba 180 dias/Pendencias"
 - Consumes: `latestJornadaPeriod` (Fase 1).
 - Produces: `pendingSignatureAlerts() -> [{type:'assinatura',severity,text,detail}]`.
 
-- [ ] **Step 1: Função de alerta**
+- [x] **Step 1: Função de alerta**
 
 Logo após `function financeDueAlerts(){...}` (buscar o `}` que fecha essa função), inserir:
 
@@ -1090,7 +1090,7 @@ function pendingSignatureAlerts(){
 }
 ```
 
-- [ ] **Step 2: Incluir na lista de alertas do Home**
+- [x] **Step 2: Incluir na lista de alertas do Home**
 
 Localizar (buscar `const alerts=[...vacationDeadlineAlerts()`):
 ```js
@@ -1113,12 +1113,12 @@ Trocar por:
     if(a.type==='assinatura')return `<div class="alert-box ${a.severity}"><div class="ic">✍️</div><div><b>${escHtml(a.text)}</b><small>${escHtml(a.detail)}</small></div></div>`;
 ```
 
-- [ ] **Step 3: Verificar sintaxe**
+- [x] **Step 3: Verificar sintaxe**
 
 Run: mesmo comando + `node --check`.
 Expected: sem saída.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add renderer/app.html
@@ -1131,7 +1131,7 @@ git commit -m "Adiciona alerta de assinatura de ponto pendente no Home"
 
 **Files:** nenhum (só verificação)
 
-- [ ] **Step 1: Rodar o app localmente**
+- [x] **Step 1: Rodar o app localmente**
 
 ```bash
 unset ELECTRON_RUN_AS_NODE   # ou Remove-Item Env:\ELECTRON_RUN_AS_NODE no PowerShell
@@ -1139,35 +1139,35 @@ npm start
 ```
 Expected: app abre sem erro no console.
 
-- [ ] **Step 2: Importar os 4 arquivos novos, em qualquer ordem**
+- [x] **Step 2: Importar os 4 arquivos novos, em qualquer ordem**
 
 No Jornada/HE → Visão Geral, importar `Bco_Horas_Selbetti_Analitico_Portal_MEU_RH.pdf`, `Bco_Horas_Selbetti_Sintetico_Portal_MEU_RH.pdf`, `Espelho_de_Ponto_PENDENTE_Assinatura_Portal_MEU_RH.pdf`, `Listagem_de_INTERJORNADA_e_INTRAJORNADA_Portal_MEU_RH.pdf`.
 Expected: 4 alertas de sucesso; o Espelho de Ponto Pendente só funciona se um período já existir (importar a planilha de saldo ou a Listagem de HE da Fase 1 primeiro, se ainda não tiver dado de teste).
 
-- [ ] **Step 3: Conferir a aba "180 dias / Pendências"**
+- [x] **Step 3: Conferir a aba "180 dias / Pendências"**
 
 Expected: tabela de 180 dias mostrando a janela `26/01/2026 a 25/02/2026` com valor "00:00" pra todo mundo (arquivo real não tem evento); tabela de pendências mostrando 4 colaboradores (ITALO KELLER MARQUES SAYAO, JOAO PEDRO RODRIGUES SANTOS, TIAGO FERRARI CANDIOTTO, VINICIUS MAGALHAES MORAIS RIBEIRO) com seus documentos.
 
-- [ ] **Step 4: Conferir o alerta no Home**
+- [x] **Step 4: Conferir o alerta no Home**
 
 Expected: 4 alertas de assinatura pendente aparecem na lista de alertas do Home (um por colaborador com pendência), com o ícone ✍️.
 
-- [ ] **Step 5: Reimportar os mesmos 4 arquivos**
+- [x] **Step 5: Reimportar os mesmos 4 arquivos**
 
 Expected: números batem exatamente com a primeira importação (idempotente, não duplica).
 
-- [ ] **Step 6: Conferir que a Fase 1 continua intacta**
+- [x] **Step 6: Conferir que a Fase 1 continua intacta**
 
 Abrir a aba "Banco de Horas"/"HE do período" do Jornada/HE, o Meu Painel de um operador, e o resumo de pagamento estimado no perfil individual — tudo deve continuar mostrando exatamente os mesmos valores de antes desta Fase 2 (nada da Fase 1 foi alterado).
 
-- [ ] **Step 7: Build completo**
+- [x] **Step 7: Build completo**
 
 ```bash
 npx electron-builder --win
 ```
 Expected: build termina com exit code 0, gera `dist\GO-Enterprise-Setup-<versão>.exe`.
 
-- [ ] **Step 8: Commit final (se algum ajuste tiver sido feito durante o QA)**
+- [x] **Step 8: Commit final (se algum ajuste tiver sido feito durante o QA)**
 
 ```bash
 git add -A
