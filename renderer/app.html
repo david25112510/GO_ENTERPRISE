@@ -1933,6 +1933,32 @@ function parseEspelhoPendenteFragments(frags){
   });
   return {employees};
 }
+async function importJornadaEspelhoPendente(file){
+  if(!file)return;
+  try{
+    const buf=await file.arrayBuffer();
+    const frags=await extractPdfFragments(buf);
+    const {employees}=parseEspelhoPendenteFragments(frags);
+    const period=latestJornadaPeriod();
+    if(!period){alert('Importe primeiro a planilha de saldo ou a Listagem de HE deste período — o Espelho de Ponto Pendente não tem data própria, precisa de um período já existente pra ser anexado.');return}
+    let updated=0,notFound=0;const misses=[];
+    employees.forEach(row=>{
+      let emp=row.chapa?db.employees.find(x=>x.reg&&norm(x.reg)===norm(row.chapa)):null;
+      if(!emp&&row.nome)emp=db.employees.find(x=>normName(x.name)===normName(row.nome));
+      if(!emp){notFound++;misses.push(row.nome||row.chapa);return}
+      upsertJornadaEmployeeRecord(period.id,period.periodoIni,period.periodoFim,false,emp.id,row.chapa,row.nome,{
+        pendingSignatureDocs:row.docs
+      });
+      updated++;
+    });
+    db.imports.unshift({at:new Date().toLocaleString('pt-BR'),file:file.name,total:employees.length,added:0,updated,same:0,errors:notFound});
+    db.imports=db.imports.slice(0,30);
+    await save(true);
+    let msg=`Jornada/HE — Espelho de Ponto Pendente de Assinatura importado: ${updated} colaborador(es).`;
+    if(notFound)msg+=` ${notFound} não encontrado(s) na equipe${misses.length?' ('+misses.slice(0,5).join(', ')+(misses.length>5?'…':'')+')':''}.`;
+    alert(msg);
+  }catch(e){alert('Falha ao importar Espelho de Ponto Pendente: '+e.message)}
+}
 /* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
    grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
 function isSelbItemLive(item){
