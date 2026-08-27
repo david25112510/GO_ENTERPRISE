@@ -703,6 +703,29 @@ body.kiosk-mode .dash-var{font-size:13px}
 .sn-tv-footer{position:relative;z-index:2;flex:0 0 auto;margin-top:26px;padding-top:18px;
   border-top:1px solid rgba(143,227,184,.18);display:flex;justify-content:space-between;
   font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:#9fd6bb;font-weight:700}
+
+/* ---- Jornada/HE — dashboard (Fase 3) ---- */
+#jhDashboard{display:flex;flex-direction:column;gap:16px}
+.jh-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.jh-kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.jh-kpi .k{font-size:12px;color:var(--muted);font-weight:700}
+.jh-kpi .v{font-size:22px;font-weight:800;color:var(--selbetti-dark);margin-top:4px}
+.jh-kpi.warn .v{color:#b45309}
+.jh-kpi.bad .v{color:var(--red)}
+.jh-two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.jh-grid-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.jh-grid-head h2{margin:0}
+.jh-sort{font-size:12px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px}
+.jh-sort select{font-size:12px;padding:4px 6px;border-radius:8px;border:1px solid var(--line2)}
+.jh-drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:60}
+.jh-drawer-backdrop[hidden]{display:none}
+.jh-drawer{position:fixed;top:0;right:0;height:100vh;width:min(460px,92vw);background:#fff;z-index:61;
+  box-shadow:-8px 0 30px rgba(0,0,0,.25);padding:22px;overflow-y:auto;animation:jhSlideIn .18s ease}
+.jh-drawer[hidden]{display:none}
+@keyframes jhSlideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.jh-drawer-close{position:absolute;top:14px;right:14px;border:none;background:#eef1f4;width:30px;height:30px;
+  border-radius:50%;font-size:14px;cursor:pointer}
+@media(max-width:900px){.jh-kpis{grid-template-columns:repeat(2,1fr)}.jh-two{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -920,19 +943,34 @@ body.kiosk-mode .dash-var{font-size:13px}
         <button class="role-tab" data-tab="he" onclick="switchJornadaHeTab('he')">HE do período</button>
         <button class="role-tab" data-tab="historico" onclick="switchJornadaHeTab('historico')">Histórico</button>
         <button class="role-tab" data-tab="pendencias" onclick="switchJornadaHeTab('pendencias')">180 dias / Pendências</button>
+        <button class="role-tab" data-tab="importar" onclick="switchJornadaHeTab('importar')">Importar</button>
       </div>
 
       <div class="jornadaHe-tabpane active" data-pane="overview">
-        <div class="grid cards" id="jornadaHeOverviewCards"></div>
-        <div class="panel"><div class="toolbar">
-            <label class="btn primary file">⬆ Importar planilha de saldo<input type="file" accept=".xlsx" onchange="importJornadaSaldoPlanilha(this.files[0]);this.value=''"></label>
-            <label class="btn primary file">⬆ Importar Listagem de HE (PDF)<input type="file" accept=".pdf" onchange="importJornadaListagemHe(this.files[0]);this.value=''"></label>
-            <label class="btn primary file">⬆ Importar Analítico 180 dias (PDF)<input type="file" accept=".pdf" onchange="importJornadaAnalitico180(this.files[0]);this.value=''"></label>
-            <label class="btn primary file">⬆ Importar Sintético 180 dias (PDF)<input type="file" accept=".pdf" onchange="importJornadaSintetico180(this.files[0]);this.value=''"></label>
-            <label class="btn primary file">⬆ Importar Espelho Pendente Assinatura (PDF)<input type="file" accept=".pdf" onchange="importJornadaEspelhoPendente(this.files[0]);this.value=''"></label>
-            <label class="btn primary file">⬆ Importar Intra/Interjornada detalhado (PDF)<input type="file" accept=".pdf" onchange="importJornadaInterIntraDetalhado(this.files[0]);this.value=''"></label>
+        <div id="jhEmpty" class="panel" style="display:none"><p class="muted">Nenhum período importado ainda. Use a aba <b>Importar</b> para carregar os dados do Portal Meu RH.</p></div>
+        <div id="jhDashboard">
+          <div class="jh-kpis" id="jhKpis"></div>
+          <div class="panel"><h2>Meta do banco de horas (±10h)</h2>
+            <div class="jh-ruler" id="jhMetaRuler"></div>
+            <div class="jh-metabars" id="jhMetaBars"></div>
           </div>
-          <p class="muted" style="font-size:12px;margin-top:-6px">Os arquivos são independentes — pode importar qualquer combinação deles, em qualquer ordem.</p>
+          <div class="jh-two">
+            <div class="panel"><h2>Evolução por período de importação</h2><div id="jhEvolucao"></div></div>
+            <div class="panel"><h2>Ofensores</h2><div class="jh-off3" id="jhOfensores"></div></div>
+          </div>
+          <div class="panel">
+            <div class="jh-grid-head">
+              <h2>Colaboradores</h2>
+              <label class="jh-sort">Ordenar
+                <select id="jhGridSort" onchange="renderJornadaHe()">
+                  <option value="nome">por nome</option>
+                  <option value="saldo">por saldo (devedor primeiro)</option>
+                  <option value="fora">fora da meta primeiro</option>
+                </select>
+              </label>
+            </div>
+            <div class="jh-grid" id="jhGrid"></div>
+          </div>
         </div>
       </div>
 
@@ -963,6 +1001,29 @@ body.kiosk-mode .dash-var{font-size:13px}
           <div class="tablewrap"><table><thead><tr><th>Colaborador</th><th>Documentos pendentes</th></tr></thead><tbody id="jornadaPendenciasTable"></tbody></table></div>
         </div>
       </div>
+
+      <div class="jornadaHe-tabpane" data-pane="importar">
+        <div class="panel"><h2>Importar dados do Portal Meu RH</h2>
+          <div class="toolbar">
+            <label class="btn primary file">⬆ Importar planilha de saldo<input type="file" accept=".xlsx" onchange="importJornadaSaldoPlanilha(this.files[0]);this.value=''"></label>
+            <label class="btn primary file">⬆ Importar Listagem de HE (PDF)<input type="file" accept=".pdf" onchange="importJornadaListagemHe(this.files[0]);this.value=''"></label>
+            <label class="btn primary file">⬆ Importar Analítico 180 dias (PDF)<input type="file" accept=".pdf" onchange="importJornadaAnalitico180(this.files[0]);this.value=''"></label>
+            <label class="btn primary file">⬆ Importar Sintético 180 dias (PDF)<input type="file" accept=".pdf" onchange="importJornadaSintetico180(this.files[0]);this.value=''"></label>
+            <label class="btn primary file">⬆ Importar Espelho Pendente Assinatura (PDF)<input type="file" accept=".pdf" onchange="importJornadaEspelhoPendente(this.files[0]);this.value=''"></label>
+            <label class="btn primary file">⬆ Importar Intra/Interjornada detalhado (PDF)<input type="file" accept=".pdf" onchange="importJornadaInterIntraDetalhado(this.files[0]);this.value=''"></label>
+          </div>
+          <p class="muted" style="font-size:12px;margin-top:-6px">Os arquivos são independentes — pode importar qualquer combinação deles, em qualquer ordem.</p>
+        </div>
+        <div class="panel"><h2>Últimas importações do Jornada/HE</h2>
+          <div class="tablewrap"><table><thead><tr><th>Quando</th><th>Arquivo</th><th>Registros</th><th>Atualizados</th><th>Não encontrados</th></tr></thead><tbody id="jhImportLog"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="jh-drawer-backdrop" id="jhDrawerBackdrop" hidden onclick="closeJhEmployeeDrawer()"></div>
+      <aside class="jh-drawer" id="jhEmployeeDrawer" hidden aria-label="Detalhe do colaborador">
+        <button class="jh-drawer-close" type="button" onclick="closeJhEmployeeDrawer()" aria-label="Fechar">✕</button>
+        <div id="jhDrawerBody"></div>
+      </aside>
     </section>
 
     <!-- PERFIL INDIVIDUAL DO COLABORADOR -->
@@ -3772,6 +3833,17 @@ function jhSparkline(values,opts){
     </svg>
   </div>`;
 }
+function jhIsJornadaImport(fname){
+  return /bco_horas|espelho.*(assinatura|ponto)|inter\s*jornada|intra\s*jornada|listagem[_ ]?de[_ ]?he|planilha.*saldo|saldo.*selbetti/i.test(fname||'');
+}
+function renderJhImportLog(){
+  const tb=$('jhImportLog');if(!tb)return;
+  const rows=(db.imports||[]).filter(i=>jhIsJornadaImport(i.file));
+  tb.innerHTML=rows.length?rows.map(i=>`<tr>
+    <td>${escHtml(i.at||'')}</td><td>${escHtml(i.file||'')}</td>
+    <td>${i.total??'—'}</td><td>${i.updated??'—'}</td><td>${i.errors??0}</td></tr>`).join('')
+    :'<tr><td colspan="5" class="muted">Nenhuma importação do Jornada/HE ainda.</td></tr>';
+}
 function renderJornadaHe(){
   const el=$('jornadaHeOverviewCards');if(!el)return;
   const period=latestJornadaPeriod();
@@ -4099,6 +4171,7 @@ function render(){
   renderRH();
   renderJornadaHe();
   renderJornada180Pendencias();
+  renderJhImportLog();
   renderFornecedores();
   renderAdmin();
   renderManuais();
