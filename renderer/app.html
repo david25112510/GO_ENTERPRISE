@@ -2207,6 +2207,37 @@ function parseAnalitico180Fragments(frags){
   });
   return {windows:[...windows.entries()].map(([id,w])=>({id,...w}))};
 }
+/* Importador do Analítico de 180 dias (Fase 2): grava valorPagarDescontarMin + eventos na coleção
+   db.jornada180Windows (janela ANTIGA, não o período ativo). Um arquivo pode ter mais de uma janela
+   se colaboradores diferentes tiverem janelas distintas — cada uma vira/atualiza seu registro. */
+async function importJornadaAnalitico180(file){
+  if(!file)return;
+  try{
+    const buf=await file.arrayBuffer();
+    const frags=await extractPdfFragments(buf);
+    const {windows}=parseAnalitico180Fragments(frags);
+    let updated=0,notFound=0,totalRows=0;const misses=[];
+    windows.forEach(w=>{
+      w.employees.forEach(row=>{
+        totalRows++;
+        let emp=row.chapa?db.employees.find(x=>x.reg&&norm(x.reg)===norm(row.chapa)):null;
+        if(!emp&&row.nome)emp=db.employees.find(x=>normName(x.name)===normName(row.nome));
+        if(!emp){notFound++;misses.push(row.nome||row.chapa);return}
+        upsertJornada180EmployeeRecord(w.id,w.janelaIni,w.janelaFim,emp.id,row.chapa,row.nome,{
+          valorPagarDescontarMin:row.valorPagarDescontarMin,eventos:row.eventos
+        });
+        updated++;
+      });
+    });
+    db.imports.unshift({at:new Date().toLocaleString('pt-BR'),file:file.name,total:totalRows,added:0,updated,same:0,errors:notFound});
+    db.imports=db.imports.slice(0,30);
+    await save(true);
+    const janelas=windows.map(w=>`${w.janelaIni.split('-').reverse().join('/')} a ${w.janelaFim.split('-').reverse().join('/')}`).join(', ');
+    let msg=`Jornada/HE — Analítico de 180 dias importado: ${updated} colaborador(es) (janela ${janelas}).`;
+    if(notFound)msg+=` ${notFound} não encontrado(s) na equipe${misses.length?' ('+misses.slice(0,5).join(', ')+(misses.length>5?'…':'')+')':''}.`;
+    alert(msg);
+  }catch(e){alert('Falha ao importar Analítico de 180 dias: '+e.message)}
+}
 /* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
    grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
 function isSelbItemLive(item){
