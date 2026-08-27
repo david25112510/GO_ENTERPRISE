@@ -919,6 +919,7 @@ body.kiosk-mode .dash-var{font-size:13px}
         <button class="role-tab" data-tab="banco" onclick="switchJornadaHeTab('banco')">Banco de Horas</button>
         <button class="role-tab" data-tab="he" onclick="switchJornadaHeTab('he')">HE do período</button>
         <button class="role-tab" data-tab="historico" onclick="switchJornadaHeTab('historico')">Histórico</button>
+        <button class="role-tab" data-tab="pendencias" onclick="switchJornadaHeTab('pendencias')">180 dias / Pendências</button>
       </div>
 
       <div class="jornadaHe-tabpane active" data-pane="overview">
@@ -926,8 +927,12 @@ body.kiosk-mode .dash-var{font-size:13px}
         <div class="panel"><div class="toolbar">
             <label class="btn primary file">⬆ Importar planilha de saldo<input type="file" accept=".xlsx" onchange="importJornadaSaldoPlanilha(this.files[0]);this.value=''"></label>
             <label class="btn primary file">⬆ Importar Listagem de HE (PDF)<input type="file" accept=".pdf" onchange="importJornadaListagemHe(this.files[0]);this.value=''"></label>
+            <label class="btn primary file">⬆ Importar Analítico 180 dias (PDF)<input type="file" accept=".pdf" onchange="importJornadaAnalitico180(this.files[0]);this.value=''"></label>
+            <label class="btn primary file">⬆ Importar Sintético 180 dias (PDF)<input type="file" accept=".pdf" onchange="importJornadaSintetico180(this.files[0]);this.value=''"></label>
+            <label class="btn primary file">⬆ Importar Espelho Pendente Assinatura (PDF)<input type="file" accept=".pdf" onchange="importJornadaEspelhoPendente(this.files[0]);this.value=''"></label>
+            <label class="btn primary file">⬆ Importar Intra/Interjornada detalhado (PDF)<input type="file" accept=".pdf" onchange="importJornadaInterIntraDetalhado(this.files[0]);this.value=''"></label>
           </div>
-          <p class="muted" style="font-size:12px;margin-top:-6px">Os dois arquivos são independentes — pode importar só um, o outro, ou os dois, em qualquer ordem.</p>
+          <p class="muted" style="font-size:12px;margin-top:-6px">Os arquivos são independentes — pode importar qualquer combinação deles, em qualquer ordem.</p>
         </div>
       </div>
 
@@ -946,6 +951,16 @@ body.kiosk-mode .dash-var{font-size:13px}
       <div class="jornadaHe-tabpane" data-pane="historico">
         <div class="panel"><h2>Períodos importados</h2>
           <div class="tablewrap"><table><thead><tr><th>Período</th><th>Colaboradores</th><th>Saldo líquido</th><th>vs. período anterior</th></tr></thead><tbody id="jornadaHeHistoricoTable"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="jornadaHe-tabpane" data-pane="pendencias">
+        <div class="panel"><h2>Vencimento do banco de horas (180 dias)</h2>
+          <p class="muted" style="font-size:12px;margin-top:-6px">Informativo — não entra no cálculo de pagamento estimado.</p>
+          <div class="tablewrap"><table><thead><tr><th>Colaborador</th><th>Janela mais antiga</th><th>Valor a pagar/descontar</th><th>Próximos vencimentos</th></tr></thead><tbody id="jornada180Table"></tbody></table></div>
+        </div>
+        <div class="panel"><h2>Assinaturas de ponto pendentes</h2>
+          <div class="tablewrap"><table><thead><tr><th>Colaborador</th><th>Documentos pendentes</th></tr></thead><tbody id="jornadaPendenciasTable"></tbody></table></div>
         </div>
       </div>
     </section>
