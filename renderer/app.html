@@ -1772,6 +1772,7 @@ function normalizeDb(x){
     selbNews:Array.isArray(source.selbNews)?source.selbNews.map(normalizeSelbNews):[],
     selbAlerts:Array.isArray(source.selbAlerts)?source.selbAlerts.map(normalizeSelbAlert):[],
     jornadaPeriods:Array.isArray(source.jornadaPeriods)?source.jornadaPeriods.map(normalizeJornadaPeriod):[],
+    jornada180Windows:Array.isArray(source.jornada180Windows)?source.jornada180Windows.map(normalizeJornada180Window):[],
     config:{...db.config,...(source.config||{}),security:{...db.config.security,...((source.config||{}).security||{})}}
   };
 }
@@ -1803,7 +1804,11 @@ function normalizeJornadaEmployeeRecord(e){
     horario:e.horario||'', horasBaseMin:e.horasBaseMin??null, horasTrabMin:e.horasTrabMin??null,
     horasAtrasoMin:e.horasAtrasoMin??null, horasFaltaMin:e.horasFaltaMin??null, horasAbonoMin:e.horasAbonoMin??null,
     horasExtraMin:e.horasExtraMin??null, horasAdNoturnoMin:e.horasAdNoturnoMin??null,
-    intrajornadaMin:e.intrajornadaMin??null, interjornadaMin:e.interjornadaMin??null
+    intrajornadaMin:e.intrajornadaMin??null, interjornadaMin:e.interjornadaMin??null,
+    // ---- Fase 2 ----
+    pendingSignatureDocs:Array.isArray(e.pendingSignatureDocs)?e.pendingSignatureDocs.map(d=>({id:d.id||'',arquivo:d.arquivo||'',status:d.status||''})):[],
+    interIntraEvents:Array.isArray(e.interIntraEvents)?e.interIntraEvents.map(ev=>({data:ev.data||'',codigo:ev.codigo||'',descricao:ev.descricao||'',minutos:ev.minutos??null,tipo:ev.tipo||'intra'})):[],
+    vencimentos180d:Array.isArray(e.vencimentos180d)?e.vencimentos180d.map(v=>({competenciaId:v.competenciaId||'',valorMin:v.valorMin??null})):[]
   };
 }
 function normalizeJornadaPeriod(p){
@@ -1842,6 +1847,41 @@ function upsertJornadaEmployeeRecord(periodId,periodoIni,periodoFim,precise,empl
   if(chapa)rec.chapa=chapa;
   if(nome)rec.nome=nome;
   period.updatedAt=new Date().toISOString();
+}
+/* ===================== JORNADA/HE — Fase 2: aging de 180 dias =====================
+   Coleção própria db.jornada180Windows[]: um registro por janela de 180 dias (diferente do
+   período ativo de db.jornadaPeriods — a janela de 180 dias é sempre uma competência ANTIGA,
+   não a atual). Um mesmo import pode gerar/atualizar mais de uma janela se colaboradores
+   diferentes tiverem janelas diferentes no mesmo arquivo (não observado no arquivo real de
+   exemplo, mas o layout do PDF permite). */
+function jornada180WindowId(dateIso){ return String(dateIso||'').slice(0,7) }
+function normalizeJornada180Employee(e){
+  return {
+    employeeId:e.employeeId||null, chapa:e.chapa||'', nome:e.nome||'',
+    valorPagarDescontarMin:e.valorPagarDescontarMin??null,
+    eventos:Array.isArray(e.eventos)?e.eventos.map(ev=>({data:ev.data||'',dataLimite:ev.dataLimite||'',evento:ev.evento||'',tipo:ev.tipo||'',valorMin:ev.valorMin??null})):[]
+  };
+}
+function normalizeJornada180Window(w){
+  return {
+    id:w.id||'', janelaIni:w.janelaIni||'', janelaFim:w.janelaFim||'',
+    importedAt:w.importedAt||new Date().toISOString(), updatedAt:w.updatedAt||w.importedAt||new Date().toISOString(),
+    employees:Array.isArray(w.employees)?w.employees.map(normalizeJornada180Employee):[]
+  };
+}
+function upsertJornada180EmployeeRecord(windowId,janelaIni,janelaFim,employeeId,chapa,nome,patch){
+  db.jornada180Windows=db.jornada180Windows||[];
+  let win=db.jornada180Windows.find(w=>w.id===windowId);
+  if(!win){
+    win=normalizeJornada180Window({id:windowId,janelaIni,janelaFim,importedAt:new Date().toISOString()});
+    db.jornada180Windows.push(win);
+  }
+  let rec=win.employees.find(e=>e.employeeId===employeeId);
+  if(!rec){rec=normalizeJornada180Employee({employeeId,chapa,nome});win.employees.push(rec)}
+  Object.assign(rec,patch);
+  if(chapa)rec.chapa=chapa;
+  if(nome)rec.nome=nome;
+  win.updatedAt=new Date().toISOString();
 }
 /* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
    grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
