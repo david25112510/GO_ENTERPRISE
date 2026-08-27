@@ -1959,6 +1959,75 @@ async function importJornadaEspelhoPendente(file){
     alert(msg);
   }catch(e){alert('Falha ao importar Espelho de Ponto Pendente: '+e.message)}
 }
+/* ===================== JORNADA/HE — Fase 2: parser da Listagem de INTERJORNADA e INTRAJORNADA (detalhado) =====================
+   Layout validado contra o arquivo real (2 páginas). Cada colaborador: linha de cabeçalho (chapa/
+   nome/horário/T.Hr Intra/T.Hr Inter — os valores só aparecem quando >0) + sub-cabeçalho "Data/Cod
+   Evento/Desc Evento/Horas" + 0..N linhas de evento. A coluna do valor de interjornada (x≈708.5) é
+   inferida por simetria com a de intrajornada (x=596.7, confirmada com dado real) — nenhum
+   colaborador do arquivo de exemplo tem interjornada > 0 pra confirmar essa posição de verdade.
+   O rótulo "Periodo Ativo do Ponto" se repete uma vez por página (mesmo Y todo santo página) —
+   usado aqui como marcador de página pra segmentar os fragmentos e nunca misturar linhas de
+   páginas diferentes no mesmo agrupamento por Y (que reinicia a cada página). */
+const INTERINTRA_COLS=[
+  {key:'a',x:40.1},{key:'nome',x:97.4},{key:'cod',x:119.1},{key:'desc',x:198.6},
+  {key:'horario',x:301.9},{key:'horas',x:445.4},
+  {key:'intraLabel',x:541.9},{key:'intraVal',x:596.7},
+  {key:'interLabel',x:653.7},{key:'interVal',x:708.5}
+];
+function interIntraClassifyCol(x){
+  let best=null,bestDist=Infinity;
+  for(const c of INTERINTRA_COLS){const d=Math.abs(x-c.x);if(d<bestDist){bestDist=d;best=c}}
+  return bestDist<=8?best.key:null;
+}
+function parseInterIntraFragments(frags){
+  const periodoLabels=frags.filter(f=>f.s.indexOf('Periodo Ativo do Ponto')>=0);
+  if(!periodoLabels.length)throw new Error('Layout da Listagem de Interjornada/Intrajornada não reconhecido (rótulo de período não encontrado).');
+  // Restrito ao segmento da página 1: como o rótulo se repete em toda página com o MESMO y (o eixo Y
+  // reinicia a cada página), buscar as datas em `frags` inteiro (todas as páginas concatenadas)
+  // pegaria também as datas idênticas do cabeçalho da página 2, duplicando o array e corrompendo o
+  // sort por x. Página 1 já basta — o período é o mesmo em todas as páginas do relatório.
+  const page1EndIdx=periodoLabels[1]?frags.indexOf(periodoLabels[1]):frags.length;
+  const page1Frags=frags.slice(frags.indexOf(periodoLabels[0]),page1EndIdx);
+  const dateFrags=page1Frags.filter(f=>Math.abs(f.y-periodoLabels[0].y)<3&&/^\d{2}\/\d{2}\/\d{2,4}$/.test(f.s)).sort((a,b)=>a.x-b.x);
+  if(dateFrags.length<2)throw new Error('Não foi possível ler o período ativo do ponto.');
+  const periodoIni=pdfDateBrToIso(dateFrags[0].s),periodoFim=pdfDateBrToIso(dateFrags[1].s);
+
+  const employees=[];
+  periodoLabels.forEach((periodoLabel,pi)=>{
+    const startIdx=frags.indexOf(periodoLabel);
+    const nextLabel=periodoLabels[pi+1];
+    const endIdx=nextLabel?frags.indexOf(nextLabel):frags.length;
+    const pageFrags=frags.slice(startIdx,endIdx);
+    const dataFrags=pageFrags.filter(f=>f.y<periodoLabel.y-10);
+    const rowsByY=new Map();
+    dataFrags.forEach(f=>{
+      const yKey=Math.round(f.y*2)/2;
+      let bucket=null;
+      for(const k of rowsByY.keys())if(Math.abs(k-yKey)<1){bucket=k;break}
+      if(bucket===null){bucket=yKey;rowsByY.set(bucket,[])}
+      rowsByY.get(bucket).push(f);
+    });
+    let current=null;
+    [...rowsByY.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,rowFrags])=>{
+      const rec={};
+      rowFrags.forEach(f=>{const col=interIntraClassifyCol(f.x);if(col)rec[col]=f.s});
+      if(rec.a==='Data')return;
+      if(rec.a&&/^\d{2}\/\d{2}\/\d{4}$/.test(rec.a)){
+        if(current)current.eventos.push({
+          data:pdfDateBrToIso(rec.a),codigo:rec.cod||'',descricao:rec.desc||'',
+          minutos:parseDurationHms(rec.horas),
+          tipo:/INTERJORNADA/i.test(rec.desc||'')?'inter':'intra'
+        });
+        return;
+      }
+      if(rec.a&&/^\d{4,6}$/.test(rec.a)){
+        current={chapa:rec.a,nome:rec.nome||'',intraTotalMin:parseDurationHms(rec.intraVal),interTotalMin:parseDurationHms(rec.interVal),eventos:[]};
+        employees.push(current);
+      }
+    });
+  });
+  return {periodoIni,periodoFim,employees};
+}
 /* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
    grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
 function isSelbItemLive(item){
