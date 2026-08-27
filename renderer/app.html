@@ -751,6 +751,27 @@ body.kiosk-mode .dash-var{font-size:13px}
 .jh-metabar-fill.bad{background:var(--red)}
 .jh-metabar-val{font-size:12px;font-weight:700;text-align:right}
 .jh-metabar-val.bad{color:var(--red)}
+.jh-minis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.jh-mini{border:1px solid var(--line);border-radius:10px;padding:10px}
+.jh-mini-t{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.jh-mini-v{font-size:16px;font-weight:800;margin-top:2px}
+.jh-mini-x{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px}
+.jh-spark{height:56px}
+.jh-spark svg{width:100%;height:100%;display:block;overflow:visible}
+.jh-spark-line{stroke:var(--selbetti);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.jh-spark-dot{fill:var(--selbetti-dark)}
+.jh-spark-zero{stroke:#cbd5e1;stroke-width:1;stroke-dasharray:4 4}
+.jh-spark-empty{height:56px;background:repeating-linear-gradient(90deg,#eef2f6 0 1px,transparent 1px 24px);border-bottom:1px solid #cbd5e1}
+.jh-off3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.jh-offcard{border:1px solid var(--line);border-radius:10px;padding:10px}
+.jh-offcard h4{margin:0 0 8px;font-size:10px;text-transform:uppercase;color:var(--muted)}
+.jh-offrow{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--line);font-size:12px;cursor:pointer}
+.jh-offrow:last-child{border-bottom:none}
+.jh-offrow:hover{background:#f8fafc}
+.jh-offnm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jh-offrow b{margin-left:auto;font-weight:700}
+.jh-offrow b.bad{color:var(--red)}
+@media(max-width:900px){.jh-minis,.jh-off3{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -3947,8 +3968,40 @@ function renderJornadaHe(){
   jhRenderGrid(period);  // Task 5
 }
 function jhAvatar(e,size){const src=(e&&e.photo)||DEFAULT_AVATAR;return `<img class="jh-av jh-av-${size||'sm'}" src="${src}" alt="">`;}
-function jhRenderEvolucao(){}
-function jhRenderOfensores(){}
+function jhRenderEvolucao(){
+  const el=$('jhEvolucao');if(!el)return;
+  const s=jhEvolucaoSeries();
+  if(!s.length){el.innerHTML='<p class="muted">Nenhum período importado.</p>';return}
+  const cards=[
+    {t:'Saldo líquido da equipe',vals:s.map(p=>p.saldoLiquidoMin),fmt:fmtSignedMin},
+    {t:'HE total',vals:s.map(p=>p.heTotalMin),fmt:fmtDurationMin},
+    {t:'Colaboradores fora da meta',vals:s.map(p=>p.foraMeta),fmt:v=>String(v)}
+  ];
+  const xlab=`<div class="jh-mini-x"><span>${s[0].label}</span>${s.length>1?`<span>${s[s.length-1].label}</span>`:''}</div>`;
+  el.innerHTML=`<div class="jh-minis">${cards.map(c=>`
+    <div class="jh-mini">
+      <div class="jh-mini-t">${c.t}</div>
+      ${jhSparkline(c.vals)}
+      <div class="jh-mini-v">${c.fmt(c.vals[c.vals.length-1])}</div>
+      ${xlab}
+    </div>`).join('')}</div>
+    ${s.length<2?'<p class="muted" style="font-size:11px;margin-top:6px">O histórico aparece a partir da 2ª importação de período.</p>':''}`;
+}
+function jhRenderOfensores(period){
+  const el=$('jhOfensores');if(!el)return;
+  const o=jhOfensores(period);
+  const col=(titulo,itens,fmt,empty)=>`
+    <div class="jh-offcard">
+      <h4>${titulo}</h4>
+      ${itens.length?itens.map(x=>`<div class="jh-offrow" onclick="openJhEmployeeDrawer('${x.employeeId}')">
+        ${jhAvatar(x,'sm')}<span class="jh-offnm">${escHtml(x.nome)}</span><b class="${x.valorMin<0?'bad':''}">${fmt(x.valorMin)}</b>
+      </div>`).join(''):`<p class="muted" style="font-size:11px">${empty}</p>`}
+    </div>`;
+  el.innerHTML=
+    col('Banco de horas fora da meta',o.bancoHoras,fmtSignedMin,'Toda a equipe dentro da meta.')+
+    col('Horas extras',o.he,fmtDurationMin,'Sem horas extras no período.')+
+    col('Intra + interjornada',o.intraInter,fmtDurationMin,'Sem ocorrências no período.');
+}
 function jhRenderGrid(){}
 function renderJornada180Pendencias(){
   const tbl180=$('jornada180Table'),tblPend=$('jornadaPendenciasTable');
