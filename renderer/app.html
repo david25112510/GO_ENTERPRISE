@@ -3799,6 +3799,7 @@ async function importJornadaListagemHe(file){
   }catch(e){alert('Falha ao importar Listagem de HE: '+e.message)}
 }
 function switchJornadaHeTab(tab){
+  if(typeof closeJhEmployeeDrawer==='function')closeJhEmployeeDrawer();
   document.querySelectorAll('#jornadaHeTabs .role-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   document.querySelectorAll('#jornadaHe .jornadaHe-tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===tab));
 }
@@ -3897,7 +3898,7 @@ function jhSparkline(values,opts){
   const yOf=v=>flat?50:padTop+h*(1-(v-min)/span);
   const pts=vals.map((v,i)=>({x:n>1?i/(n-1)*100:50,y:yOf(v)}));
   const d=pts.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
-  const dots=pts.map(p=>`<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="2.4" class="jh-spark-dot"/>`).join('');
+  const dots=n>2?'':pts.map(p=>`<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="2.4" class="jh-spark-dot"/>`).join('');
   const zeroY=(!flat&&min<0&&max>0)?yOf(0):null;
   return `<div class="jh-spark">
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
@@ -4062,16 +4063,15 @@ function jhRenderGrid(period){
         <span>Inter</span><b>${fmtDurationMin(e.interjornadaMin)}</b>
       </div>
     </div>`;
-  }).join('')||'<p class="muted">Nenhum colaborador ativo neste período.</p>';
+  }).join('')||'<p class="muted" style="grid-column:1/-1">Nenhum colaborador ativo neste período.</p>';
 }
 // série do saldo total desse colaborador ao longo dos períodos importados (para o mini-gráfico do drawer)
 function jhEmpSaldoSeries(employeeId){
   return [...(db.jornadaPeriods||[])]
     .sort((a,b)=>a.id.localeCompare(b.id))
-    .map(p=>{
-      const r=(p.employees||[]).find(e=>e.employeeId===employeeId);
-      return {label:jhPeriodLabel(p.id),v:r?(r.bhSaldoTotalMin||0):0};
-    });
+    .map(p=>({p,r:(p.employees||[]).find(e=>e.employeeId===employeeId)}))
+    .filter(x=>x.r)
+    .map(x=>({label:jhPeriodLabel(x.p.id),v:x.r.bhSaldoTotalMin||0}));
 }
 function openJhEmployeeDrawer(employeeId){
   const period=latestJornadaPeriod();if(!period)return;
@@ -4380,6 +4380,7 @@ function pendingSignatureAlerts(){
 /* ===================== 9. RENDER ===================== */
 let activeView='home';
 function switchView(v){
+  if(typeof closeJhEmployeeDrawer==='function')closeJhEmployeeDrawer();
   if(currentRole==='operador'){
     if(v==='rh'){openEmployeeProfile(currentOperatorId);return}
     if(!['operadorHome','producao','manuais','dashboardTv'].includes(v))v='operadorHome';
