@@ -2057,6 +2057,66 @@ async function importJornadaInterIntraDetalhado(file){
     alert(msg);
   }catch(e){alert('Falha ao importar Listagem de Interjornada/Intrajornada: '+e.message)}
 }
+/* ===================== JORNADA/HE — Fase 2: parser do Sintético de 180 dias (só a projeção) =====================
+   Layout validado contra o arquivo real. As colunas "VL REF" (uma por competência futura de
+   vencimento) têm um cabeçalho em 3 linhas ("REF"/"COMP"/"N/YYYY") bem acima da linha "VL REF"
+   principal (mesma linha de CHAPA/NOME/...) — usa a posição X da própria "VL REF" como âncora
+   da coluna de dado, e casa com a "N/YYYY" mais próxima em X pra saber a competência. Só a
+   projeção é extraída aqui — SLD TOT BH/NEG ATU/POS ATU já vêm da planilha/Listagem de HE da
+   Fase 1 e não são reimportados. */
+function parseSintetico180Fragments(frags){
+  const periodoLabel=frags.find(f=>f.s.indexOf('Periodo Ativo do Ponto')>=0);
+  if(!periodoLabel)throw new Error('Layout do Sintético de 180 dias não reconhecido (rótulo de período não encontrado).');
+  const dateFrags=frags.filter(f=>Math.abs(f.y-periodoLabel.y)<3&&/^\d{2}\/\d{2}\/\d{2,4}$/.test(f.s)).sort((a,b)=>a.x-b.x);
+  if(dateFrags.length<2)throw new Error('Não foi possível ler o período ativo do ponto.');
+  const periodoIni=pdfDateBrToIso(dateFrags[0].s),periodoFim=pdfDateBrToIso(dateFrags[1].s);
+
+  const headerFrag=frags.find(f=>f.s==='CHAPA');
+  if(!headerFrag)throw new Error('Layout do Sintético de 180 dias não reconhecido (cabeçalho "CHAPA" não encontrado).');
+
+  const vlRefCols=frags.filter(f=>f.s==='VL REF').map(vf=>{
+    const compFrag=frags.find(f=>Math.abs(f.x-vf.x)<10&&/^\d{1,2}\/\d{4}$/.test(f.s));
+    if(!compFrag)return null;
+    const [mes,ano]=compFrag.s.split('/');
+    return {x:vf.x,competenciaId:`${ano}-${mes.padStart(2,'0')}`};
+  }).filter(Boolean);
+
+  const dataFrags=frags.filter(f=>f.y<headerFrag.y-3);
+  const rowsByY=new Map();
+  dataFrags.forEach(f=>{
+    const yKey=Math.round(f.y*2)/2;
+    let bucket=null;
+    for(const k of rowsByY.keys())if(Math.abs(k-yKey)<1){bucket=k;break}
+    if(bucket===null){bucket=yKey;rowsByY.set(bucket,[])}
+    rowsByY.get(bucket).push(f);
+  });
+  const SINTETICO_COLS=[{key:'chapa',x:34.1},{key:'nome',x:88.0},{key:'sldTot',x:396.0},{key:'negAtu',x:457.3},{key:'posAtu',x:517.4}];
+  function classifyBase(x){
+    let best=null,bestDist=Infinity;
+    for(const c of SINTETICO_COLS){const d=Math.abs(x-c.x);if(d<bestDist){bestDist=d;best=c}}
+    return bestDist<=6?best.key:null;
+  }
+  const employees=[];
+  [...rowsByY.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,rowFrags])=>{
+    const rec={vencimentos:[]};
+    rowFrags.forEach(f=>{
+      const col=classifyBase(f.x);
+      if(col==='chapa')rec.chapa=f.s;
+      else if(col==='nome')rec.nome=f.s;
+      else if(col)return; // sldTot/negAtu/posAtu — não usados nesta fase
+      else{
+        let best=null,bestDist=Infinity;
+        vlRefCols.forEach(c=>{const d=Math.abs(f.x-c.x);if(d<bestDist){bestDist=d;best=c}});
+        if(best&&bestDist<=8){
+          const parsed=parseHourBankCell(f.s);
+          if(parsed)rec.vencimentos.push({competenciaId:best.competenciaId,valorMin:parsed.minutes*parsed.sign});
+        }
+      }
+    });
+    if(rec.chapa)employees.push(rec);
+  });
+  return {periodoIni,periodoFim,employees};
+}
 /* ---- SELBNEWS: regras de negócio puras (validade, ordenação) — usadas tanto pelo admin (contadores/
    grids) quanto pela tela de TV (renderSelbNewsBlocks), pra nunca divergir entre as duas telas ---- */
 function isSelbItemLive(item){
