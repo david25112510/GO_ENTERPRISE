@@ -357,15 +357,20 @@ Layout real validado: cabeçalho "Periodo Ativo do Ponto" com as duas datas (igu
 
 **Risco conhecido**: nenhum colaborador do arquivo real tem interjornada > 0, então a coluna de valor de interjornada (`interVal`, x estimado por simetria com a de intrajornada) nunca foi vista populada de verdade — só a posição da coluna de intrajornada (`intraVal`, x=596.7) foi confirmada com dado real positivo. Documentar como risco residual.
 
+**Correção aplicada após a Task 2 (ruling do controlador)**: `extractPdfFragments` (função compartilhada de Fase 1) tinha um bug de páginas — usava `.find()` no primeiro `/Type/Page`, retornando só a página 1 do PDF. O arquivo real desta task tem **2 páginas**. A Task 2 descobriu isso e o controlador corrigiu `extractPdfFragments` na raiz (agora itera todas as páginas, concatenando os fragmentos na ordem do documento — mudança retrocompatível, verificada contra o PDF de exemplo da Listagem de HE da Fase 1, que é de 1 página só). Como o array de fragmentos agora pode conter mais de uma página concatenada, e o rótulo "Periodo Ativo do Ponto" se repete **uma vez por página** (mesmo texto, mesmo Y, em cada página), o parser abaixo processa os fragmentos em segmentos — um por ocorrência do rótulo — evitando que linhas de páginas diferentes colidam no mesmo bucket de Y (o eixo Y do PDF reinicia a cada página).
+
 - [ ] **Step 1: Escrever o parser**
 
 ```js
 /* ===================== JORNADA/HE — Fase 2: parser da Listagem de INTERJORNADA e INTRAJORNADA (detalhado) =====================
-   Layout validado contra o arquivo real. Cada colaborador: linha de cabeçalho (chapa/nome/horário/
-   T.Hr Intra/T.Hr Inter — os valores só aparecem quando >0) + sub-cabeçalho "Data/Cod Evento/
-   Desc Evento/Horas" + 0..N linhas de evento. A coluna do valor de interjornada (x≈708.5) é
+   Layout validado contra o arquivo real (2 páginas). Cada colaborador: linha de cabeçalho (chapa/
+   nome/horário/T.Hr Intra/T.Hr Inter — os valores só aparecem quando >0) + sub-cabeçalho "Data/Cod
+   Evento/Desc Evento/Horas" + 0..N linhas de evento. A coluna do valor de interjornada (x≈708.5) é
    inferida por simetria com a de intrajornada (x=596.7, confirmada com dado real) — nenhum
-   colaborador do arquivo de exemplo tem interjornada > 0 pra confirmar essa posição de verdade. */
+   colaborador do arquivo de exemplo tem interjornada > 0 pra confirmar essa posição de verdade.
+   O rótulo "Periodo Ativo do Ponto" se repete uma vez por página (mesmo Y todo santo página) —
+   usado aqui como marcador de página pra segmentar os fragmentos e nunca misturar linhas de
+   páginas diferentes no mesmo agrupamento por Y (que reinicia a cada página). */
 const INTERINTRA_COLS=[
   {key:'a',x:40.1},{key:'nome',x:97.4},{key:'cod',x:119.1},{key:'desc',x:198.6},
   {key:'horario',x:301.9},{key:'horas',x:445.4},
@@ -378,39 +383,45 @@ function interIntraClassifyCol(x){
   return bestDist<=8?best.key:null;
 }
 function parseInterIntraFragments(frags){
-  const periodoLabel=frags.find(f=>f.s.indexOf('Periodo Ativo do Ponto')>=0);
-  if(!periodoLabel)throw new Error('Layout da Listagem de Interjornada/Intrajornada não reconhecido (rótulo de período não encontrado).');
-  const dateFrags=frags.filter(f=>Math.abs(f.y-periodoLabel.y)<3&&/^\d{2}\/\d{2}\/\d{2,4}$/.test(f.s)).sort((a,b)=>a.x-b.x);
+  const periodoLabels=frags.filter(f=>f.s.indexOf('Periodo Ativo do Ponto')>=0);
+  if(!periodoLabels.length)throw new Error('Layout da Listagem de Interjornada/Intrajornada não reconhecido (rótulo de período não encontrado).');
+  const dateFrags=frags.filter(f=>Math.abs(f.y-periodoLabels[0].y)<3&&/^\d{2}\/\d{2}\/\d{2,4}$/.test(f.s)).sort((a,b)=>a.x-b.x);
   if(dateFrags.length<2)throw new Error('Não foi possível ler o período ativo do ponto.');
   const periodoIni=pdfDateBrToIso(dateFrags[0].s),periodoFim=pdfDateBrToIso(dateFrags[1].s);
 
-  const dataFrags=frags.filter(f=>f.y<periodoLabel.y-10);
-  const rowsByY=new Map();
-  dataFrags.forEach(f=>{
-    const yKey=Math.round(f.y*2)/2;
-    let bucket=null;
-    for(const k of rowsByY.keys())if(Math.abs(k-yKey)<1){bucket=k;break}
-    if(bucket===null){bucket=yKey;rowsByY.set(bucket,[])}
-    rowsByY.get(bucket).push(f);
-  });
   const employees=[];
-  let current=null;
-  [...rowsByY.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,rowFrags])=>{
-    const rec={};
-    rowFrags.forEach(f=>{const col=interIntraClassifyCol(f.x);if(col)rec[col]=f.s});
-    if(rec.a==='Data')return;
-    if(rec.a&&/^\d{2}\/\d{2}\/\d{4}$/.test(rec.a)){
-      if(current)current.eventos.push({
-        data:pdfDateBrToIso(rec.a),codigo:rec.cod||'',descricao:rec.desc||'',
-        minutos:parseDurationHms(rec.horas),
-        tipo:/INTERJORNADA/i.test(rec.desc||'')?'inter':'intra'
-      });
-      return;
-    }
-    if(rec.a&&/^\d{4,6}$/.test(rec.a)){
-      current={chapa:rec.a,nome:rec.nome||'',intraTotalMin:parseDurationHms(rec.intraVal),interTotalMin:parseDurationHms(rec.interVal),eventos:[]};
-      employees.push(current);
-    }
+  periodoLabels.forEach((periodoLabel,pi)=>{
+    const startIdx=frags.indexOf(periodoLabel);
+    const nextLabel=periodoLabels[pi+1];
+    const endIdx=nextLabel?frags.indexOf(nextLabel):frags.length;
+    const pageFrags=frags.slice(startIdx,endIdx);
+    const dataFrags=pageFrags.filter(f=>f.y<periodoLabel.y-10);
+    const rowsByY=new Map();
+    dataFrags.forEach(f=>{
+      const yKey=Math.round(f.y*2)/2;
+      let bucket=null;
+      for(const k of rowsByY.keys())if(Math.abs(k-yKey)<1){bucket=k;break}
+      if(bucket===null){bucket=yKey;rowsByY.set(bucket,[])}
+      rowsByY.get(bucket).push(f);
+    });
+    let current=null;
+    [...rowsByY.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,rowFrags])=>{
+      const rec={};
+      rowFrags.forEach(f=>{const col=interIntraClassifyCol(f.x);if(col)rec[col]=f.s});
+      if(rec.a==='Data')return;
+      if(rec.a&&/^\d{2}\/\d{2}\/\d{4}$/.test(rec.a)){
+        if(current)current.eventos.push({
+          data:pdfDateBrToIso(rec.a),codigo:rec.cod||'',descricao:rec.desc||'',
+          minutos:parseDurationHms(rec.horas),
+          tipo:/INTERJORNADA/i.test(rec.desc||'')?'inter':'intra'
+        });
+        return;
+      }
+      if(rec.a&&/^\d{4,6}$/.test(rec.a)){
+        current={chapa:rec.a,nome:rec.nome||'',intraTotalMin:parseDurationHms(rec.intraVal),interTotalMin:parseDurationHms(rec.interVal),eventos:[]};
+        employees.push(current);
+      }
+    });
   });
   return {periodoIni,periodoFim,employees};
 }
@@ -719,16 +730,20 @@ Layout real validado: bloco por colaborador ("chapa NOME ... 180 dias do Banco D
 
 **Risco conhecido, já documentado no spec**: no arquivo real de exemplo, **nenhum colaborador tem eventos** (todos "00:00", tabela de eventos vazia) — o caminho "com eventos" é escrito a partir da estrutura visível do cabeçalho (mesmas posições X dos rótulos "Data"/"Data Limite"/"Evento"/"Tipo"/"Valor"), mas sem um exemplo populado real pra confirmar 100%. O teste desta task só valida o caminho "sem eventos", que é o único disponível.
 
+**Correção aplicada após a Task 2 (ruling do controlador)**: mesma correção de `extractPdfFragments` (agora retorna todas as páginas concatenadas, ver Task 4). O arquivo real desta task tem **4 páginas**. O rótulo "Periodo Ativo do Ponto" se repete uma vez por página (mesmo Y em todas), usado aqui como marcador de página pra segmentar os fragmentos e nunca misturar linhas de páginas diferentes no mesmo agrupamento por Y.
+
 - [ ] **Step 1: Escrever o parser**
 
 ```js
 /* ===================== JORNADA/HE — Fase 2: parser do Analítico de 180 dias =====================
-   Layout validado contra o arquivo real. Cada colaborador: linha "chapa NOME ... 180 dias do
-   Banco DD/MM/YY a DD/MM/YY" + sub-cabeçalho "Data/Data Limite/Evento/Tipo/Valor" + 0..N linhas
-   de evento + linha "Horas a PAGAR/DESCONTAR HH:MM". RISCO CONHECIDO: nenhum colaborador do
+   Layout validado contra o arquivo real (4 páginas). Cada colaborador: linha "chapa NOME ... 180
+   dias do Banco DD/MM/YY a DD/MM/YY" + sub-cabeçalho "Data/Data Limite/Evento/Tipo/Valor" + 0..N
+   linhas de evento + linha "Horas a PAGAR/DESCONTAR HH:MM". RISCO CONHECIDO: nenhum colaborador do
    arquivo de exemplo tem evento real (todos "00:00" sem eventos) — a leitura de uma linha de
    evento é inferida pela posição dos rótulos do sub-cabeçalho, sem confirmação com dado real
-   populado. Reconfirmar assim que houver um arquivo real com eventos. */
+   populado. Reconfirmar assim que houver um arquivo real com eventos. O rótulo "Periodo Ativo do
+   Ponto" se repete uma vez por página — usado como marcador de página pra segmentar os fragmentos
+   e evitar colisão de Y entre páginas (o eixo Y do PDF reinicia a cada página). */
 const ANALITICO180_COLS=[
   {key:'chapa',x:43.4},{key:'nome',x:118.4},{key:'janelaLabel',x:512.9},{key:'janelaIni',x:607.3},{key:'janelaFim',x:669.6},
   {key:'col1',x:46.4},{key:'dataLimite',x:112.4},{key:'evento',x:179.9},{key:'tipo',x:414.4},{key:'valor',x:474.0},
@@ -740,38 +755,45 @@ function analitico180ClassifyCol(x){
   return bestDist<=6?best.key:null;
 }
 function parseAnalitico180Fragments(frags){
-  const headerFrag=frags.find(f=>f.s==='180 dias do Banco');
-  if(!headerFrag)throw new Error('Layout do Analítico de 180 dias não reconhecido (rótulo "180 dias do Banco" não encontrado).');
-  const rowsByY=new Map();
-  frags.forEach(f=>{
-    const yKey=Math.round(f.y*2)/2;
-    let bucket=null;
-    for(const k of rowsByY.keys())if(Math.abs(k-yKey)<1){bucket=k;break}
-    if(bucket===null){bucket=yKey;rowsByY.set(bucket,[])}
-    rowsByY.get(bucket).push(f);
-  });
+  const pageMarkers=frags.filter(f=>f.s.indexOf('Periodo Ativo do Ponto')>=0);
+  if(!pageMarkers.length)throw new Error('Layout do Analítico de 180 dias não reconhecido (rótulo de período não encontrado).');
+  if(!frags.some(f=>f.s==='180 dias do Banco'))throw new Error('Layout do Analítico de 180 dias não reconhecido (rótulo "180 dias do Banco" não encontrado).');
   const windows=new Map();
-  let current=null;
-  [...rowsByY.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,rowFrags])=>{
-    const rec={};
-    rowFrags.forEach(f=>{const col=analitico180ClassifyCol(f.x);if(col)rec[col]=f.s});
-    if(rec.janelaLabel==='180 dias do Banco'){
-      const janelaIni=pdfDateBrToIso(rec.janelaIni),janelaFim=pdfDateBrToIso(rec.janelaFim);
-      const windowId=jornada180WindowId(janelaFim);
-      if(!windows.has(windowId))windows.set(windowId,{janelaIni,janelaFim,employees:[]});
-      current={chapa:rec.chapa||'',nome:rec.nome||'',valorPagarDescontarMin:0,eventos:[]};
-      windows.get(windowId).employees.push(current);
-      return;
-    }
-    if(rec.totalLabel==='Horas a PAGAR/DESCONTAR'){
-      if(current){const parsed=parseHourBankCell(rec.valor);current.valorPagarDescontarMin=parsed?parsed.minutes*parsed.sign:0}
-      return;
-    }
-    if(rec.col1==='Data')return;
-    if(current&&rec.col1&&/^\d{2}\/\d{2}\/\d{2,4}$/.test(rec.col1)){
-      const parsed=parseHourBankCell(rec.valor);
-      current.eventos.push({data:pdfDateBrToIso(rec.col1),dataLimite:pdfDateBrToIso(rec.dataLimite),evento:rec.evento||'',tipo:rec.tipo||'',valorMin:parsed?parsed.minutes*parsed.sign:null});
-    }
+  pageMarkers.forEach((marker,pi)=>{
+    const startIdx=frags.indexOf(marker);
+    const nextMarker=pageMarkers[pi+1];
+    const endIdx=nextMarker?frags.indexOf(nextMarker):frags.length;
+    const pageFrags=frags.slice(startIdx,endIdx);
+    const rowsByY=new Map();
+    pageFrags.forEach(f=>{
+      const yKey=Math.round(f.y*2)/2;
+      let bucket=null;
+      for(const k of rowsByY.keys())if(Math.abs(k-yKey)<1){bucket=k;break}
+      if(bucket===null){bucket=yKey;rowsByY.set(bucket,[])}
+      rowsByY.get(bucket).push(f);
+    });
+    let current=null;
+    [...rowsByY.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,rowFrags])=>{
+      const rec={};
+      rowFrags.forEach(f=>{const col=analitico180ClassifyCol(f.x);if(col)rec[col]=f.s});
+      if(rec.janelaLabel==='180 dias do Banco'){
+        const janelaIni=pdfDateBrToIso(rec.janelaIni),janelaFim=pdfDateBrToIso(rec.janelaFim);
+        const windowId=jornada180WindowId(janelaFim);
+        if(!windows.has(windowId))windows.set(windowId,{janelaIni,janelaFim,employees:[]});
+        current={chapa:rec.chapa||'',nome:rec.nome||'',valorPagarDescontarMin:0,eventos:[]};
+        windows.get(windowId).employees.push(current);
+        return;
+      }
+      if(rec.totalLabel==='Horas a PAGAR/DESCONTAR'){
+        if(current){const parsed=parseHourBankCell(rec.valor);current.valorPagarDescontarMin=parsed?parsed.minutes*parsed.sign:0}
+        return;
+      }
+      if(rec.col1==='Data')return;
+      if(current&&rec.col1&&/^\d{2}\/\d{2}\/\d{2,4}$/.test(rec.col1)){
+        const parsed=parseHourBankCell(rec.valor);
+        current.eventos.push({data:pdfDateBrToIso(rec.col1),dataLimite:pdfDateBrToIso(rec.dataLimite),evento:rec.evento||'',tipo:rec.tipo||'',valorMin:parsed?parsed.minutes*parsed.sign:null});
+      }
+    });
   });
   return {windows:[...windows.entries()].map(([id,w])=>({id,...w}))};
 }
