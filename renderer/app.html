@@ -3961,6 +3961,15 @@ function financeDueAlerts(){
     return {type:'financeiro',severity:days<0?'bad':days<=7?'bad':days<=15?'warn':null,x,days};
   }).filter(a=>a.severity).sort((a,b)=>a.days-b.days);
 }
+function pendingSignatureAlerts(){
+  const period=latestJornadaPeriod();
+  if(!period)return [];
+  return period.employees.filter(e=>e.employeeId&&(e.pendingSignatureDocs||[]).length).map(e=>({
+    type:'assinatura',severity:e.pendingSignatureDocs.length>=3?'bad':'warn',
+    text:`${e.nome} — ${e.pendingSignatureDocs.length} espelho(s) de ponto pendente(s) de assinatura`,
+    detail:e.pendingSignatureDocs.map(d=>d.arquivo).join(', ')
+  }));
+}
 
 /* ===================== 9. RENDER ===================== */
 let activeView='home';
@@ -4075,9 +4084,10 @@ function renderHome(prods,months){
   $('executiveStatusValue').textContent=pace?pct(pace):'—';
   $('executiveStatusNote').textContent=pace>=100?'Operação acima do ritmo esperado':pace>=90?'Operação próxima da meta':'Operação abaixo do ritmo esperado';
 
-  const alerts=[...vacationDeadlineAlerts(),...financeDueAlerts(),...lossAlerts()];
+  const alerts=[...vacationDeadlineAlerts(),...financeDueAlerts(),...lossAlerts(),...pendingSignatureAlerts()];
   $('alertsList').innerHTML=alerts.length?alerts.map(a=>{
     if(a.type==='ferias')return `<div class="alert-box ${a.severity}"><div class="ic">🏖️</div><div><b>${escHtml(a.text)}</b><small>${escHtml(a.detail)}</small></div></div>`;
+    if(a.type==='assinatura')return `<div class="alert-box ${a.severity}"><div class="ic">✍️</div><div><b>${escHtml(a.text)}</b><small>${escHtml(a.detail)}</small></div></div>`;
     if(a.type==='perda')return `<div class="alert-box ${a.severity}"><div class="ic">📉</div><div><b>Perda de papel — ${monthLabel(a.x.ref)}</b><small>Défice de ${a.m.defct.toFixed(2).replace('.',',')} resma(s) · Valor: ${fmtBRL(a.m.valorPerdas)}</small></div></div>`;
     const f=a.x;return `<div class="alert-box ${a.severity}"><div class="ic">💰</div><div><b>${escHtml(f.supplier||f.type)} — ${fmtBRL(f.value)}</b><small>${a.days<0?`Vencido há ${Math.abs(a.days)} dia(s)`:`Vence em ${a.days} dia(s)`} · Doc. ${escHtml(f.document||'-')}</small></div></div>`;
   }).join(''):`<p class="muted">Sem alertas no momento.</p>`;
