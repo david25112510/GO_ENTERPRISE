@@ -29,9 +29,24 @@ db = {
   news: [],                                      // notícias exibidas na TV
   alerts: [],                                      // alertas customizados exibidos na TV
   dailyMessages: [],                                 // pool de mensagens do rodapé da TV
+  developmentOrders: [],                             // OS de desenvolvimento importadas do arquivo ODS
   config: { ...parâmetros operacionais... }
 }
 ```
+
+## `db.developmentOrders` — OS de desenvolvimento
+
+Importadas das abas anuais da planilha `.ods`. Cada linha é preservada mesmo quando o número da OS
+se repete no mesmo ano. O identificador combina ano, número e posição da linha de origem.
+
+```js
+{ id, year, os, client, state, matrix, orderType, serviceType, documentType,
+  openedAt, deadline, analyst, deliveredAt, notes, cancelled,
+  sourceSheet, importedAt, updatedAt }
+```
+
+As datas ficam em `AAAA-MM-DD`. A situação é calculada na exibição: cancelada, entregue no prazo,
+entregue em atraso, em aberto ou em atraso. A coleção participa da mesclagem por registro entre PCs.
 
 > **`db.production` é vestigial.** Ninguém escreve nele (`grep` confirma zero `db.production.push`).
 > A "produção diária" de verdade é **derivada em tempo real** a partir de `db.sla` pela função

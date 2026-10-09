@@ -300,6 +300,21 @@ código, o disco `C:` da máquina de build estava com **145MB livres de 118GB** 
 cheio em si é um problema da máquina, não do projeto, e vale o usuário investigar o que mais está
 ocupando espaço (118GB usados é muito).
 
+## 13. Módulo de OS de Desenvolvimento (v8.9.0)
+
+A planilha `Planilha de Desenvolvimentos 2022-2026.ods` possui cinco abas anuais com o mesmo conjunto
+de 13 campos, mas grafias e formatos de data variam entre os anos. O módulo lê o ODS diretamente no
+renderer usando o leitor ZIP já existente, sem biblioteca ou conexão externa.
+
+Foram encontrados 3.707 registros e 12 números de OS repetidos dentro do mesmo ano. Por isso o número
+da OS isolado não foi usado como chave: cada linha recebe identidade por ano, número e posição na aba,
+preservando o histórico completo. A reimportação substitui a coleção, pois a planilha é a fonte de
+verdade e os registros não são editados manualmente no aplicativo.
+
+A Visão Geral também apresenta um recorte executivo coerente com a sua `dashboardDate`. Para não
+vazar informação futura ao consultar uma data histórica, uma entrega posterior à data selecionada é
+tratada como ainda aberta naquele recorte; o backlog considera todas as OS abertas até aquela data.
+
 ## Coisas que parecem bug mas são intencionais
 
 - `db.production` sempre vazio — não é bug, é vestigial; produção real vem de `db.sla` (ver

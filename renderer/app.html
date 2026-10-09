@@ -800,6 +800,21 @@ body.kiosk-mode .dash-var{font-size:13px}
 .jh-d-note{font-size:11px;color:#334155;margin:4px 0}
 .jh-dtable{width:100%;border-collapse:collapse;font-size:10px}
 .jh-dtable th,.jh-dtable td{padding:3px 4px;border-bottom:1px solid var(--line);text-align:left}
+.devos-filters{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:10px;align-items:end}
+.devos-filters label{font-size:11px;color:var(--muted)}
+.devos-filters select,.devos-filters input{margin-top:4px;width:100%}
+.devos-chart{display:flex;align-items:flex-end;gap:7px;height:210px;padding:24px 4px;border-bottom:1px solid var(--line)}
+.devos-col{height:100%;flex:1;min-width:22px;display:flex;align-items:flex-end;position:relative}
+.devos-col>div{width:100%;min-height:3px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--selbetti),var(--selbetti-dark));position:relative}
+.devos-col b{position:absolute;top:-19px;left:50%;transform:translateX(-50%);font-size:10px;white-space:nowrap}
+.devos-col small{position:absolute;bottom:-21px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;color:var(--muted)}
+.devos-hbars{display:grid;gap:9px}
+.devos-hrow{display:grid;grid-template-columns:minmax(110px,1fr) 3fr 42px;gap:8px;align-items:center;font-size:11px}
+.devos-track{height:9px;background:#e8eeeb;border-radius:999px;overflow:hidden}
+.devos-fill{height:100%;background:linear-gradient(90deg,var(--selbetti-dark),var(--selbetti));border-radius:999px}
+.devos-pager{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:var(--muted)}
+@media(max-width:1100px){.devos-filters{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.devos-filters{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -864,6 +879,7 @@ body.kiosk-mode .dash-var{font-size:13px}
       <button data-view="selbnews" data-role="gestor">📡 <span>SELBNEWS</span></button>
       <button data-view="fornecedores" data-role="gestor">🏢 <span>Fornecedores</span></button>
       <button data-view="admin" data-role="gestor">⚙️ <span>Administração</span></button>
+      <button data-view="developmentOs" data-role="gestor">💻 <span>OS Desenvolvimento</span></button>
     </nav>
     <div class="side-footer">
       <div><span class="dot" id="dbDot"></span><span id="dbStatusText">Verificando banco…</span></div>
@@ -886,6 +902,14 @@ body.kiosk-mode .dash-var{font-size:13px}
       <div class="grid cards executive-cards" id="homeCards"></div>
       <div class="executive-pulse" id="executivePulse"></div>
       <div class="panel" id="alertsPanel"><h2>⚠️ Central de alertas</h2><div id="alertsList"></div></div>
+      <div class="panel" id="homeDevOsPanel">
+        <div class="toolbar"><div><h2 style="margin:0">💻 OS de Desenvolvimento</h2><p class="muted" id="homeDevOsSubtitle" style="margin:4px 0 0;font-size:11px">Resumo do período selecionado.</p></div><button class="btn" onclick="switchView('developmentOs')">Abrir módulo completo</button></div>
+        <div class="grid cards" id="homeDevOsCards"></div>
+        <div class="grid" style="grid-template-columns:1.25fr 1fr;margin-top:12px">
+          <div><h3 style="font-size:12px;margin:0 0 8px">Volume por tipo de ordem</h3><div class="devos-hbars" id="homeDevOsTypeChart"></div></div>
+          <div><h3 style="font-size:12px;margin:0 0 8px">Últimas OS abertas</h3><div id="homeDevOsLatest"></div></div>
+        </div>
+      </div>
       <div class="grid" style="grid-template-columns:1.4fr 1fr">
         <div class="panel chart-panel"><h2>Evolução diária de impressões (mês atual)</h2><div class="bars" id="homeChart"></div></div>
         <div class="panel"><h2>Resumo operacional</h2><div id="summary"></div></div>
@@ -946,6 +970,33 @@ body.kiosk-mode .dash-var{font-size:13px}
       <div class="panel"><div class="toolbar"><h2 style="margin:0">Ordens de Serviço importadas</h2>
         <input class="table-search" id="productionSearch" placeholder="Pesquisar OS ou status" oninput="render()"></div>
         <div class="tablewrap" style="max-height:420px"><table><thead><tr><th>OS</th><th>Status</th><th>Recebimento</th><th>Entrega</th><th>SLA</th><th>Objetos</th><th>Impressões</th></tr></thead><tbody id="slaTable"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- OS DE DESENVOLVIMENTO -->
+    <section class="view" id="developmentOs">
+      <div class="top"><div><h1>OS de Desenvolvimento</h1><p>Volume, prazo e distribuição das ordens importadas da planilha histórica.</p></div>
+        <div class="top-actions"><label class="btn primary file">⬆ Importar planilha ODS<input type="file" accept=".ods" onchange="importDevelopmentOrders(this.files[0]);this.value=''" /></label></div></div>
+      <div class="panel"><div class="devos-filters">
+        <label>Ano<select id="devOsYear" onchange="devOsPage=1;renderDevelopmentOrders()"></select></label>
+        <label>Mês<select id="devOsMonth" onchange="devOsPage=1;renderDevelopmentOrders()"></select></label>
+        <label>Estado<select id="devOsState" onchange="devOsPage=1;renderDevelopmentOrders()"></select></label>
+        <label>Analista<select id="devOsAnalyst" onchange="devOsPage=1;renderDevelopmentOrders()"></select></label>
+        <label>Tipo de serviço<select id="devOsService" onchange="devOsPage=1;renderDevelopmentOrders()"></select></label>
+        <label>Pesquisar<input id="devOsSearch" placeholder="Cliente, matriz ou OS" oninput="devOsPage=1;renderDevelopmentOrders()" /></label>
+      </div></div>
+      <div class="grid cards" id="devOsCards"></div>
+      <div class="grid" style="grid-template-columns:1.5fr 1fr">
+        <div class="panel"><h2>OS abertas por mês</h2><div class="devos-chart" id="devOsMonthlyChart"></div></div>
+        <div class="panel"><h2>Distribuição por estado</h2><div class="devos-hbars" id="devOsStateChart"></div></div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="panel"><h2>Tipos de ordem</h2><div class="devos-hbars" id="devOsOrderChart"></div></div>
+        <div class="panel"><h2>Desempenho por analista</h2><div class="devos-hbars" id="devOsAnalystChart"></div></div>
+      </div>
+      <div class="panel"><div class="toolbar"><div><h2 style="margin:0">Ordens de serviço</h2><p class="muted" id="devOsImportInfo" style="margin:4px 0 0;font-size:11px"></p></div><button class="btn" onclick="exportDevelopmentOrdersCsv()">Exportar CSV filtrado</button></div>
+        <div class="tablewrap" style="max-height:520px"><table><thead><tr><th>Ano/OS</th><th>Cliente</th><th>UF</th><th>Matriz</th><th>Ordem</th><th>Serviço</th><th>Documento</th><th>Abertura</th><th>Prazo</th><th>Analista</th><th>Entrega</th><th>Situação</th></tr></thead><tbody id="devOsTable"></tbody></table></div>
+        <div class="devos-pager"><span id="devOsPageInfo"></span><div><button class="btn" onclick="changeDevOsPage(-1)">‹ Anterior</button> <button class="btn" onclick="changeDevOsPage(1)">Próxima ›</button></div></div>
       </div>
     </section>
 
@@ -1831,7 +1882,7 @@ function seedManuals(){
   ];
 }
 let db={
-  production:[],sla:{},finance:[],expenses:[],losses:[],employees:[],absences:[],vacations:[],suppliers:[],imports:[],history:[],activities:[],timesheets:[],manuals:seedManuals(),news:[],alerts:[],dailyMessages:[],
+  production:[],sla:{},finance:[],expenses:[],losses:[],employees:[],absences:[],vacations:[],suppliers:[],imports:[],history:[],activities:[],timesheets:[],manuals:seedManuals(),news:[],alerts:[],dailyMessages:[],developmentOrders:[],
   config:{printValue:.053,paperWeight:4.7,slaGoal:95,payrollTax:70,dailyPrintGoal:580000,dailyObjectGoal:260000,
     security:{enabled:false,pinHash:'',salt:'',iterations:150000,encryptionEnabled:false,hint:'',tvEnabled:false,tvPinHash:'',tvSalt:'',tvHint:''}}
 };
@@ -1919,6 +1970,7 @@ function normalizeDb(x){
     news:Array.isArray(source.news)?source.news:[],
     alerts:Array.isArray(source.alerts)?source.alerts:[],
     dailyMessages:Array.isArray(source.dailyMessages)?source.dailyMessages:[],
+    developmentOrders:Array.isArray(source.developmentOrders)?source.developmentOrders.map(normalizeDevelopmentOrder):[],
     selbNews:Array.isArray(source.selbNews)?source.selbNews.map(normalizeSelbNews):[],
     selbAlerts:Array.isArray(source.selbAlerts)?source.selbAlerts.map(normalizeSelbAlert):[],
     jornadaPeriods:Array.isArray(source.jornadaPeriods)?source.jornadaPeriods.map(normalizeJornadaPeriod):[],
@@ -2427,7 +2479,7 @@ function normalizeManual(m){
     summary:m.summary||'',steps:Array.isArray(m.steps)?m.steps.map(s=>({id:s.id||uid(),title:s.title||'',text:s.text||'',images:Array.isArray(s.images)?s.images:[]})):[],
     updatedAt:m.updatedAt||new Date().toISOString()};
 }
-function recordCount(){return db.production.length+Object.keys(db.sla||{}).length+db.finance.length+db.expenses.length+db.losses.length+db.employees.length+db.absences.length+db.vacations.length+db.suppliers.length+(db.activities||[]).length+(db.timesheets||[]).length+(db.manuals||[]).length}
+function recordCount(){return db.production.length+Object.keys(db.sla||{}).length+db.finance.length+db.expenses.length+db.losses.length+db.employees.length+db.absences.length+db.vacations.length+db.suppliers.length+(db.activities||[]).length+(db.timesheets||[]).length+(db.manuals||[]).length+(db.developmentOrders||[]).length}
 
 /* snapshot leve para histórico de versões — exclui sla/imports (grandes e reimportáveis) */
 function lightSnapshot(){const {sla,imports,history,...rest}=db;return rest}
@@ -2729,7 +2781,7 @@ async function afterUnlock(){
 const NAV_VIEWS_BY_ROLE={
   operador:['operadorHome','producao','manuais','dashboardTv'],
   tv:['dashboardTv','noticias'],
-  gestor:['home','producao','financeiro','rh','jornadaHe','manuais','dashboardTv','fornecedores','admin','noticias','selbnews']
+  gestor:['home','producao','developmentOs','financeiro','rh','jornadaHe','manuais','dashboardTv','fornecedores','admin','noticias','selbnews']
 };
 function applyRoleUI(){
   const isOp=currentRole==='operador',isTv=currentRole==='tv';
@@ -3403,6 +3455,157 @@ async function readFirstSheet(file){
   let shared=[];
   if(sharedName){const sBuf=await readEntry(sharedName);shared=parseSharedStrings(dec.decode(sBuf))}
   return parseSheet(sheetXml,shared);
+}
+
+/* ===================== OS DE DESENVOLVIMENTO — importacao ODS ===================== */
+function normalizeDevelopmentOrder(o){
+  return {id:o.id||uid(),year:String(o.year||''),os:String(o.os||''),client:o.client||'',state:o.state||'',matrix:o.matrix||'',
+    orderType:o.orderType||'',serviceType:o.serviceType||'',documentType:o.documentType||'',openedAt:o.openedAt||'',
+    deadline:o.deadline||'',analyst:o.analyst||'',deliveredAt:o.deliveredAt||'',notes:o.notes||'',cancelled:!!o.cancelled,
+    sourceSheet:o.sourceSheet||'',importedAt:o.importedAt||'',updatedAt:o.updatedAt||o.importedAt||new Date().toISOString()};
+}
+function devOsDate(raw){
+  const s=String(raw||'').trim();if(!s)return '';
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m)return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);return m?`${m[1]}-${m[2]}-${m[3]}`:'';
+}
+function devOsCanonical(raw){
+  return String(raw||'').trim().replace(/\s+/g,' ').toLocaleUpperCase('pt-BR')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+async function readOdsSheets(file){
+  const {entries,readEntry}=await unzipXlsx(file);
+  if(!entries['content.xml'])throw new Error('Arquivo ODS invalido: content.xml nao encontrado.');
+  const xml=new DOMParser().parseFromString(dec.decode(await readEntry('content.xml')),'application/xml');
+  if(xml.querySelector('parsererror'))throw new Error('Nao foi possivel interpretar o XML da planilha.');
+  const TABLE_NS='urn:oasis:names:tc:opendocument:xmlns:table:1.0',TEXT_NS='urn:oasis:names:tc:opendocument:xmlns:text:1.0';
+  return [...xml.getElementsByTagNameNS(TABLE_NS,'table')].map(table=>{
+    const name=table.getAttributeNS(TABLE_NS,'name')||'';const rows=[];
+    [...table.children].filter(n=>n.localName==='table-row').forEach(rowEl=>{
+      const row=[];
+      [...rowEl.children].filter(n=>n.localName==='table-cell'||n.localName==='covered-table-cell').forEach(cell=>{
+        const repeat=Math.min(30,Math.max(1,Number(cell.getAttributeNS(TABLE_NS,'number-columns-repeated'))||1));
+        const value=[...cell.getElementsByTagNameNS(TEXT_NS,'p')].map(p=>p.textContent||'').join(' / ').trim();
+        for(let i=0;i<repeat;i++)row.push(value);
+      });
+      while(row.length&&row[row.length-1]==='')row.pop();
+      if(row.some(v=>String(v).trim()))rows.push(row);
+    });
+    return {name,rows};
+  });
+}
+async function importDevelopmentOrders(file){
+  if(!file)return;
+  try{
+    const sheets=(await readOdsSheets(file)).filter(s=>/DESENVOLVIMENTO\s+20\d{2}/i.test(s.name));
+    if(!sheets.length)throw new Error('Nenhuma aba anual de OS de desenvolvimento foi encontrada.');
+    const importedAt=new Date().toISOString(),records=[];let ignored=0;
+    sheets.forEach(sheet=>{
+      const year=(sheet.name.match(/20\d{2}/)||[])[0]||'';const h=sheet.rows[0]||[];
+      const ix={os:findCol(h,'OS'),client:findCol(h,'CLIENTE'),state:findCol(h,'ESTADO'),matrix:findCol(h,'MATRIZ'),
+        orderType:findCol(h,'ORDEM SERVICO','ORDEM SERVIÇO'),serviceType:findCol(h,'TIPO SERVICO','TIPO SERVIÇO'),
+        documentType:findCol(h,'TIPO DOCUMENTO'),openedAt:findCol(h,'ABERTURA'),deadline:findCol(h,'PRAZO FINAL'),
+        analyst:findCol(h,'ANALISTA RESPONSAVEL','ANALISTA RESPONSÁVEL'),deliveredAt:findCol(h,'DATA ENTREGUE'),
+        notes:findCol(h,'OBSERVACOES','OBSERVAÇÕES'),cancelled:findCol(h,'CANCELADO','CANCELADO / RECOLHIDA')};
+      if(ix.os<0||ix.client<0||ix.openedAt<0)throw new Error(`Cabecalho nao reconhecido na aba ${sheet.name}.`);
+      sheet.rows.slice(1).forEach((r,rowIndex)=>{
+        const os=String(r[ix.os]||'').trim();if(!os){ignored++;return}
+        const cancelled=/^(SIM|S|YES|1)$/i.test(String(r[ix.cancelled]||'').trim());
+        records.push(normalizeDevelopmentOrder({id:`devos-${year}-${os}-${rowIndex+2}`,year,os,client:r[ix.client]||'',state:r[ix.state]||'',matrix:r[ix.matrix]||'',
+          orderType:r[ix.orderType]||'',serviceType:r[ix.serviceType]||'',documentType:r[ix.documentType]||'',openedAt:devOsDate(r[ix.openedAt]),
+          deadline:devOsDate(r[ix.deadline]),analyst:r[ix.analyst]||'',deliveredAt:devOsDate(r[ix.deliveredAt]),notes:r[ix.notes]||'',cancelled,
+          sourceSheet:sheet.name,importedAt,updatedAt:importedAt}));
+      });
+    });
+    const unique=new Map(records.map(r=>[r.id,r]));
+    db.developmentOrders=[...unique.values()];
+    db.imports.unshift({at:new Date().toLocaleString('pt-BR'),file:file.name,type:'OS Desenvolvimento',total:records.length,added:unique.size,updated:0,same:0,errors:ignored});
+    db.imports=db.imports.slice(0,30);await save(true);
+    alert(`Importacao concluida: ${unique.size} OS carregadas de ${sheets.length} abas anuais${ignored?`, ${ignored} linhas vazias ignoradas`:''}.`);
+  }catch(e){alert('Falha ao importar OS de desenvolvimento: '+e.message)}
+}
+function devOsStatus(o,today){
+  if(o.cancelled)return 'Cancelada';
+  if(o.deliveredAt)return o.deadline&&o.deliveredAt>o.deadline?'Entregue em atraso':'Entregue no prazo';
+  return o.deadline&&o.deadline<today?'Em atraso':'Em aberto';
+}
+function devOsStatusPill(status){
+  const cls=status==='Entregue no prazo'?'ok':status.includes('atraso')?'bad':status==='Cancelada'?'mut':'warn';
+  return `<span class="pill ${cls}">${escHtml(status)}</span>`;
+}
+let devOsPage=1;
+function setDevOsOptions(id,values,allLabel){
+  const el=$(id);if(!el)return;const cur=el.value;
+  el.innerHTML=`<option value="">${allLabel||'Todos'}</option>`+values.map(v=>`<option value="${escHtml(v)}">${escHtml(v)}</option>`).join('');
+  if(values.includes(cur))el.value=cur;
+}
+function filteredDevelopmentOrders(){
+  const year=val('devOsYear'),month=val('devOsMonth'),state=val('devOsState'),analyst=val('devOsAnalyst'),service=val('devOsService'),q=norm(val('devOsSearch'));
+  return (db.developmentOrders||[]).filter(o=>(!year||o.year===year)&&(!month||(o.openedAt||'').slice(5,7)===month)&&
+    (!state||o.state===state)&&(!analyst||o.analyst===analyst)&&(!service||o.serviceType===service)&&
+    (!q||norm([o.os,o.client,o.state,o.matrix,o.orderType,o.serviceType,o.documentType,o.analyst,o.notes].join(' ')).includes(q)));
+}
+function devOsBarsHtml(items){
+  if(!items.length)return '<p class="muted">Sem dados para os filtros selecionados.</p>';
+  const max=Math.max(...items.map(x=>x[1]),1);
+  return items.map(([label,n])=>`<div class="devos-hrow"><span title="${escHtml(label)}">${escHtml(label||'Nao informado')}</span><div class="devos-track"><div class="devos-fill" style="width:${n/max*100}%"></div></div><b>${fmtNum(n)}</b></div>`).join('');
+}
+function devOsGroup(rows,key){const m={};rows.forEach(o=>{const k=(o[key]||'Nao informado').trim();m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
+function renderDevelopmentOrders(){
+  const root=$('developmentOs');if(!root)return;const all=db.developmentOrders||[];
+  setDevOsOptions('devOsYear',[...new Set(all.map(o=>o.year).filter(Boolean))].sort(),'Todos os anos');
+  setDevOsOptions('devOsMonth',['01','02','03','04','05','06','07','08','09','10','11','12'],'Todos os meses');
+  setDevOsOptions('devOsState',[...new Set(all.map(o=>o.state).filter(Boolean))].sort(),'Todos');
+  setDevOsOptions('devOsAnalyst',[...new Set(all.map(o=>o.analyst).filter(Boolean))].sort(),'Todos');
+  setDevOsOptions('devOsService',[...new Set(all.map(o=>o.serviceType).filter(Boolean))].sort(),'Todos');
+  const rows=filteredDevelopmentOrders(),today=new Date().toISOString().slice(0,10),status=rows.map(o=>devOsStatus(o,today));
+  const delivered=rows.filter(o=>o.deliveredAt&&!o.cancelled),onTime=delivered.filter(o=>!o.deadline||o.deliveredAt<=o.deadline).length;
+  const late=status.filter(s=>s==='Entregue em atraso'||s==='Em atraso').length,cancelled=status.filter(s=>s==='Cancelada').length;
+  const leadDays=delivered.map(o=>(new Date(o.deliveredAt+'T12:00:00')-new Date(o.openedAt+'T12:00:00'))/86400000).filter(n=>Number.isFinite(n)&&n>=0);
+  $('devOsCards').innerHTML=`<div class="card accent-teal"><div class="k">Total de OS</div><div class="v">${fmtNum(rows.length)}</div><div class="s">No recorte selecionado</div></div>
+    <div class="card accent-indigo"><div class="k">Entregues</div><div class="v">${fmtNum(delivered.length)}</div><div class="s">${rows.length?pct(delivered.length/rows.length*100):'0%'} do total</div></div>
+    <div class="card ${delivered.length&&onTime/delivered.length<.9?'accent-red':'accent-teal'}"><div class="k">Cumprimento do prazo</div><div class="v">${delivered.length?pct(onTime/delivered.length*100):'--'}</div><div class="s">${onTime} de ${delivered.length} entregues</div></div>
+    <div class="card ${late?'accent-red':'accent-teal'}"><div class="k">Com atraso</div><div class="v">${fmtNum(late)}</div><div class="s">Abertas vencidas + entregues atrasadas</div></div>
+    <div class="card accent-amber"><div class="k">Canceladas / recolhidas</div><div class="v">${fmtNum(cancelled)}</div><div class="s">${rows.length?pct(cancelled/rows.length*100):'0%'}</div></div>
+    <div class="card accent-indigo"><div class="k">Tempo medio de entrega</div><div class="v">${leadDays.length?(leadDays.reduce((a,b)=>a+b,0)/leadDays.length).toFixed(1).replace('.',','):'--'}</div><div class="s">Dias corridos</div></div>`;
+  const monthly=Array.from({length:12},(_,i)=>[String(i+1).padStart(2,'0'),rows.filter(o=>(o.openedAt||'').slice(5,7)===String(i+1).padStart(2,'0')).length]);
+  const maxMonth=Math.max(...monthly.map(x=>x[1]),1),mn=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  $('devOsMonthlyChart').innerHTML=monthly.map(([m,n],i)=>`<div class="devos-col"><div style="height:${n/maxMonth*100}%"><b>${n}</b><small>${mn[i]}</small></div></div>`).join('');
+  $('devOsStateChart').innerHTML=devOsBarsHtml(devOsGroup(rows,'state').slice(0,12));
+  $('devOsOrderChart').innerHTML=devOsBarsHtml(devOsGroup(rows,'orderType').slice(0,10));
+  const analystRows=devOsGroup(rows,'analyst').slice(0,10).map(([a,n])=>[a,`${n}`]);
+  $('devOsAnalystChart').innerHTML=devOsBarsHtml(analystRows.map(([a,n])=>[a,+n]));
+  const pageSize=100,pages=Math.max(1,Math.ceil(rows.length/pageSize));devOsPage=Math.min(Math.max(1,devOsPage),pages);
+  const shown=rows.slice().sort((a,b)=>(b.openedAt||'').localeCompare(a.openedAt||'')||(+b.os||0)-(+a.os||0)).slice((devOsPage-1)*pageSize,devOsPage*pageSize);
+  $('devOsTable').innerHTML=shown.map(o=>{const s=devOsStatus(o,today);return `<tr><td>${escHtml(o.year+'/'+o.os)}</td><td>${escHtml(o.client)}</td><td>${escHtml(o.state)}</td><td>${escHtml(o.matrix)}</td><td>${escHtml(o.orderType)}</td><td>${escHtml(o.serviceType)}</td><td>${escHtml(o.documentType||'-')}</td><td>${formatIsoDate(o.openedAt)}</td><td>${formatIsoDate(o.deadline)}</td><td>${escHtml(o.analyst||'-')}</td><td>${formatIsoDate(o.deliveredAt)}</td><td>${devOsStatusPill(s)}</td></tr>`}).join('')||'<tr><td colspan="12" class="muted">Importe a planilha ODS ou ajuste os filtros.</td></tr>';
+  $('devOsPageInfo').textContent=`Pagina ${devOsPage} de ${pages} - ${rows.length} registro(s)`;
+  const newest=all.map(o=>o.importedAt).filter(Boolean).sort().pop();$('devOsImportInfo').textContent=newest?`Ultima importacao: ${new Date(newest).toLocaleString('pt-BR')} - ${all.length} OS na base`:'Nenhuma planilha importada.';
+}
+function renderDevelopmentOrdersHome(selectedDate){
+  const cards=$('homeDevOsCards');if(!cards)return;
+  const month=String(selectedDate||'').slice(0,7),all=db.developmentOrders||[];
+  const opened=all.filter(o=>o.openedAt&&o.openedAt.startsWith(month)&&o.openedAt<=selectedDate);
+  const delivered=opened.filter(o=>!o.cancelled&&o.deliveredAt&&o.deliveredAt<=selectedDate);
+  const onTime=delivered.filter(o=>!o.deadline||o.deliveredAt<=o.deadline).length;
+  const overdue=all.filter(o=>!o.cancelled&&o.openedAt&&o.openedAt<=selectedDate&&(!o.deliveredAt||o.deliveredAt>selectedDate)&&o.deadline&&o.deadline<selectedDate);
+  const cancelled=opened.filter(o=>o.cancelled).length;
+  $('homeDevOsSubtitle').textContent=`${monthLabel(month)} ate ${selectedDate.split('-').reverse().join('/')} - base historica importada`;
+  cards.innerHTML=`<div class="card accent-indigo"><div class="k">OS abertas no mes</div><div class="v">${fmtNum(opened.length)}</div><div class="s">Ate a data do painel</div></div>
+    <div class="card accent-teal"><div class="k">Entregues</div><div class="v">${fmtNum(delivered.length)}</div><div class="s">${opened.length?pct(delivered.length/opened.length*100):'0%'} das abertas</div></div>
+    <div class="card ${delivered.length&&onTime/delivered.length<.9?'accent-red':'accent-teal'}"><div class="k">Cumprimento do prazo</div><div class="v">${delivered.length?pct(onTime/delivered.length*100):'--'}</div><div class="s">${onTime} de ${delivered.length} entregues</div></div>
+    <div class="card ${overdue.length?'accent-red':'accent-teal'}"><div class="k">Backlog vencido</div><div class="v">${fmtNum(overdue.length)}</div><div class="s">Abertas ate a data, sem entrega no prazo</div></div>
+    <div class="card accent-amber"><div class="k">Canceladas / recolhidas</div><div class="v">${fmtNum(cancelled)}</div><div class="s">No mes selecionado</div></div>`;
+  $('homeDevOsTypeChart').innerHTML=devOsBarsHtml(devOsGroup(opened,'orderType').slice(0,6));
+  const latest=opened.slice().sort((a,b)=>(b.openedAt||'').localeCompare(a.openedAt||'')||(+b.os||0)-(+a.os||0)).slice(0,5);
+  $('homeDevOsLatest').innerHTML=latest.length?latest.map(o=>`<div class="metricline"><span><b>${escHtml(o.year+'/'+o.os)}</b> ${escHtml(o.client||'Sem cliente')}</span><small>${formatIsoDate(o.openedAt)}</small></div>`).join(''):'<p class="muted">Sem OS abertas neste periodo.</p>';
+}
+function formatIsoDate(iso){return iso?iso.split('-').reverse().join('/'):'-'}
+function changeDevOsPage(delta){devOsPage+=delta;renderDevelopmentOrders()}
+function exportDevelopmentOrdersCsv(){
+  const rows=filteredDevelopmentOrders(),cols=['year','os','client','state','matrix','orderType','serviceType','documentType','openedAt','deadline','analyst','deliveredAt','notes','cancelled'];
+  const csv=[cols.join(';'),...rows.map(o=>cols.map(k=>'"'+String(o[k]??'').replace(/"/g,'""')+'"').join(';'))].join('\r\n');
+  download('os_desenvolvimento_filtrado.csv','\ufeff'+csv,'text/csv;charset=utf-8');
 }
 function findCol(header,...names){for(const n of names){const i=header.findIndex(h=>norm(h)===norm(n));if(i>=0)return i}return -1}
 function joinDateTime(d,t){const date=excelDate(d);if(!date)return '-';return date.split('-').reverse().join('/')+' '+(t||'')}
@@ -4407,6 +4610,7 @@ function render(){
   renderHome(prods,months);
   renderOperadorHome(prods);
   renderProducao(prods);
+  renderDevelopmentOrders();
   renderFinanceiro();
   renderRH();
   renderJornadaHe();
@@ -4462,6 +4666,7 @@ function renderHome(prods,months){
   const avgPrint=elapsedDays?totalP/elapsedDays:0,avgObject=elapsedDays?totalO/elapsedDays:0;
   const projPrint=avgPrint*daysInMonth,projObject=avgObject*daysInMonth,projBilling=projPrint*db.config.printValue;
   const selectedDateFmt=selectedDate.split('-').reverse().join('/');
+  renderDevelopmentOrdersHome(selectedDate);
 
   const monthLoss=lossForMonth(month),lossM=lossMetrics(monthLoss||{weighings:[],resmasPagas:0});
   const absent=teamAbsenteeism();

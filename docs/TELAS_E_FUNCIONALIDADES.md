@@ -20,6 +20,9 @@ automática (texto gerado a partir dos números), e a tabela de produção diár
   e [HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md).
 - **Projeção/metas** — `donutCard()`/`projItem()`, comparam realizado × meta × ritmo esperado até a
   data selecionada (`dashboardDate`).
+- **OS de Desenvolvimento** — resumo vinculado à mesma data do painel, com OS abertas no mês,
+  entregas, cumprimento de prazo, backlog vencido, cancelamentos, tipos de ordem e últimas aberturas.
+  O botão “Abrir módulo completo” leva à consulta detalhada e aos demais gráficos.
 
 ## Meu Painel (`id="operadorHome"`, papel: operador) — `renderOperadorHome(prods)`
 
@@ -49,6 +52,19 @@ da competência, faturamento produzido (`prints × config.printValue`, escondido
   de Recebimento", "Data/Hora da Entrega", "Sla de Produção", "Qtde. de Objetos", "Total de
   Impressões", etc. (ver `importSLA()` para a lista exata de nomes de coluna aceitos). Reimportar a
   mesma OS atualiza o registro em vez de duplicar (chave = Número da OS).
+
+## OS de Desenvolvimento (`id="developmentOs"`, papel: gestor) — `renderDevelopmentOrders()`
+
+Dashboard alimentado pela planilha histórica `.ods` de desenvolvimentos. O importador lê todas as
+abas cujo nome contém `DESENVOLVIMENTO 20XX`, normaliza datas e substitui a base reimportável.
+
+- Filtros por ano, mês, estado, analista, tipo de serviço e busca textual.
+- KPIs de volume, entregas, cumprimento do prazo, atrasos, cancelamentos e tempo médio.
+- Gráficos mensais, por estado, tipo de ordem e analista.
+- Tabela paginada com 100 registros por página e exportação CSV do recorte filtrado.
+
+O prazo usa comparação entre `deliveredAt` e `deadline`; OS não entregues cujo prazo já venceu são
+classificadas como “Em atraso”. Linhas marcadas como canceladas/recolhidas não entram nas entregas.
 
 ## Financeiro (`id="financeiro"`, papel: gestor) — `renderFinanceiro()`
 

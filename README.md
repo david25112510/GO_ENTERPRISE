@@ -24,6 +24,8 @@ build/release e o histórico de decisões/armadilhas conhecidas): [`docs/README.
   escolhida, preferências da janela de TV etc.), guardadas fora da pasta compartilhada.
 - **`src/updater.js`** — verifica se há uma versão nova publicada na pasta compartilhada e permite
   instalar sem precisar ir de máquina em máquina.
+- **OS de Desenvolvimento** — importa a planilha histórica `.ods` (2022–2026) e apresenta volume,
+  cumprimento de prazo, atrasos, cancelamentos, tempo médio, gráficos e consulta detalhada.
 
 ## Como configurar (depois de instalado em cada PC)
 
