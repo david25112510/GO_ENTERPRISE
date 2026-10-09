@@ -266,6 +266,22 @@ body.kiosk-mode .dash-kpi-yesterday small{font-size:10px}
 .dash-tile-chart{flex:2;min-width:0}
 .dash-tile-gauge{flex:1;min-width:0}
 .dash-tile-rank{flex:1;min-width:0}
+.dash-tile-devos{flex:1;min-width:210px}
+.dash-devos-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:2px}
+.dash-devos-stat{padding:10px 8px;border:1px solid rgba(143,227,184,.16);border-radius:8px;background:rgba(255,255,255,.035)}
+.dash-devos-stat b{display:block;color:#eafff2;font-size:20px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
+.dash-devos-stat small{display:block;color:#9fd6bb;font-size:9px;line-height:1.25;text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
+.dash-devos-stat.warn b{color:#ffd76a}
+.dash-devos-stat.bad b{color:#ff9d9d}
+.dash-devos-foot{margin-top:9px;color:#9fd6bb;font-size:9px;text-align:center}
+.dash-devos-mini{height:52px;margin-top:9px;padding-top:5px;border-top:1px solid rgba(143,227,184,.14);display:flex;align-items:flex-end;gap:5px}
+.dash-devos-mini-col{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;min-width:0}
+.dash-devos-mini-bar{width:100%;max-width:22px;min-height:2px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#8ff5b8,#0e9a55);position:relative}
+.dash-devos-mini-bar b{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-1px);color:#dff8ea;font-size:8px;line-height:1;font-weight:700}
+.dash-devos-mini-col small{color:#81b99d;font-size:7px;line-height:1;text-transform:uppercase}
+body.kiosk-mode .dash-devos-stat{padding:9px 8px}
+body.kiosk-mode .dash-devos-stat b{font-size:22px}
+body.kiosk-mode .dash-devos-stat small{font-size:9px}
 .dash-bars{min-height:220px}
 .dash-bars .bar{background:linear-gradient(180deg,#8ff5b8,#0e9a55);box-shadow:0 0 14px rgba(111,230,160,.35)}
 .dash-bars .bar .value{color:#eaf6ef}
@@ -1276,6 +1292,16 @@ body.kiosk-mode .dash-var{font-size:13px}
 
           <div class="dash-tile dash-tile-rank"><div class="dash-tile-head"><span class="ic">🏆</span><h2>Melhores dias</h2></div>
             <div id="dashRankBestProd"></div></div>
+
+          <div class="dash-tile dash-tile-devos"><div class="dash-tile-head"><span class="ic">💻</span><h2>OS Desenvolvimento</h2></div>
+            <div class="dash-devos-grid">
+              <div class="dash-devos-stat"><b id="dashDevOsOpened">0</b><small>Abertas no mês</small></div>
+              <div class="dash-devos-stat"><b id="dashDevOsDelivered">0</b><small>Entregues no mês</small></div>
+              <div class="dash-devos-stat" id="dashDevOsOverdueBox"><b id="dashDevOsOverdue">0</b><small>Backlog vencido</small></div>
+              <div class="dash-devos-stat" id="dashDevOsOnTimeBox"><b id="dashDevOsOnTime">—</b><small>Entregues no prazo</small></div>
+            </div>
+            <div class="dash-devos-mini" id="dashDevOsMiniChart" aria-label="OS abertas nos últimos seis meses"></div>
+            <div class="dash-devos-foot" id="dashDevOsUpdated">Base ainda não importada</div></div>
           </div>
 
           <div class="dash-tile dash-tile-ticker">
@@ -4892,6 +4918,28 @@ function renderDashboardTvInner(){
   const paceTrend=$('dashKpiPaceTrend');
   paceTrend.textContent=onTrack?'▲ acima do ritmo esperado':'▼ abaixo do ritmo esperado';
   paceTrend.className='dash-kpi-trend '+(onTrack?'up':'down');
+
+  // ---- OS de desenvolvimento: leitura curta para a TV, sem dados de cliente/analista ----
+  const devOrders=db.developmentOrders||[];
+  const devOpened=devOrders.filter(o=>!o.cancelled&&String(o.openedAt||'').startsWith(month)&&o.openedAt<=currentISO);
+  const devDelivered=devOrders.filter(o=>!o.cancelled&&String(o.deliveredAt||'').startsWith(month)&&o.deliveredAt<=currentISO);
+  const devOnTime=devDelivered.filter(o=>!o.deadline||o.deliveredAt<=o.deadline).length;
+  const devOverdue=devOrders.filter(o=>!o.cancelled&&o.openedAt&&o.openedAt<=currentISO&&(!o.deliveredAt||o.deliveredAt>currentISO)&&o.deadline&&o.deadline<currentISO);
+  const devOnTimeRate=devDelivered.length?devOnTime/devDelivered.length*100:null;
+  $('dashDevOsOpened').textContent=fmtNum(devOpened.length);
+  $('dashDevOsDelivered').textContent=fmtNum(devDelivered.length);
+  $('dashDevOsOverdue').textContent=fmtNum(devOverdue.length);
+  $('dashDevOsOnTime').textContent=devOnTimeRate==null?'—':pct(devOnTimeRate);
+  $('dashDevOsOverdueBox').className='dash-devos-stat'+(devOverdue.length?' bad':'');
+  $('dashDevOsOnTimeBox').className='dash-devos-stat'+(devOnTimeRate!=null&&devOnTimeRate<90?' warn':'');
+  const devMonths=[];let devMonthCursor=month;
+  for(let i=0;i<6;i++){devMonths.unshift(devMonthCursor);devMonthCursor=previousMonth(devMonthCursor)}
+  const devMonthly=devMonths.map(m=>({month:m,count:devOrders.filter(o=>!o.cancelled&&String(o.openedAt||'').startsWith(m)).length}));
+  const devMonthlyMax=Math.max(1,...devMonthly.map(x=>x.count));
+  $('dashDevOsMiniChart').innerHTML=devMonthly.map(x=>`<div class="dash-devos-mini-col" title="${monthLabel(x.month)}: ${fmtNum(x.count)} OS abertas">
+    <div class="dash-devos-mini-bar" style="height:${Math.max(4,x.count/devMonthlyMax*72)}%"><b>${fmtNum(x.count)}</b></div><small>${monthLabel(x.month).slice(0,3)}</small></div>`).join('');
+  const devLatestImport=devOrders.map(o=>o.importedAt).filter(Boolean).sort().pop();
+  $('dashDevOsUpdated').textContent=devLatestImport?`Base atualizada em ${new Date(devLatestImport).toLocaleDateString('pt-BR')}`:'Base ainda não importada';
 
   const msg=todaysMessage();
   const tickerEl=$('dashDailyMessage');
