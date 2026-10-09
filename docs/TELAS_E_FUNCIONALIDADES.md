@@ -136,10 +136,13 @@ de `renderDashboardTvInner()`.
 .dash-board
   .dash-row.dash-row-kpis       8 tiles (grid 4×2): impressões/objetos hoje, ritmo, perdas de papel,
                                  impressões do mês, dias com produção, dias faltantes, produção de ontem
-  .dash-row.dash-row-main       gráfico de produção (flex maior) · gauge de SLA · ranking (melhores dias)
-  .dash-row.dash-row-secondary  avisos (trilho de cor lateral) · destaque notícias/aniversariantes
+  .dash-row.dash-row-main       gráfico de produção (flex maior) · gauge de SLA · ranking (melhores dias) · OS Desenvolvimento
   .dash-tile.dash-tile-ticker   mensagem do dia, em ticker de rolagem horizontal contínua
 ```
+
+O bloco **OS Desenvolvimento** (v8.9.1) apresenta somente informações operacionais básicas, sem
+cliente ou analista: abertas no mês, entregues no mês, backlog vencido, percentual entregue no prazo
+e um minigráfico das aberturas nos últimos seis meses. O rodapé informa a data da última importação.
 
 Cada `.dash-tile` reaproveita o mesmo "cartão de vidro escuro" (`rgba(8,28,20,.62)` + borda
 `rgba(143,227,184,.22)`) usado em todo o resto da TV. `.dash-tile-head` é o cabeçalho padrão

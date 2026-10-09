@@ -315,6 +315,22 @@ A Visão Geral também apresenta um recorte executivo coerente com a sua `dashbo
 vazar informação futura ao consultar uma data histórica, uma entrega posterior à data selecionada é
 tratada como ainda aberta naquele recorte; o backlog considera todas as OS abertas até aquela data.
 
+## 14. OS de Desenvolvimento no Dashboard TV (v8.9.1)
+
+Após aprovação visual, o Dashboard TV recebeu um quarto bloco na linha principal, sem alterar o
+design aprovado da Visão Geral. O bloco exibe somente números agregados: OS abertas no mês,
+entregues no mês, backlog vencido e percentual entregue no prazo. Não mostra cliente, analista,
+observações ou qualquer detalhe individual.
+
+O minigráfico usa as OS não canceladas abertas nos últimos seis meses, incluindo o mês atual. A
+altura das barras é relativa ao maior volume do período; os valores e abreviações dos meses ficam
+visíveis mesmo sem interação. Os cálculos ficam em `renderDashboardTvInner()` e os elementos usam o
+prefixo `dashDevOs`, mantendo o isolamento visual e funcional do restante do painel.
+
+Antes dessa solução, houve uma tentativa de reformular o design do dashboard principal. Ela foi
+rejeitada na avaliação visual e totalmente revertida antes do commit. Portanto, a v8.9.1 mantém o
+dashboard principal da v8.9.0 e altera apenas o Dashboard TV.
+
 ## Coisas que parecem bug mas são intencionais
 
 - `db.production` sempre vazio — não é bug, é vestigial; produção real vem de `db.sla` (ver

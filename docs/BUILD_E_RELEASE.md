@@ -71,6 +71,13 @@ Remove-Item Env:\ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
      `settingsStore.DEFAULTS.updateCheckIntervalMinutes` — e também ao abrir o programa) e mostra um
      banner "Atualizar agora" (ver `renderDesktopUpdateBanner()` em app.html e `updater.js`).
 
+### Observação da release 8.9.1
+
+Nesta máquina, o `C:` quase cheio fez o `makensis` falhar com `Internal compiler error #12345: error
+creating mmap`. O empacotamento terminou normalmente após apontar `TEMP` e `TMP` para uma pasta no
+disco `F:`. Se o erro reaparecer, confira primeiro o espaço livre e use um diretório temporário em um
+volume com folga; não é necessário alterar o código nem o formato do instalador.
+
 ## Como a comparação de versão funciona
 
 `updater.compareVersions(a, b)` compara `major.minor.patch` numericamente (não é comparação de

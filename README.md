@@ -69,8 +69,8 @@ importando a própria folha de ponto, etc.), mas tem um limite importante:
 ## Tela de TV independente
 
 Em **Administração → 📺 Tela de TV independente** (ou pelo menu do app / ícone na bandeja), o botão
-"Abrir Dashboard TV" abre uma **janela separada** com o painel giratório já existente (produção, SLA,
-ranking, ritmo + aniversariantes, com o visual espacial). Essa janela:
+"Abrir Dashboard TV" abre uma **janela separada** com o painel operacional (produção, SLA, ranking,
+ritmo, OS de desenvolvimento e mensagem do dia, com o visual espacial). Essa janela:
 
 - roda em processo/janela independente da janela principal — fechar ou minimizar a janela principal
   **não** fecha a TV;
