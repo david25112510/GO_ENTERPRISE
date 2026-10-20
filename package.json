@@ -8,6 +8,7 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
+    "test": "node --test tests/*.cjs",
     "start": "electron .",
     "dist": "electron-builder --win",
     "dist:dir": "electron-builder --win --dir"
