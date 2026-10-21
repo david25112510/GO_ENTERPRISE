@@ -1,5 +1,9 @@
 # Sincronização e persistência
 
+Estado revisado para a 8.10.0 em 21/10/2026. A implementação descrita abaixo tem falhas
+reproduzidas no [relatório de 20/10/2026](VERIFICACAO_2026-10-20.md), ainda não corrigidas nesta release.
+Não há garantia de preservação de edições concorrentes nem fila de reenvio offline.
+
 Não existe servidor nem banco relacional. O GO Enterprise usa **três camadas de persistência**,
 dependendo de onde e como está rodando — é importante saber qual está ativa para debugar qualquer
 "meus dados sumiram"/"não sincronizou".
@@ -45,11 +49,13 @@ Roda no **processo principal** (main.js), não no renderer. Responsabilidades:
 2. **`mergeDb()`** — a lógica de mesclagem:
    - **Coleções-array com `id`** (`ARRAY_COLLECTIONS`: `production, finance, expenses, losses,
      employees, absences, vacations, suppliers, imports, history, activities, timesheets, manuals,
-     news, alerts, dailyMessages`) → mescla **registro por registro**, casando por `id`. Registro que
+     news, alerts, dailyMessages`, entre outras; consulte a constante no código) → mescla **registro por registro**, casando por `id`. Registro que
      só existe num lado entra igual; registro com o mesmo `id` mas conteúdo diferente nos dois lados
      é resolvido por `updatedAt` (o mais recente vence) quando ambos os lados têm esse campo — senão,
-     a versão que está sendo salva agora (`incoming`) vence, e a versão descartada do disco é
-     preservada em `db.syncConflicts` (não é apagada).
+     a versão que está sendo salva agora (`incoming`) vence. Somente o ramo sem timestamps guarda
+     o conteúdo descartado em `db.syncConflicts`; o ramo com timestamps registra apenas metadados.
+     A lista de conflitos é limitada a 200 entradas. Jornada/HE é mesclado pelo ID do período,
+     não individualmente por colaborador dentro de `period.employees`.
    - **Coleções-mapa** (`MAP_COLLECTIONS`: só `sla`) → mesma ideia, mesclando por chave.
    - **`config`** → mesclagem rasa (`{...diskDb.config, ...incomingDb.config}`), campo por campo — o
      que está sendo salvo agora prevalece por campo individual, sem comparação de timestamp.
@@ -62,16 +68,16 @@ Roda no **processo principal** (main.js), não no renderer. Responsabilidades:
 
 ### O que isso significa na prática
 
-- **Não é um banco multiusuário em tempo real.** Duas pessoas editando o **mesmo registro** em dois
-  PCs quase ao mesmo tempo (antes da nuvem sincronizar o arquivo) fazem uma delas "vencer" — a outra
-  edição não é perdida de verdade (vai pra `db.syncConflicts`, visível em Administração), mas não é
-  aplicada automaticamente. Evitar editar o mesmo cadastro em duas máquinas ao mesmo tempo continua
-  sendo a orientação pro usuário.
-- Editar **registros diferentes** em PCs diferentes ao mesmo tempo funciona bem (é exatamente o caso
-  que a mesclagem por `id` resolve).
-- A sincronização depende inteiramente do cliente de nuvem (OneDrive etc.) estar rodando com internet.
-  Sem internet, cada PC continua funcionando com a última cópia que tinha (IndexedDB local) e
-  sincroniza quando a conexão voltar.
+- Edições concorrentes podem ser perdidas, inclusive em registros diferentes: não há comparação
+  de três versões (base, disco e alteração local), e `save()` não adota `result.data` após a mesclagem.
+- A leitura da TV compartilha `baseSavedAt` com o editor; avançar essa referência não garante que
+  todas as janelas incorporaram os dados. Eventos externos até três segundos após uma escrita
+  local podem ser descartados. A TV também relê os dados a cada 60 segundos.
+- Exclusões podem ser recriadas na mesclagem. JSON inválido é tratado como ausência de dados e
+  pode ser sobrescrito. Falhas na escrita compartilhada ficam no console, sem estado próprio na UI.
+- Em pasta de rede, é necessária conectividade com o compartilhamento; em pasta de nuvem, também
+  é necessário o cliente do provedor. O cache local não constitui mecanismo de reconciliação
+  automática confiável ao retornar a conexão. Preserve backups independentes.
 
 ## `src/settingsStore.js` — configurações locais (NÃO sincronizadas)
 

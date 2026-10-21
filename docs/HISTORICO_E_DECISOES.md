@@ -348,3 +348,15 @@ dashboard principal da v8.9.0 e altera apenas o Dashboard TV.
 - As margens do `.dash-kiosk-wrap` em modo TV são em `vw`/`vh`, não pixel fixo — de propósito, é a
   "área segura" contra overscan de TV física (item 12c). Não trocar de volta pra pixel fixo achando
   que é mais preciso.
+
+## 15. Jornada/HE e publicação 8.10.0 — 20/10/2026
+
+A versão incorporou edição e exclusão por competência, integração da folha pelo perfil, todos os colaboradores ativos na Visão Geral e gráfico interativo. O quadro de ativos é uma projeção do cadastro: excluir os dados da competência não remove o cartão nem o cadastro no RH. Dados não importados permanecem não informados, sem gerar saldos fictícios.
+
+Antes da publicação, quatro commits remotos da 8.9.1 foram incorporados por rebase, preservando OS de Desenvolvimento e o Dashboard TV. A imagem `build/tray.png`, ausente no pacote anterior, passou a constar explicitamente em `build.files`.
+
+O build foi concluído no Windows usando a API do electron-builder pelo Node embarcado no Electron, com `process.noAsar=true`. A extração de links macOS em winCodeSign foi contornada preparando o cache apenas com as ferramentas necessárias ao Windows, sem mudar permissões do sistema. Esse resultado substitui a antiga afirmação de que Developer Mode seria sempre obrigatório.
+
+Passaram 12 testes e a integração sobre o conteúdo extraído do instalador. Instalador e blockmap foram copiados com verificação de hash; o manifesto da rede foi atualizado por último. Após autenticação no Git Credential Manager, o push foi concluído e o commit remoto conferido.
+
+Referências: [estado publicado](ESTADO_ATUAL_8.10.0.md), [release e hash](RELEASE_8.10.0.md), [procedimento atualizado](BUILD_E_RELEASE.md). A verificação anterior permanece como registro histórico: as falhas de sincronização não foram corrigidas nesta release; a ausência da imagem da bandeja foi corrigida.

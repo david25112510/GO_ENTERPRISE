@@ -1,5 +1,9 @@
 # GO Enterprise — app desktop (Windows)
 
+**Versão publicada: 8.10.0 (20/10/2026).** Documentação revisada em 21/10/2026.
+Veja o [estado atual](docs/ESTADO_ATUAL_8.10.0.md), as [notas da release](docs/RELEASE_8.10.0.md)
+e o [guia de Jornada/HE](docs/JORNADA_HE_EDICAO.md).
+
 App desktop do GO Enterprise para a Selbetti (Correios MG), empacotado com Electron. Reaproveita
 100% da ferramenta que já existia (`GO_Enterprise_V8.html`) como a "tela" do programa — o que muda é
 que agora ele roda como um `.exe` instalado no Windows, com uma pasta compartilhada sincronizando os
@@ -50,21 +54,20 @@ GO Enterprise Compartilhado/
 
 ## Como funciona a sincronização (e suas limitações)
 
-Isto **não é um banco de dados multiusuário em tempo real** — é um arquivo JSON dentro de uma pasta
-sincronizada por nuvem. Funciona muito bem para o uso normal (um gestor lançando dados, operadores
-importando a própria folha de ponto, etc.), mas tem um limite importante:
+Isto **não é um banco de dados multiusuário em tempo real** — é um arquivo JSON em uma pasta
+compartilhada de rede ou sincronizada por nuvem. A verificação de 20/10/2026 encontrou falhas
+de persistência ainda presentes na 8.10.0:
 
 - Antes de cada salvamento, o programa relê o arquivo da pasta compartilhada. Se detectar que outro
   computador salvou algo nesse meio tempo, ele **mescla registro por registro** (por id) em vez de
-  sobrescrever tudo — então editar um colaborador em um PC e lançar produção em outro, quase ao mesmo
-  tempo, funciona sem perda de dados.
+  sobrescrever tudo. Porém, os testes reproduziram perda de alterações mesmo em registros diferentes;
+  a mesclagem atual não garante preservação de edições concorrentes.
 - Quando o **mesmo registro** é alterado de forma diferente em dois PCs muito perto um do outro, o
-  programa mantém a edição mais recente e guarda a versão descartada em `db.syncConflicts` (visível
-  nos dados, não é apagada) — mas o ideal é evitar editar o mesmo cadastro em duas máquinas ao mesmo
-  tempo.
-- A sincronização depende do cliente de nuvem (OneDrive etc.) estar rodando e com internet — sem
-  internet, cada PC continua funcionando normalmente com a última cópia que tinha, e sincroniza assim
-  que a conexão voltar.
+  programa tenta decidir por timestamp. O log `db.syncConflicts` não preserva o conteúdo descartado
+  em todos os casos e retém no máximo 200 conflitos; não substitui backup.
+- Em pasta de rede, o acesso depende da conectividade com o compartilhamento; em pasta de nuvem,
+  depende também do cliente de sincronização. Não há fila de reenvio com reconciliação garantida.
+  Consulte os cenários reproduzidos no [relatório de verificação](docs/VERIFICACAO_2026-10-20.md).
 
 ## Tela de TV independente
 
@@ -75,7 +78,8 @@ ritmo, OS de desenvolvimento e mensagem do dia, com o visual espacial). Essa jan
 - roda em processo/janela independente da janela principal — fechar ou minimizar a janela principal
   **não** fecha a TV;
 - se detectar um segundo monitor (a própria TV ligada como tela extra), abre direto em tela cheia nele;
-- se só houver uma tela, abre como janela normal — é só arrastar pra TV e usar F11/tela cheia do Windows;
+- o modo tela cheia segue a preferência `tv.autoFullscreen` (ativada por padrão), inclusive com um monitor;
+- no kiosk, alterna entre Dashboard (dois minutos) e SELBNEWS (40 segundos);
 - continua funcionando em segundo plano: o app fica disponível no ícone da bandeja do Windows mesmo se
   a janela principal for fechada, então quem usa esse computador para outras coisas pode fechar a janela
   do GO Enterprise sem derrubar a TV.
@@ -89,10 +93,10 @@ Sem precisar de servidor próprio — usa a mesma pasta compartilhada:
 3. Crie/atualize o arquivo `<pasta compartilhada>/atualizacoes/version.json`:
    ```json
    {
-     "version": "8.2.0",
-     "installer": "GO-Enterprise-Setup-8.2.0.exe",
+     "version": "8.10.0",
+     "installer": "GO-Enterprise-Setup-8.10.0.exe",
      "notes": "Resumo curto do que mudou nesta versão.",
-     "publishedAt": "2026-08-10T12:00:00.000Z"
+     "publishedAt": "2026-10-20T18:40:07.2997827Z"
    }
    ```
 4. Todos os computadores instalados verificam essa pasta sozinhos (a cada 1 hora, por padrão) e também
@@ -104,10 +108,9 @@ Sem precisar de servidor próprio — usa a mesma pasta compartilhada:
 
 ## Como gerar o instalador (.exe) — IMPORTANTE
 
-Este ambiente onde o código foi escrito **não tem acesso de internet liberado** para baixar o binário
-do Electron nem para compilar o instalador do Windows — então o build final (`npm run dist`) precisa
-ser feito em um computador com internet normal, de preferência **Windows** (ou Linux/Mac com Wine
-configurado, mas Windows é o caminho mais simples e confiável para gerar um instalador Windows).
+O instalador 8.10.0 foi gerado e verificado no Windows. O fluxo padrão usa Node.js, npm e acesso
+à internet para baixar ferramentas ainda ausentes no cache. O procedimento e a alternativa usada
+nesta máquina estão em [BUILD_E_RELEASE.md](docs/BUILD_E_RELEASE.md).
 
 Antes do primeiro build, crie `renderer/master-secret.js` (não versionado — fica só na sua máquina)
 com a senha mestre que libera o primeiro acesso de gestor num PC/banco sem PIN ainda definido:
@@ -129,6 +132,9 @@ cd GO_Enterprise_Desktop
 # 2. instale as dependências (electron, electron-builder, chokidar)
 npm install
 
+# execute os testes automatizados
+npm test
+
 # 3. rode em modo desenvolvimento pra testar antes de empacotar
 npm start
 
@@ -136,8 +142,9 @@ npm start
 npm run dist
 ```
 
-O instalador final fica em `dist/GO-Enterprise-Setup-8.1.0.exe` (o número da versão vem do
-`"version"` em `package.json` — mude ali antes de cada release).
+O instalador atual fica em `dist/GO-Enterprise-Setup-8.10.0.exe`. Atualize a versão em
+`package.json` e `package-lock.json` antes de cada release. Copie também o `.blockmap`, confira os
+hashes e publique `version.json` por último.
 
 ### Ícone do programa
 
@@ -154,15 +161,13 @@ código (Code Signing Certificate) de uma autoridade certificadora e configurar 
 `build.win.certificateFile`/`certificatePassword` no `package.json` antes de gerar o instalador — isso
 tem um custo recorrente e não foi configurado aqui.
 
-## O que ainda precisa ser validado num Windows real
+## Validação e pendências de homologação
 
-Tudo que está neste projeto foi escrito e testado o quanto deu neste ambiente (sintaxe, lógica de
-mesclagem de dados isolada, checagem de versão), mas por não ter Windows nem Electron rodando de
-verdade aqui, os itens abaixo precisam de um teste real antes de distribuir pros computadores da
-operação:
+Na 8.10.0 passaram 12 testes automatizados e testes de integração no Electron com dados sintéticos,
+incluindo execução sobre o conteúdo extraído do instalador. Isso não substitui a homologação:
 
 - Instalar em 2+ PCs de teste e confirmar que a sincronização via OneDrive/Drive/Dropbox realmente
-  propaga as mudanças entre eles (a lógica está pronta, mas o comportamento real de sincronização de
+  propaga as mudanças entre eles (há falhas conhecidas no código e o comportamento de sincronização de
   cada provedor de nuvem pode ter particularidades, ex.: conflitos de nome de arquivo do próprio
   OneDrive se dois PCs escreverem ao mesmo tempo antes do merge interno rodar).
 - Testar a janela de TV com uma TV/segundo monitor de verdade ligada (detecção de monitor secundário,

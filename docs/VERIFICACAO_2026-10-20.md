@@ -1,5 +1,10 @@
 # Verificação do GO Enterprise — 20/10/2026
 
+Nota de acompanhamento (21/10/2026): este relatório registra a avaliação da base 8.8.0 antes
+da integração das mudanças remotas. Na release 8.10.0, a ausência de `build/tray.png` no pacote
+foi corrigida e foram adicionados 12 testes de Jornada/HE. Os demais achados não devem ser
+interpretados como corrigidos. Consulte o [estado atual](ESTADO_ATUAL_8.10.0.md).
+
 Versão declarada: 8.8.0. A aplicação abre, mas a persistência apresenta falhas reproduzíveis que podem causar perda de dados. Recomenda-se corrigir os itens P1 antes de ampliar o uso simultâneo em vários computadores.
 
 Esta revisão não alterou código de produção nem acessou a base operacional. Foram utilizados arquivos temporários, dados sintéticos e um perfil Electron isolado.

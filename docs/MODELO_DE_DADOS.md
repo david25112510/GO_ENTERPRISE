@@ -232,3 +232,24 @@ config: {
 Editável em **Administração → Configurações operacionais** (`saveConfig()`) e **Segurança**. Todos os
 campos numéricos desta tela usam `numVal()` (aceitam vírgula — ver
 [HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md)).
+
+## `db.jornadaPeriods` — competências de Jornada/HE
+
+Um item por mês de término da competência (`id: 'YYYY-MM'`), com `periodoIni`, `periodoFim` em ISO, `importedAt`, `updatedAt` e `employees`. Importar novamente a mesma competência atualiza o item existente.
+
+Cada registro de `employees` contém:
+
+- Identidade: `employeeId`, `chapa`, `nome`, `horario`.
+- Saldos em minutos, aceitando negativos: `bhSaldoAnteriorMin`, `bhSaldoPeriodoMin`, `bhSaldoTotalMin`.
+- Durações em minutos: `horasBaseMin`, `horasTrabMin`, `horasExtraMin`, `horasAtrasoMin`, `horasFaltaMin`, `horasAbonoMin`, `horasAdNoturnoMin`, `intrajornadaMin`, `interjornadaMin`.
+- Detalhes preservados pela edição/importação do ponto: `pendingSignatureDocs`, `interIntraEvents`, `vencimentos180d`.
+
+`null` significa informação não disponível; zero significa duração/saldo informado como zero. `normalizeJornadaEmployeeRecord()` aplica esses padrões. Edição e exclusão atualizam `period.updatedAt`.
+
+`syncJornadaFromTimesheet()` mapeia saldos do rodapé, totais diários e rubricas explícitas para o registro. HE usa a coluna `aut`, sem somar novamente `exec`. Dados ausentes/ilegíveis não substituem valores existentes; células vazias em colunas diárias reconhecidas contam como zero.
+
+`jhOverviewEmployees()` produz uma projeção transitória dos cadastros ativos com `hasPeriodData`. Essa propriedade não é persistida: exibir alguém sem importação não cria um item em `jornadaPeriods`.
+
+A coleção `db.jornada180Windows` é independente: representa janelas de 180 dias, normalizadas por `normalizeJornada180Window()`. Excluir um registro do período exibido não exclui essas janelas.
+
+O histórico do gráfico é calculado por `jhEvolucaoSeries()`. Seleção de indicador, faixa e ponto fica somente em memória em `jhEvolucaoState`; não altera o banco. Consulte o código dessas funções para o schema completo e o [guia do módulo](JORNADA_HE_EDICAO.md) para a operação.

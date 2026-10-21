@@ -224,3 +224,20 @@ em `renderer/app.html`, seção **6. MODAIS / CRUD**:
 `finModal` (registro financeiro) · `expModal` (gasto) · `lossModal` (perda de papel) ·
 `activityModal` (atividade) · `manualModal` (manual de equipamento) · `pinChangeModal` /
 `tvPinChangeModal` (segurança).
+
+## Jornada/HE (`id="jornadaHe"`, papel: gestor) — versão 8.10.0
+
+`renderJornadaHe()` mantém as abas Visão Geral, Banco de Horas, HE do período, Histórico, 180 dias/Pendências e Importar.
+
+- A Visão Geral usa `jhOverviewEmployees()` para cruzar todos os cadastros ativos do RH com o período mais recente. Cadastros sem status explícito são considerados ativos, seguindo a regra `status !== 'Inativo'`.
+- Cartões sem registro mostram “Sem dados no período”, valores `—` e acesso ao perfil. Não criam registros fictícios nem entram nos totais importados.
+- Cartões com registro oferecem **Editar** (`editJhEmployee`) e **Excluir do período** (`deleteJhEmployee`). A edição usa `HH:MM`, permite negativos nos saldos e `null` para campo vazio. A exclusão preserva cadastro, folhas e outros períodos; o cartão continua visível se o colaborador estiver ativo.
+- `importTimesheet()` no perfil chama `syncJornadaFromTimesheet()`: valida datas e matrícula, atualiza a competência do mês de término e usa HE autorizadas. Reimportação atualiza o registro existente e pode substituir ajustes manuais nos campos presentes na folha.
+- `jhRenderEvolucao()` oferece indicadores de saldo líquido, HE e quantidade fora da meta; filtros de 6, 12 ou todas as competências; seleção com mouse/toque/teclado; e diferença em relação à competência anterior disponível. Cada ponto representa uma competência, não cada execução de importação.
+- Os gráficos históricos conservam os registros de cada período; a filtragem de ativos do cadastro atual se aplica à Visão Geral e seus indicadores do período atual.
+
+Regras de campos e operação: [JORNADA_HE_EDICAO.md](JORNADA_HE_EDICAO.md).
+
+### Alternância de conteúdo da TV
+
+O painel operacional não alterna os antigos cinco slides. No kiosk atual, `showKioskPhase()` alterna esse painel completo com SELBNEWS: dois minutos de Dashboard e 40 segundos de SELBNEWS, na mesma janela. O texto histórico sobre “sem rodízio” se refere aos slides internos do Dashboard.
