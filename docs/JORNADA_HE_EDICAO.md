@@ -24,10 +24,22 @@ Reimportar atualiza os valores reconhecidos, sem duplicar o colaborador no perí
 
 Períodos inválidos e matrículas divergentes são recusados antes de alterar os dados. A comparação de matrícula tolera zeros à esquerda.
 
-## Evolução por período de importação
+## Planilha de saldo e competência
 
-O gráfico permite alternar entre saldo do banco, horas extras e quantidade de colaboradores fora da meta. O filtro mostra as últimas 6, 12 ou todas as competências, com rolagem horizontal para históricos longos.
+A importação pede o início e o fim do **Período Ativo do Ponto**, além do arquivo XLSX. A data de geração do relatório não define a competência. Por exemplo, um arquivo gerado em 04/11/2026 com período de 26/09 a 25/10 pertence a outubro/2026. Datas inválidas, invertidas ou conflitantes com um intervalo já cadastrado no mês são recusadas.
 
-Passar o mouse, tocar ou focar um ponto exibe o valor e sua variação em relação à competência anterior disponível. As setas esquerda/direita navegam pelos pontos. Os totais históricos permanecem consolidados por competência; reimportar o mesmo período atualiza esse ponto, sem criar uma nova competência.
+## Sinais no cartão de ponto
 
-Validação: 12 testes automatizados (`npm test`) e teste de integração em Electron com dados sintéticos, cobrindo listagem de ativos com e sem importação, importação pelo perfil, edição, persistência local, reimportação, exclusão e controles do gráfico. O gráfico também foi inspecionado visualmente. A extração de um PDF real não foi revalidada nesta alteração.
+No cartão do Portal Meu RH, **A PAGAR** representa débito do colaborador (negativo) e **A COMPENSAR** representa crédito (positivo). **A DESCONTAR** continua negativo. Quando há sinal explícito, ele prevalece. Importação e exibição usam a mesma interpretação. Valores ilegíveis não substituem saldos existentes.
+
+Exemplo validado: −32h11 de saldo anterior + 3h13 de movimento = −28h58 de saldo atual. O período deste cartão é 26/10 a 25/11/2026, competência novembro; não confundir com o período da planilha anterior.
+
+Após atualizar, reimporte as folhas afetadas para corrigir os valores persistidos. Não há migração automática. Registros criados anteriormente em competência errada pela planilha precisam ser revisados no Histórico; reimportar no mês correto não remove o registro do mês errado.
+
+## Resumo por competência e ofensores
+
+O quadro grande de evolução foi substituído por três gráficos compactos com as últimas três competências: saldo do banco, horas extras e colaboradores fora da meta. Os valores ficam sempre visíveis ao lado das barras, com horas em HH:MM. As barras representam a magnitude proporcional dentro de cada indicador; o sinal aparece no valor e os saldos negativos ficam vermelhos.
+
+Ofensores ocupa a largura disponível, reorganiza os grupos conforme o espaço e permite quebra de linha nos nomes completos. Os valores ficam alinhados à direita.
+
+Validação da 8.10.1: 16 testes automatizados; extração do PDF fornecido pelo usuário com o importador real; inspeção visual e verificação de overflow dos dois layouts em larguras de 375, 768, 1024 e 1440 pixels. Os exemplos visuais usam dados sintéticos. Isso não equivale a homologação de sincronização entre computadores.

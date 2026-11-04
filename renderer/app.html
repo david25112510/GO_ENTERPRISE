@@ -797,16 +797,26 @@ body.kiosk-mode .dash-var{font-size:13px}
 .jh-evo-detail small{display:block;color:#52675d;margin-top:5px}
 @keyframes jhEvoReveal{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.jh-evo-line{animation:none}.jh-evo-point circle{transition:none}}
-.jh-off3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.jh-offcard{border:1px solid var(--line);border-radius:10px;padding:10px}
+.jh-two.jh-overview-panels{grid-template-columns:minmax(0,1fr)}
+.jh-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:16px}
+.jh-summary-chart{min-width:0}
+.jh-summary-chart h3{font-size:12px;margin:0 0 10px;color:var(--muted)}
+.jh-summary-row{display:grid;grid-template-columns:58px minmax(0,1fr) max-content;gap:8px;align-items:center;margin:8px 0;font-size:12px}
+.jh-summary-track{height:10px;background:#eef2f6;border-radius:4px;overflow:hidden}
+.jh-summary-bar{height:100%;background:#079149;border-radius:4px}
+.jh-summary-bar.negative{background:var(--red)}
+.jh-summary-row b{white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+.jh-overview-panels>.panel{min-width:0}
+.jh-off3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px;align-items:start}
+.jh-offcard{min-width:0;border:1px solid var(--line);border-radius:10px;padding:12px}
 .jh-offcard h4{margin:0 0 8px;font-size:10px;text-transform:uppercase;color:var(--muted)}
-.jh-offrow{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--line);font-size:12px;cursor:pointer}
+.jh-offrow{display:grid;grid-template-columns:28px minmax(0,1fr) max-content;align-items:center;gap:8px;min-height:52px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px;cursor:pointer}
 .jh-offrow:last-child{border-bottom:none}
 .jh-offrow:hover{background:#f8fafc}
-.jh-offnm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.jh-offrow b{margin-left:auto;font-weight:700}
+.jh-offnm{min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.45}
+.jh-offrow b{font-weight:700;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
 .jh-offrow b.bad{color:var(--red)}
-@media(max-width:900px){.jh-minis,.jh-off3{grid-template-columns:1fr}}
+@media(max-width:900px){.jh-minis{grid-template-columns:1fr}}
 .jh-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .jh-card{border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;border-left:4px solid #079149;transition:box-shadow .15s}
 .jh-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.10)}
@@ -1114,8 +1124,8 @@ body.kiosk-mode .dash-var{font-size:13px}
             <div class="jh-ruler" id="jhMetaRuler"></div>
             <div class="jh-metabars" id="jhMetaBars"></div>
           </div>
-          <div class="jh-two">
-            <div class="panel"><h2>Evolução por período de importação</h2><div id="jhEvolucao"></div></div>
+          <div class="jh-two jh-overview-panels">
+            <div class="panel"><h2>Resumo por competência</h2><p class="muted" style="font-size:11px;margin:0 0 12px">Últimas 3 competências · Horas em HH:MM · Barras proporcionais dentro de cada indicador.</p><div id="jhEvolucao" class="jh-summary"></div></div>
             <div class="panel"><h2>Ofensores</h2><div class="jh-off3" id="jhOfensores"></div></div>
           </div>
           <div class="panel" id="jhRosterPanel">
@@ -1165,7 +1175,7 @@ body.kiosk-mode .dash-var{font-size:13px}
       <div class="jornadaHe-tabpane" data-pane="importar">
         <div class="panel"><h2>Importar dados do Portal Meu RH</h2>
           <div class="toolbar">
-            <label class="btn primary file">⬆ Importar planilha de saldo<input type="file" accept=".xlsx" onchange="importJornadaSaldoPlanilha(this.files[0]);this.value=''"></label>
+            <button class="btn primary" onclick="prepareJornadaSaldoImport()">⬆ Importar planilha de saldo</button>
             <label class="btn primary file">⬆ Importar Listagem de HE (PDF)<input type="file" accept=".pdf" onchange="importJornadaListagemHe(this.files[0]);this.value=''"></label>
             <label class="btn primary file">⬆ Importar Analítico 180 dias (PDF)<input type="file" accept=".pdf" onchange="importJornadaAnalitico180(this.files[0]);this.value=''"></label>
             <label class="btn primary file">⬆ Importar Sintético 180 dias (PDF)<input type="file" accept=".pdf" onchange="importJornadaSintetico180(this.files[0]);this.value=''"></label>
@@ -1502,6 +1512,15 @@ body.kiosk-mode .dash-var{font-size:13px}
 <div id="printArea"></div>
 
 <!-- ===================== MODALS ===================== -->
+<div class="modal" id="jhSaldoImportModal"><div class="box"><h3>Importar planilha de saldo</h3>
+  <p class="muted">Informe o Período Ativo do Ponto ao qual os saldos pertencem. A data de geração da planilha não define a competência.</p>
+  <div class="form">
+    <div><label>Início do período<input id="jhSaldoInicio" type="date" required></label></div>
+    <div><label>Fim do período<input id="jhSaldoFim" type="date" required></label></div>
+    <div><label>Planilha de saldo<input id="jhSaldoArquivo" type="file" accept=".xlsx" required></label></div>
+  </div>
+  <div class="actions"><button class="btn ghost" onclick="closeModal('jhSaldoImportModal')">Cancelar</button><button class="btn primary" id="jhSaldoImportButton" onclick="submitJornadaSaldoImport()">Importar</button></div>
+</div></div>
 <div class="modal" id="rhModal"><div class="box"><h3 id="rhModalTitle">Novo colaborador</h3>
   <input type="hidden" id="rId">
   <div class="photo-upload">
@@ -3094,18 +3113,31 @@ async function importHourBank(file){
   }catch(e){alert('Falha ao importar planilha de banco de horas: '+e.message)}
 }
 
-/* ---- Jornada/HE: importador da planilha de saldo (mesmo formato que importHourBank já lê —
-   reaproveita os mesmos helpers — mas grava num período do histórico em vez de sobrescrever
-   emp.hourBank). A planilha não tem data de período, só a data de geração do relatório: o período
-   criado por este import é "impreciso" (upsertJornadaEmployeeRecord com precise=false) — se depois
-   a Listagem de HE for importada pro mesmo mês, ela corrige periodoIni/periodoFim com o valor certo. ---- */
-async function importJornadaSaldoPlanilha(file){
+/* A competência é informada pelo gestor, pois o arquivo só traz a data de geração. */
+function prepareJornadaSaldoImport(){
+  $('jhSaldoInicio').value='';$('jhSaldoFim').value='';$('jhSaldoArquivo').value='';
+  openModal('jhSaldoImportModal');
+}
+async function submitJornadaSaldoImport(){
+  const file=$('jhSaldoArquivo').files[0];
+  if(!file){alert('Selecione a planilha de saldo.');return}
+  const button=$('jhSaldoImportButton');
+  if(button.disabled)return;
+  button.disabled=true;
+  try{
+    if(await importJornadaSaldoPlanilha(file,val('jhSaldoInicio'),val('jhSaldoFim'))){
+      closeModal('jhSaldoImportModal');$('jhSaldoArquivo').value='';
+    }
+  }finally{button.disabled=false}
+}
+async function importJornadaSaldoPlanilha(file,periodoIni,periodoFim){
   if(!file)return;
+  if(!isValidJhIsoDate(periodoIni)||!isValidJhIsoDate(periodoFim)||periodoIni>periodoFim){
+    alert('Informe o início e o fim válidos do Período Ativo do Ponto.');return;
+  }
   try{
     const rows=await readFirstSheet(file);
     const hIdx=findHeaderRow(rows),h=rows[hIdx]||[];
-    let reportDate='';
-    for(let i=0;i<hIdx;i++){const d=parsePtBrReportDate(rows[i]&&rows[i][0]);if(d){reportDate=d;break}}
     const ix={reg:findCol(h,'Matricula','Matrícula'),name:findCol(h,'Nome'),
       saldoAnt:findCol(h,'Saldo Anterior'),
       saldoPer:findCol(h,'Saldo do Período','Saldo do Periodo','Saldo Período','Saldo Periodo'),
@@ -3113,25 +3145,11 @@ async function importJornadaSaldoPlanilha(file){
         'Banco de Horas','Banco De Horas','Saldo','Saldo Atual','Saldo Banco de Horas','Saldo do Banco de Horas')};
     if(ix.saldoTot<0){alert('Coluna com o saldo total do banco de horas não encontrada na planilha (ex.: "Total Banco" ou "Saldo").');return}
     if(ix.reg<0&&ix.name<0){alert('Informe ao menos a coluna "Matrícula" ou "Nome" para identificar cada colaborador.');return}
-    const today=new Date().toISOString().slice(0,10);
-    const periodoIni=reportDate||today,periodoFim=reportDate||today;
     const periodId=jornadaPeriodId(periodoFim);
-    // F1 (revisão final): a planilha só tem a data de GERAÇÃO do relatório, não a competência real —
-    // se o gestor exportar fora da janela de convergência com o PDF (últimos dias do mês da competência),
-    // os dados caem num período diferente do que o PDF já criou, silenciosamente. Avisa quando isso
-    // parece ter acontecido, em vez de tentar adivinhar o período certo (adivinhar erra pra outro lado
-    // em alguns casos e seria pior que separar).
-    let periodMismatchWarning='';
-    if(reportDate){
-      const reportDateObj=new Date(reportDate+'T12:00:00');
-      const nearbyPrecise=(db.jornadaPeriods||[]).find(p=>{
-        if(p.id===periodId||p.periodoIni===p.periodoFim||!p.periodoFim)return false;
-        const diffDays=(reportDateObj-new Date(p.periodoFim+'T12:00:00'))/86400000;
-        return diffDays>=0&&diffDays<=40;
-      });
-      if(nearbyPrecise){
-        periodMismatchWarning=` ⚠ Atenção: existe um período com dados do PDF (Listagem de HE) para a competência ${nearbyPrecise.periodoIni.split('-').reverse().join('/')} a ${nearbyPrecise.periodoFim.split('-').reverse().join('/')} (id ${nearbyPrecise.id}) próximo da data desta planilha — pode ser o período correto. Esta importação foi registrada em ${periodId}. Confira a aba Histórico e, se necessário, avise a TI.`;
-      }
+    const existing=jornadaPeriodByMonthId(periodId);
+    if(existing&&existing.periodoIni!==existing.periodoFim&&
+       (existing.periodoIni!==periodoIni||existing.periodoFim!==periodoFim)){
+      alert('Já existe uma competência neste mês com outras datas. Confira o período no Histórico antes de importar.');return;
     }
     let updated=0,notFound=0,skipped=0;const misses=[];
     for(const r of rows.slice(hIdx+1)){
@@ -3145,7 +3163,7 @@ async function importJornadaSaldoPlanilha(file){
       if(!emp){notFound++;misses.push(name||reg);continue}
       const antParsed=ix.saldoAnt>=0?parseHourBankCell(r[ix.saldoAnt]):null;
       const perParsed=ix.saldoPer>=0?parseHourBankCell(r[ix.saldoPer]):null;
-      upsertJornadaEmployeeRecord(periodId,periodoIni,periodoFim,false,emp.id,reg,name,{
+      upsertJornadaEmployeeRecord(periodId,periodoIni,periodoFim,true,emp.id,reg,name,{
         bhSaldoAnteriorMin:antParsed?antParsed.minutes*antParsed.sign:null,
         bhSaldoPeriodoMin:perParsed?perParsed.minutes*perParsed.sign:null,
         bhSaldoTotalMin:totParsed.minutes*totParsed.sign
@@ -3158,8 +3176,9 @@ async function importJornadaSaldoPlanilha(file){
     let msg=`Jornada/HE — planilha de saldo importada: ${updated} colaborador(es) (período ${periodId}).`;
     if(notFound)msg+=` ${notFound} não encontrado(s) na equipe${misses.length?' ('+misses.slice(0,5).join(', ')+(misses.length>5?'…':'')+')':''}.`;
     if(skipped)msg+=` ${skipped} linha(s) com saldo inválido ignorada(s).`;
-    msg+=periodMismatchWarning;
+
     alert(msg);
+    return true;
   }catch(e){alert('Falha ao importar planilha de saldo: '+e.message)}
 }
 
@@ -3927,11 +3946,19 @@ async function parsePontoPdf(file){
 /* ---- interpretação de horas e cálculo da folha a partir do cartão de ponto ---- */
 function pontoTimeToMinutes(hhmm){const m=String(hhmm||'').trim().match(/(\d+):(\d{2})/);return m?(+m[1])*60+(+m[2]):0}
 function sumPontoCell(s){return String(s||'').split(/\s+/).filter(Boolean).reduce((sum,tok)=>sum+pontoTimeToMinutes(tok),0)}
+// No cartão do Portal Meu RH, A PAGAR é débito do colaborador; A COMPENSAR é crédito.
+function pontoSaldoValue(raw){
+  const text=String(raw??'').trim().replace(/[−–]/g,'-');
+  const match=/^([+-]?)\s*(\d+):([0-5]\d)(?:\s*\(\s*A\s+(PAGAR|DESCONTAR|COMPENSAR)\s*\))?$/i.exec(text);
+  if(!match)return null;
+  const sign=match[1]? (match[1]==='-'?-1:1) : (/^(PAGAR|DESCONTAR)$/i.test(match[4]||'')?-1:1);
+  return (Number(match[2])*60+Number(match[3]))*sign;
+}
 function pontoSaldoParse(s){
   if(!s)return {minutes:0,sign:1,text:'—'};
-  const m=String(s).match(/(\d+):(\d{2})\s*\(A\s*(PAGAR|DESCONTAR)\)/i);
-  if(!m)return {minutes:0,sign:1,text:s};
-  return {minutes:(+m[1])*60+(+m[2]),sign:/DESCONTAR/i.test(m[3])?-1:1,text:s};
+  const value=pontoSaldoValue(s);
+  if(value===null)return {minutes:0,sign:1,text:s};
+  return {minutes:Math.abs(value),sign:value<0?-1:1,text:s};
 }
 /* saldo de banco de horas em HH:MM assinado, sem o texto "(A PAGAR)/(A DESCONTAR)" do ponto —
    esse rótulo é enganoso aqui porque o saldo é apenas o banco de horas corrente, não um
@@ -4278,68 +4305,23 @@ function jhEvolucaoGeometry(values){
 }
 function jhRenderEvolucao(){
   const el=$('jhEvolucao');if(!el)return;
-  const all=jhEvolucaoSeries();
-  if(!all.length){el.innerHTML='<p class="muted">Nenhum período importado.</p>';return}
+  const series=jhEvolucaoSeries().slice(-3);
+  if(!series.length){el.innerHTML='<p class="muted">Nenhum período importado.</p>';return}
   const metrics=[
     {key:'saldoLiquidoMin',label:'Saldo do banco',format:fmtSignedMin},
     {key:'heTotalMin',label:'Horas extras',format:fmtDurationMin},
-    {key:'foraMeta',label:'Fora da meta',format:v=>`${v} colaborador${v===1?'':'es'}`}
+    {key:'foraMeta',label:'Colaboradores fora da meta',format:v=>String(v)}
   ];
-  const metric=metrics.find(m=>m.key===jhEvolucaoState.metric)||metrics[0];
-  const s=jhEvolucaoState.range==='all'?all:all.slice(-Number(jhEvolucaoState.range));
-  const g=jhEvolucaoGeometry(s.map(p=>p[metric.key]));
-  if(!s.some(p=>p.periodId===jhEvolucaoState.selected))jhEvolucaoState.selected=s[s.length-1].periodId;
-  const line=g.points.map((p,i)=>`${i?'L':'M'}${p.x},${p.y}`).join(' ');
-  const area=`${line} L${g.points.at(-1).x},${g.y(0)} L${g.points[0].x},${g.y(0)} Z`;
-  el.innerHTML=`<div class="jh-evo-tools" aria-label="Indicador da evolução">
-    ${metrics.map(m=>`<button type="button" data-metric="${m.key}" aria-pressed="${m.key===metric.key}">${m.label}</button>`).join('')}
-    <label>Exibir <select id="jhEvoRange" aria-label="Quantidade de períodos">
-      <option value="6">Últimos 6</option><option value="12">Últimos 12</option><option value="all">Todos</option>
-    </select></label></div>
-    <div class="jh-evo-scroll"><svg class="jh-evo-svg" style="min-width:${g.width}px" viewBox="0 0 ${g.width} 240" role="group" aria-label="${metric.label} por competência">
-      ${g.ticks.map(v=>`<line class="jh-evo-grid" x1="${g.left}" x2="${g.right}" y1="${g.y(v)}" y2="${g.y(v)}"/>
-        <text x="${g.left-10}" y="${g.y(v)+4}" text-anchor="end">${metric.key==='foraMeta'?Math.round(v):fmtSignedMin(Math.round(v))}</text>`).join('')}
-      <line x1="${g.left}" x2="${g.right}" y1="${g.y(0)}" y2="${g.y(0)}" stroke="#aabdb2" stroke-dasharray="4 4"/>
-      <path d="${area}" fill="rgba(0,168,89,.10)"/>
-      <path class="jh-evo-line" d="${line}"/>
-      ${s.map((p,i)=>`<g class="jh-evo-point" tabindex="0" role="button" data-period="${i}" aria-pressed="${p.periodId===jhEvolucaoState.selected}"
-        aria-label="${escHtml(p.label+' — '+metric.format(p[metric.key]))}">
-        <title>${escHtml(p.label+' — '+metric.format(p[metric.key]))}</title>
-        <rect x="${g.points[i].x-20}" y="8" width="40" height="210" fill="transparent"/>
-        <circle cx="${g.points[i].x}" cy="${g.points[i].y}" r="5"/>
-        <text x="${g.points[i].x}" y="226" text-anchor="middle">${escHtml(p.label)}</text></g>`).join('')}
-    </svg></div>
-    <div class="jh-evo-detail" id="jhEvoDetail" aria-live="polite"></div>
-    <p class="muted" style="font-size:11px;margin:8px 0 0">${s.length===1?'Importe outra competência para comparar a evolução.':'Passe o mouse, toque ou use as setas nos pontos para comparar os períodos.'} Valores consolidados por competência.</p>`;
-  const selectPeriod=index=>{
-    const p=s[index];if(!p)return;
-    jhEvolucaoState.selected=p.periodId;
-    el.querySelectorAll('[data-period]').forEach(node=>node.setAttribute('aria-pressed',String(Number(node.dataset.period)===index)));
-    const previous=all[all.findIndex(item=>item.periodId===p.periodId)-1];
-    const delta=previous?p[metric.key]-previous[metric.key]:null;
-    const deltaValue=delta===null?'':metric.key==='foraMeta'?String(Math.abs(delta)):fmtDurationMin(Math.abs(delta));
-    const change=delta===null?'Primeiro período disponível.':`${delta>0?'Aumento de':delta<0?'Redução de':'Sem variação'}${delta===0?'':' '+deltaValue}${metric.key==='foraMeta'&&delta!==0?' colaborador(es)':''} em relação a ${previous.label}.`;
-    $('jhEvoDetail').innerHTML=`<div>${escHtml(p.label)} · ${metric.label}</div><strong>${escHtml(metric.format(p[metric.key]))}</strong>
-      <small>${escHtml(change)}</small><small>Saldo: ${fmtSignedMin(p.saldoLiquidoMin)} · HE: ${fmtDurationMin(p.heTotalMin)} · Fora da meta: ${p.foraMeta}</small>`;
-  };
-  el.querySelectorAll('[data-metric]').forEach(button=>button.onclick=()=>{
-    jhEvolucaoState.metric=button.dataset.metric;jhRenderEvolucao();
-    el.querySelector(`[data-metric="${jhEvolucaoState.metric}"]`).focus();
-  });
-  $('jhEvoRange').value=jhEvolucaoState.range;
-  $('jhEvoRange').onchange=event=>{jhEvolucaoState.range=event.target.value;jhRenderEvolucao();$('jhEvoRange').focus()};
-  el.querySelectorAll('[data-period]').forEach(node=>{
-    const index=Number(node.dataset.period);
-    node.onmouseenter=node.onclick=node.onfocus=()=>selectPeriod(index);
-    node.onkeydown=event=>{
-      if(event.key==='Enter'||event.key===' '){event.preventDefault();selectPeriod(index)}
-      if(event.key==='ArrowLeft'||event.key==='ArrowRight'){
-        event.preventDefault();const next=Math.max(0,Math.min(s.length-1,index+(event.key==='ArrowRight'?1:-1)));
-        el.querySelector(`[data-period="${next}"]`).focus();
-      }
-    };
-  });
-  selectPeriod(s.findIndex(p=>p.periodId===jhEvolucaoState.selected));
+  el.innerHTML=metrics.map(metric=>{
+    const max=Math.max(1,...series.map(p=>Math.abs(p[metric.key])));
+    return '<div class="jh-summary-chart"><h3>'+metric.label+'</h3>'+series.map(p=>{
+      const value=p[metric.key];
+      const label=p.periodId.slice(5,7)+'/'+p.periodId.slice(0,4);
+      return '<div class="jh-summary-row"><span>'+escHtml(label)+'</span>'+
+        '<div class="jh-summary-track" aria-hidden="true"><div class="jh-summary-bar '+(value<0?'negative':'')+'" style="width:'+(Math.abs(value)/max*100)+'%"></div></div>'+
+        '<b>'+escHtml(metric.format(value))+'</b></div>';
+    }).join('')+'</div>';
+  }).join('');
 }
 function jhRenderOfensores(period){
   const el=$('jhOfensores');if(!el)return;
@@ -4650,9 +4632,8 @@ function syncJornadaFromTimesheet(employee,ts){
   if(!isValidJhIsoDate(start)||!isValidJhIsoDate(end)||start>end)throw new Error('Período inválido para Jornada/HE.');
   const patch={};
   [['saldoAnterior','bhSaldoAnteriorMin'],['saldoPeriodo','bhSaldoPeriodoMin'],['saldoAtual','bhSaldoTotalMin']].forEach(([source,target])=>{
-    const text=String(ts[source]??'').trim();
-    const match=/^([+-]?)(\d+):([0-5]\d)(?:\s*\(A\s+(PAGAR|DESCONTAR)\))?$/i.exec(text);
-    if(match)patch[target]=(Number(match[2])*60+Number(match[3]))*(match[1]==='-'||/DESCONTAR/i.test(match[4]||'')?-1:1);
+    const value=pontoSaldoValue(ts[source]);
+    if(value!==null)patch[target]=value;
   });
   const rows=ts.rows||[];
   // HE autorizadas são a coluna "aut"; não somar novamente as HE executadas.

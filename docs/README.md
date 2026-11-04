@@ -4,7 +4,7 @@
 contrato Correios MG. Este índice existe para orientar consultas e correções futuras — tanto para o
 David quanto para qualquer pessoa ou agente trabalhando neste projeto.
 
-Documentação revisada em **21/10/2026**, referente à versão **8.10.0**, publicada em 20/10/2026.
+Documentação revisada em **04/11/2026**, referente à versão **8.10.1**, publicada em 04/11/2026.
 
 ## Como o projeto está organizado
 
@@ -45,8 +45,8 @@ numeração é referenciada nos documentos abaixo.
 | Como os dados são salvos e sincronizados entre computadores | [SINCRONIZACAO_E_PERSISTENCIA.md](SINCRONIZACAO_E_PERSISTENCIA.md) |
 | Como gerar o instalador e publicar uma atualização | [BUILD_E_RELEASE.md](BUILD_E_RELEASE.md) |
 | Como editar Jornada/HE, importar ponto e usar o gráfico | [JORNADA_HE_EDICAO.md](JORNADA_HE_EDICAO.md) |
-| Estado publicado, commits, validação e pendências | [ESTADO_ATUAL_8.10.0.md](ESTADO_ATUAL_8.10.0.md) |
-| Notas e hash do instalador 8.10.0 | [RELEASE_8.10.0.md](RELEASE_8.10.0.md) |
+| Estado publicado, commits, validação e pendências | [ESTADO_ATUAL_8.10.1.md](ESTADO_ATUAL_8.10.1.md) |
+| Notas e hash do instalador 8.10.1 | [RELEASE_8.10.1.md](RELEASE_8.10.1.md) |
 | Falhas encontradas e limites da verificação | [VERIFICACAO_2026-10-20.md](VERIFICACAO_2026-10-20.md) |
 | Decisões de design não óbvias, bugs corrigidos e por quê, armadilhas conhecidas | [HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md) |
 
@@ -54,7 +54,7 @@ O `README.md` na raiz do projeto continua existindo com uma visão geral mais cu
 está configurando o app pela primeira vez (instalação, pasta compartilhada, TV). Esta pasta `docs/`
 é o nível "manutenção e evolução do código".
 
-## Fatos rápidos (versão 8.10.0)
+## Fatos rápidos (versão 8.10.1)
 
 - **Stack:** Electron 30 + electron-builder 24, sem framework de UI, sem bundler/transpiler.
 - **Banco de dados:** um único arquivo JSON (`gestao_operacional.json`) dentro de uma pasta
@@ -69,6 +69,6 @@ está configurando o app pela primeira vez (instalação, pasta compartilhada, T
   [TELAS_E_FUNCIONALIDADES.md](TELAS_E_FUNCIONALIDADES.md) e o item 12 de
   [HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md).
 - **Estado de continuidade:** a fotografia técnica da versão publicada, artefatos, commits e próximos
-  cuidados está em [ESTADO_ATUAL_8.10.0.md](ESTADO_ATUAL_8.10.0.md). O documento da 8.9.1 é histórico.
+  cuidados está em [ESTADO_ATUAL_8.10.1.md](ESTADO_ATUAL_8.10.1.md). O documento da 8.9.1 é histórico.
 - **Repositório Git:** github.com/david25112510/GO_ENTERPRISE — alterna entre privado/público
   conforme pedido do David; o segredo de bootstrap (`renderer/master-secret.js`) nunca é commitado.

@@ -32,10 +32,59 @@ function setup() {
   return { context, elements };
 }
 const employee = { id: 'a', reg: '001', name: 'Ana' };
+function saldoSetup() {
+  const { context: c } = setup();
+  c.db.employees = [{ ...employee }];
+  c.db.imports = [];
+  c.alerts = [];
+  c.alert = message => c.alerts.push(message);
+  c.norm = value => String(value || '').toUpperCase();
+  c.stripAccents = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  c.normName = c.norm;
+  c.findCol = (headers, ...names) => headers.findIndex(h => names.includes(h));
+  c.readFirstSheet = async () => [
+    ['Banco de horas do time'], [], ['4 de nov. de 2026 11:42:10'], [],
+    ['Nome', 'Cargo', 'Saldo Anterior', 'Saldo do Período', 'Total Banco'],
+    ['Ana', 'Operador', '-21:24', '-10:47', '-32:11']
+  ];
+  vm.runInContext([
+    section('function parseHourBankCell(', 'async function importHourBank('),
+    section('async function importJornadaSaldoPlanilha(', 'function prepareAbsenceModal(')
+  ].join('\n'), c);
+  return c;
+}
+
+test('saldo gerado em novembro pertence ao período ativo encerrado em outubro', async () => {
+  const c = saldoSetup();
+  c.upsertJornadaEmployeeRecord('2026-09', '2026-08-26', '2026-09-25', true, 'a', '', 'Ana', {horasExtraMin: 60});
+  const previous = JSON.stringify(c.db.jornadaPeriods[0]);
+  await c.importJornadaSaldoPlanilha({name:'saldo.xlsx'}, '2026-09-26', '2026-10-25');
+  const p = c.jornadaPeriodByMonthId('2026-10');
+  assert.equal(p.periodoIni, '2026-09-26');
+  assert.equal(p.periodoFim, '2026-10-25');
+  assert.equal(p.employees[0].bhSaldoTotalMin, -1931);
+  assert.equal(c.jornadaPeriodByMonthId('2026-11'), null);
+  assert.equal(JSON.stringify(c.db.jornadaPeriods[0]), previous);
+  await c.importJornadaSaldoPlanilha({name:'saldo.xlsx'}, '2026-09-26', '2026-10-25');
+  assert.equal(p.employees.length, 1);
+  assert.equal(c.db.jornadaPeriods.length, 2);
+});
+
+test('saldo rejeita datas ausentes, impossíveis, invertidas e conflito de período sem alterar dados', async () => {
+  const c = saldoSetup();
+  c.upsertJornadaEmployeeRecord('2026-10', '2026-09-21', '2026-10-20', true, 'a', '', 'Ana', {horasExtraMin: 60});
+  const before = JSON.stringify(c.db);
+  for (const dates of [[undefined, undefined], ['2026-02-30','2026-03-25'], ['2026-10-25','2026-09-26'], ['2026-09-26','2026-10-25']]) {
+    await c.importJornadaSaldoPlanilha({name:'saldo.xlsx'}, ...dates);
+    assert.equal(JSON.stringify(c.db), before);
+  }
+  assert.equal(c.alerts.length, 4);
+});
+
 function sheet(overrides = {}) {
   return {
     periodStart: '2026-09-21', periodEnd: '2026-10-20',
-    saldoAnterior: '02:00 (A DESCONTAR)', saldoPeriodo: '03:30 (A PAGAR)', saldoAtual: '01:30 (A PAGAR)',
+    saldoAnterior: '02:00 (A DESCONTAR)', saldoPeriodo: '03:30 (A COMPENSAR)', saldoAtual: '01:30 (A COMPENSAR)',
     rows: [
       { trab: '08:00', aut: '01:00', exec: '02:00', atraso: '', falta: '00:30', adNot: '00:10' },
       { trab: '08:30', aut: '00:30', exec: '01:00', atraso: '00:15', falta: '', adNot: '' }
@@ -44,6 +93,34 @@ function sheet(overrides = {}) {
 }
 test('sintaxe de todos os scripts inline', () => {
   for (const [, code] of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) new vm.Script(code);
+});
+
+test('cartão Meu RH: débito A PAGAR e crédito A COMPENSAR conciliam o saldo de Tiago', () => {
+  const { context: c } = setup();
+  vm.runInContext(section('function pontoSaldoParse(', 'function fmtSaldoHM('), c);
+  const values = ['032:11 (A PAGAR)', '003:13 (A COMPENSAR)', '028:58 (A PAGAR)'];
+  c.syncJornadaFromTimesheet(employee, sheet({
+    periodStart:'2026-10-26', periodEnd:'2026-11-25',
+    saldoAnterior:values[0], saldoPeriodo:values[1], saldoAtual:values[2]
+  }));
+  const r = c.db.jornadaPeriods[0].employees[0];
+  assert.equal(r.bhSaldoAnteriorMin, -1931);
+  assert.equal(r.bhSaldoPeriodoMin, 193);
+  assert.equal(r.bhSaldoTotalMin, -1738);
+  assert.equal(r.bhSaldoAnteriorMin + r.bhSaldoPeriodoMin, r.bhSaldoTotalMin);
+  values.forEach((value, i) => {
+    const parsed = c.pontoSaldoParse(value);
+    assert.equal(parsed.minutes * parsed.sign, [-1931, 193, -1738][i]);
+  });
+});
+
+test('leitura de saldo preserva sinais explícitos, zero, desconto e valores inválidos', () => {
+  const { context: c } = setup();
+  for(const [raw, expected] of [
+    ['-02:30',-150], ['+02:30',150], ['−02:30',-150],
+    ['02:30 (A DESCONTAR)',-150], ['02:30 (A COMPENSAR)',150],
+    ['+02:30 (A PAGAR)',150], ['00:00',0], ['',null], ['02:99',null], ['ilegível',null]
+  ]) assert.equal(c.pontoSaldoValue(raw), expected);
 });
 test('visão geral inclui ativos sem importação e exclui inativos e registros órfãos', () => {
   const { context: c } = setup();

@@ -233,7 +233,8 @@ em `renderer/app.html`, seção **6. MODAIS / CRUD**:
 - Cartões sem registro mostram “Sem dados no período”, valores `—` e acesso ao perfil. Não criam registros fictícios nem entram nos totais importados.
 - Cartões com registro oferecem **Editar** (`editJhEmployee`) e **Excluir do período** (`deleteJhEmployee`). A edição usa `HH:MM`, permite negativos nos saldos e `null` para campo vazio. A exclusão preserva cadastro, folhas e outros períodos; o cartão continua visível se o colaborador estiver ativo.
 - `importTimesheet()` no perfil chama `syncJornadaFromTimesheet()`: valida datas e matrícula, atualiza a competência do mês de término e usa HE autorizadas. Reimportação atualiza o registro existente e pode substituir ajustes manuais nos campos presentes na folha.
-- `jhRenderEvolucao()` oferece indicadores de saldo líquido, HE e quantidade fora da meta; filtros de 6, 12 ou todas as competências; seleção com mouse/toque/teclado; e diferença em relação à competência anterior disponível. Cada ponto representa uma competência, não cada execução de importação.
+- Desde a 8.10.1, `jhRenderEvolucao()` mostra três gráficos compactos das últimas três competências, com valores sempre visíveis: saldo líquido, HE e quantidade fora da meta. Ofensores ocupa a largura disponível e exibe nomes completos com quebra de linha.
+- A planilha de saldo exige o Período Ativo do Ponto informado pelo gestor. O cartão Meu RH interpreta A PAGAR como débito e A COMPENSAR como crédito, tanto na exibição quanto na integração com Jornada/HE.
 - Os gráficos históricos conservam os registros de cada período; a filtragem de ativos do cadastro atual se aplica à Visão Geral e seus indicadores do período atual.
 
 Regras de campos e operação: [JORNADA_HE_EDICAO.md](JORNADA_HE_EDICAO.md).

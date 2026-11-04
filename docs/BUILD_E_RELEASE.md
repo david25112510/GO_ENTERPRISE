@@ -1,6 +1,6 @@
 ﻿# Build e release
 
-Procedimento revisado em 21/10/2026. Última publicação: **8.10.0**, em 20/10/2026.
+Procedimento revisado em 04/11/2026. Release atual: **8.10.1**. Veja [notas e hashes](RELEASE_8.10.1.md). Os exemplos da 8.10.0 abaixo documentam a publicação anterior; ajuste a versão em cada execução.
 
 ## Preparação
 
