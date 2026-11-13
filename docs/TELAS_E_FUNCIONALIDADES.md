@@ -47,7 +47,7 @@ há um cadastro manual de produção. Puxa por competência (`productionMonth`):
 da competência, faturamento produzido (`prints × config.printValue`, escondido do operador via classe
 `.finance-only`), meta e atingimento, gráfico diário, melhor/pior dia, tabela de OS importadas.
 
-- **Importar planilha de produção/SLA** (`importSLA()`) — disponível para gestor e perfil TV; único ponto de entrada de
+- **Importar planilha de produção/SLA** (`importSLA()`) — disponível para gestor e perfil TV, com botão direto no Dashboard TV; único ponto de entrada de
   dados de produção no sistema. Formato esperado: colunas "Número da OS", "Status da OS", "Data/Hora
   de Recebimento", "Data/Hora da Entrega", "Sla de Produção", "Qtde. de Objetos", "Total de
   Impressões", etc. (ver `importSLA()` para a lista exata de nomes de coluna aceitos). Reimportar a

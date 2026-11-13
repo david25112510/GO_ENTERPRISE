@@ -180,6 +180,8 @@ body.role-operador .finance-only{display:none!important}
 body.role-operador .gestor-only{display:none!important}
 body.role-tv .view:not(#dashboardTv):not(#noticias):not(#producao){display:none!important}
 body.role-tv .finance-only{display:none!important}
+.tv-profile-only{display:none!important}
+body.role-tv .tv-profile-only{display:inline-flex!important}
 .session-badge{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:4px 10px;
   border-radius:999px;display:inline-block;margin-top:8px}
 .session-badge.gestor{background:rgba(0,168,89,.18);color:#8fe3b8}
@@ -1266,7 +1268,7 @@ body.kiosk-mode .dash-var{font-size:13px}
       <div class="dash-preview-only">
         <div class="header-brand"><img class="official-header-logo" id="logoHeaderDash" alt="Selbetti"><div class="tagline">Painel para exibir em uma <b>TV da operação</b></div></div>
         <div class="top"><div><h1>Dashboard TV</h1><p>Produção, ranking, SLA e avisos para deixar em uma televisão da operação — sem dados financeiros.</p></div>
-          <div class="top-actions"><button class="btn primary" onclick="openDashboardTV()">🖥️ Abrir em modo TV (tela cheia)</button></div>
+          <div class="top-actions"><label class="btn primary file tv-profile-only">⬆ Importar planilha de produção / SLA<input type="file" accept=".xlsx" onchange="importSLA(this.files[0]);this.value=''"></label><button class="btn primary" onclick="openDashboardTV()">🖥️ Abrir em modo TV (tela cheia)</button></div>
         </div>
         <div class="panel">
           <h2>Como usar na TV</h2>

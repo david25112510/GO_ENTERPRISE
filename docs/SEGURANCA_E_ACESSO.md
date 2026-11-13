@@ -6,7 +6,7 @@
 |---|---|---|
 | `gestor` | PIN (ou senha mestre, no primeiro acesso) | Tudo — todas as telas do menu |
 | `operador` | Só a matrícula (`reg`), sem senha | `operadorHome`, `producao`, `manuais`, `dashboardTv` |
-| `tv` | PIN próprio da TV (opcional, desativado por padrão) | `dashboardTv`, `noticias` e `producao` para importar a planilha de produção; valores financeiros ficam ocultos |
+| `tv` | PIN próprio da TV (opcional, desativado por padrão) | `dashboardTv`, `noticias` e `producao`; pode importar a planilha de produção pelo Dashboard TV ou pela aba Produção; valores financeiros ficam ocultos |
 
 A tela de acesso (`showPinGate()`) sempre aparece antes de entrar — não existe mais um caminho que
 libere o gestor sem digitar nada (isso já foi um bug corrigido, ver
