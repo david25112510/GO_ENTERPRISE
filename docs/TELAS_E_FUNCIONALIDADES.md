@@ -47,15 +47,15 @@ há um cadastro manual de produção. Puxa por competência (`productionMonth`):
 da competência, faturamento produzido (`prints × config.printValue`, escondido do operador via classe
 `.finance-only`), meta e atingimento, gráfico diário, melhor/pior dia, tabela de OS importadas.
 
-- **Importar planilha de produção/SLA** (`importSLA()`, `.gestor-only`) — único ponto de entrada de
+- **Importar planilha de produção/SLA** (`importSLA()`) — disponível para gestor e perfil TV; único ponto de entrada de
   dados de produção no sistema. Formato esperado: colunas "Número da OS", "Status da OS", "Data/Hora
   de Recebimento", "Data/Hora da Entrega", "Sla de Produção", "Qtde. de Objetos", "Total de
   Impressões", etc. (ver `importSLA()` para a lista exata de nomes de coluna aceitos). Reimportar a
   mesma OS atualiza o registro em vez de duplicar (chave = Número da OS).
 
-- **Matinal da operação** — botão que gera e baixa um PNG de compartilhamento manual. Reproduz os
-  indicadores, gráficos e blocos operacionais do Dashboard TV, calculados até o dia anterior em
-  `America/Sao_Paulo`; não envia mensagens pelo WhatsApp.
+- **Matinal da operação** — botão que gera e baixa um JPG vertical 9:16, dimensionado para celular e
+  compartilhamento manual no WhatsApp. Reproduz os indicadores, gráficos e blocos operacionais do
+  Dashboard TV, calculados até o dia anterior em `America/Sao_Paulo`; não envia mensagens pelo WhatsApp.
 
 ## OS de Desenvolvimento (`id="developmentOs"`, papel: gestor) — `renderDevelopmentOrders()`
 
@@ -145,8 +145,9 @@ de `renderDashboardTvInner()`.
 ```
 
 O bloco **OS Desenvolvimento** (v8.9.1) apresenta somente informações operacionais básicas, sem
-cliente ou analista: abertas no mês, entregues no mês, backlog vencido, percentual entregue no prazo
-e um minigráfico das aberturas nos últimos seis meses. O rodapé informa a data da última importação.
+cliente ou analista: abertas no mês, entregues no mês, backlog vencido de OS abertas no mês vigente,
+percentual entregue no prazo e um minigráfico das aberturas nos últimos seis meses. O rodapé informa
+a data da última importação.
 
 Cada `.dash-tile` reaproveita o mesmo "cartão de vidro escuro" (`rgba(8,28,20,.62)` + borda
 `rgba(143,227,184,.22)`) usado em todo o resto da TV. `.dash-tile-head` é o cabeçalho padrão

@@ -6,7 +6,7 @@
 |---|---|---|
 | `gestor` | PIN (ou senha mestre, no primeiro acesso) | Tudo — todas as telas do menu |
 | `operador` | Só a matrícula (`reg`), sem senha | `operadorHome`, `producao`, `manuais`, `dashboardTv` |
-| `tv` | PIN próprio da TV (opcional, desativado por padrão) | Só `dashboardTv` e `noticias` |
+| `tv` | PIN próprio da TV (opcional, desativado por padrão) | `dashboardTv`, `noticias` e `producao` para importar a planilha de produção; valores financeiros ficam ocultos |
 
 A tela de acesso (`showPinGate()`) sempre aparece antes de entrar — não existe mais um caminho que
 libere o gestor sem digitar nada (isso já foi um bug corrigido, ver
@@ -19,7 +19,7 @@ trava de PIN aqui controla edição dentro do app, não a exibição da TV.
 ```js
 const NAV_VIEWS_BY_ROLE = {
   operador: ['operadorHome','producao','manuais','dashboardTv'],
-  tv:       ['dashboardTv','noticias'],
+  tv:       ['dashboardTv','noticias','producao'],
   gestor:   ['home','producao','financeiro','rh','manuais','dashboardTv','fornecedores','admin','noticias']
 };
 ```
@@ -89,7 +89,8 @@ matrícula) — não é pensado para resistir a alguém mal-intencionado tentand
 
 Opcional (`security.tvEnabled`), com salt/hash próprios (`tvPinHash`/`tvSalt`), configurado em
 Administração → Segurança → "Definir/alterar PIN da TV" (`setNewTvPin()`). Só existe uma aba "TV" na
-tela de acesso quando `tvEnabled` está ligado. Dá acesso só a `dashboardTv`+`noticias`.
+tela de acesso quando `tvEnabled` está ligado. Dá acesso a `dashboardTv`, `noticias` e `producao` para
+importar a planilha de produção; valores financeiros ficam ocultos nesse perfil.
 
 ## Criptografia opcional do arquivo (`.godb`)
 
