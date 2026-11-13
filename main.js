@@ -5,7 +5,7 @@
 // outros computadores, verificar atualizações de versão e manter o app disponível em bandeja para
 // que a TV continue funcionando mesmo se a janela principal for fechada.
 'use strict';
-const { app, BrowserWindow, Menu, Tray, ipcMain, dialog, shell, screen } = require('electron');
+const { app, BrowserWindow, Menu, Tray, ipcMain, dialog, shell, screen, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -13,6 +13,7 @@ const settingsStore = require('./src/settingsStore');
 const dataStore = require('./src/dataStore');
 const updater = require('./src/updater');
 const mediaStore = require('./src/mediaStore');
+const { LiveOperations } = require('./src/liveOps');
 
 const APP_VERSION = require('./package.json').version;
 
@@ -21,6 +22,20 @@ let tvWindow = null;
 let tray = null;
 let isQuitting = false;
 let updateCheckTimer = null;
+let liveOperations = null;
+
+function liveOpsConfig() {
+  return {
+    enabled: !!(settingsStore.get().liveOps && settingsStore.get().liveOps.enabled),
+    decryptCommunity: (value) => {
+      if (String(value).startsWith('enc:')) {
+        if (!safeStorage.isEncryptionAvailable()) throw new Error('Armazenamento seguro do Windows indisponível.');
+        return safeStorage.decryptString(Buffer.from(String(value).slice(4), 'base64'));
+      }
+      return String(value || 'public');
+    }
+  };
+}
 
 const RENDERER_PATH = path.join(__dirname, 'renderer', 'app.html');
 
@@ -211,6 +226,7 @@ ipcMain.handle('settings:set', (_e, partial) => {
   const updated = settingsStore.set(partial);
   configureDataStoreFromSettings();
   scheduleUpdateChecks();
+  if (liveOperations) liveOperations.start();
   return updated;
 });
 ipcMain.handle('settings:chooseSharedFolder', async () => {
@@ -223,6 +239,7 @@ ipcMain.handle('settings:chooseSharedFolder', async () => {
   const folder = result.filePaths[0];
   const updated = settingsStore.set({ sharedFolder: folder });
   configureDataStoreFromSettings();
+  if (liveOperations) liveOperations.start();
   return updated;
 });
 ipcMain.handle('settings:openSharedFolder', () => { openSharedFolder(); });
@@ -240,6 +257,29 @@ ipcMain.handle('tv:close', () => { if (tvWindow && !tvWindow.isDestroyed()) tvWi
 ipcMain.handle('tv:isSelf', (e) => {
   const w = BrowserWindow.fromWebContents(e.sender);
   return !!(tvWindow && w && w.id === tvWindow.id);
+});
+
+ipcMain.handle('liveOps:get', () => liveOperations ? liveOperations.snapshot() : null);
+ipcMain.handle('liveOps:setPrinters', (_e, printers) => {
+  if (!liveOperations) throw new Error('Serviço Operação ao vivo indisponível.');
+  if (!liveOperations.snapshot().configurable) throw new Error('A configuração fica disponível no computador que está atuando como coletor central.');
+  if (!Array.isArray(printers)) throw new Error('Lista de impressoras inválida.');
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('Armazenamento seguro do Windows indisponível; não é seguro salvar a comunidade SNMP.');
+  const previous = new Map(liveOperations.list().map(p => [p.id, p.community]));
+  const secured = printers.map(p => {
+    const secret = String(p.community || '');
+    const community = secret ? `enc:${safeStorage.encryptString(secret).toString('base64')}` : previous.get(String(p.id)) || '';
+    return { ...p, community };
+  });
+  return liveOperations.setPrinters(secured);
+});
+ipcMain.handle('liveOps:setCollector', (_e, enabled) => {
+  if (enabled && !settingsStore.get().sharedFolder) throw new Error('Configure a pasta compartilhada nas configurações antes de habilitar o coletor central.');
+  if (enabled && !liveOperations.list().some(p => p.enabled)) throw new Error('Cadastre pelo menos uma impressora neste computador antes de habilitar o coletor central.');
+  const liveOps = { ...(settingsStore.get().liveOps || {}), enabled: !!enabled };
+  settingsStore.set({ liveOps });
+  liveOperations.start();
+  return liveOperations.snapshot();
 });
 
 // mídia do SELBNEWS (upload salvo como arquivo na pasta compartilhada — ver src/mediaStore.js).
@@ -262,10 +302,17 @@ ipcMain.handle('update:install', async (_e, installerPath) => {
 // ---------------------------------------------------------------------------------
 app.whenReady().then(() => {
   settingsStore.init(app.getPath('userData'));
+  liveOperations = new LiveOperations(app.getPath('userData'), liveOpsConfig, () => {
+    const s = settingsStore.get();
+    return s.sharedFolder
+      ? path.join(s.sharedFolder, s.dataSubfolder || 'dados', 'operacao_ao_vivo.json')
+      : path.join(app.getPath('userData'), 'operacao_ao_vivo.json');
+  });
   buildMenu();
   createTray();
   createMainWindow();
   configureDataStoreFromSettings();
+  liveOperations.start();
   scheduleUpdateChecks();
   setTimeout(() => runUpdateCheck(false), 5000);
 
@@ -275,7 +322,7 @@ app.whenReady().then(() => {
   });
 });
 
-app.on('before-quit', () => { isQuitting = true; });
+app.on('before-quit', () => { isQuitting = true; if (liveOperations) liveOperations.stop(); });
 
 app.on('window-all-closed', () => {
   // no Windows, só sai de fato se não houver bandeja ativa (ou se o usuário pediu Sair explicitamente)

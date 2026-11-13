@@ -40,6 +40,11 @@ contextBridge.exposeInMainWorld('goDesktop', {
   closeTvWindow: () => ipcRenderer.invoke('tv:close'),
   isTvWindow: () => ipcRenderer.invoke('tv:isSelf'),
 
+  // ---- Operação ao vivo (telemetria SNMP local ao computador coletor) ----
+  getLiveOperations: () => ipcRenderer.invoke('liveOps:get'),
+  setLivePrinters: (printers) => ipcRenderer.invoke('liveOps:setPrinters', printers),
+  setLiveCollector: (enabled) => ipcRenderer.invoke('liveOps:setCollector', enabled),
+
   // ---- mídia do SELBNEWS (upload salvo como arquivo na pasta compartilhada) ----
   saveSelbNewsImage: (dataUrl, subfolder) => ipcRenderer.invoke('selbnews:saveImage', dataUrl, subfolder),
   deleteSelbNewsImage: (relativePath) => ipcRenderer.invoke('selbnews:deleteImage', relativePath),

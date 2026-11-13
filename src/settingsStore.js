@@ -23,7 +23,8 @@ const DEFAULTS = {
   // verificação automática de atualização
   autoCheckUpdates: true,
   updateCheckIntervalMinutes: 60,
-  lastUpdateCheck: null
+  lastUpdateCheck: null,
+  liveOps: { enabled: false }
 };
 
 let settingsPath = null;

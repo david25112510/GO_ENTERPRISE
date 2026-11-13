@@ -1,7 +1,7 @@
 # GO Enterprise — app desktop (Windows)
 
-**Versão preparada: 8.12.1 (13/11/2026).** Documentação revisada em 13/11/2026.
-Veja o [estado atual](docs/ESTADO_ATUAL_8.12.1.md), as [notas da release](docs/RELEASE_8.12.1.md)
+**Versão preparada: 8.13.0 (13/11/2026).** Documentação revisada em 13/11/2026.
+Veja o [estado atual](docs/ESTADO_ATUAL_8.13.0.md), as [notas da release](docs/RELEASE_8.13.0.md)
 e o [guia de Jornada/HE](docs/JORNADA_HE_EDICAO.md).
 
 App desktop do GO Enterprise para a Selbetti (Correios MG), empacotado com Electron. Reaproveita
@@ -28,6 +28,8 @@ build/release e o histórico de decisões/armadilhas conhecidas): [`docs/README.
   escolhida, preferências da janela de TV etc.), guardadas fora da pasta compartilhada.
 - **`src/updater.js`** — verifica se há uma versão nova publicada na pasta compartilhada e permite
   instalar sem precisar ir de máquina em máquina.
+- **Operação ao vivo** — acompanha impressoras via SNMP v2c, exibindo atividade, páginas, capacidade
+  nominal e tempos de impressão, ociosidade, desconexão e ausência de leitura. Guia: [Operação ao vivo](docs/operacao-ao-vivo.md).
 - **OS de Desenvolvimento** — importa a planilha histórica `.ods` (2022–2026) e apresenta volume,
   cumprimento de prazo, atrasos, cancelamentos, tempo médio, gráficos e consulta detalhada.
 
@@ -93,8 +95,8 @@ Sem precisar de servidor próprio — usa a mesma pasta compartilhada:
 3. Crie/atualize o arquivo `<pasta compartilhada>/atualizacoes/version.json`:
    ```json
    {
-     "version": "8.12.1",
-     "installer": "GO-Enterprise-Setup-8.12.1.exe",
+     "version": "8.13.0",
+     "installer": "GO-Enterprise-Setup-8.13.0.exe",
      "notes": "Resumo curto do que mudou nesta versão.",
      "publishedAt": "2026-11-13T00:00:00.000Z"
    }
@@ -143,7 +145,7 @@ npm start
 npm run dist
 ```
 
-O instalador atual fica em `dist/GO-Enterprise-Setup-8.12.1.exe`. Atualize a versão em
+O instalador atual fica em `dist/GO-Enterprise-Setup-8.13.0.exe`. Atualize a versão em
 `package.json` e `package-lock.json` antes de cada release. Copie também o `.blockmap`, confira os
 hashes e publique `version.json` por último.
 
