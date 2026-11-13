@@ -53,6 +53,10 @@ da competência, faturamento produzido (`prints × config.printValue`, escondido
   Impressões", etc. (ver `importSLA()` para a lista exata de nomes de coluna aceitos). Reimportar a
   mesma OS atualiza o registro em vez de duplicar (chave = Número da OS).
 
+- **Matinal da operação** — botão que gera e baixa um PNG de compartilhamento manual. Reproduz os
+  indicadores, gráficos e blocos operacionais do Dashboard TV, calculados até o dia anterior em
+  `America/Sao_Paulo`; não envia mensagens pelo WhatsApp.
+
 ## OS de Desenvolvimento (`id="developmentOs"`, papel: gestor) — `renderDevelopmentOrders()`
 
 Dashboard alimentado pela planilha histórica `.ods` de desenvolvimentos. O importador lê todas as

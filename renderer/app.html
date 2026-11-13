@@ -999,6 +999,11 @@ body.kiosk-mode .dash-var{font-size:13px}
         <div class="filter-group"><label>Competência<select id="productionMonth" onchange="render()"></select></label></div>
         <div class="period-info"><b id="productionPeriodTitle">Dashboard de Produção</b><small>Indicadores calculados diretamente das Ordens de Serviço importadas.</small></div>
       </div>
+      <div class="panel" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div><h2 style="margin:0 0 5px">Matinal da opera&ccedil;&atilde;o</h2><p class="muted" style="margin:0">Gere uma imagem com os totais do dia anterior para compartilhar manualmente no WhatsApp.</p></div>
+        <button class="btn primary" onclick="generateMorningOperationImage()">Gerar imagem do matinal</button>
+      </div>
+      <div id="morningOperationPreview" class="panel" hidden></div>
       <div class="grid cards" id="prodCards"></div>
       <div class="prod-dashboard-grid">
         <div class="panel"><div class="panel-title-row" style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Evolução diária de impressões</h2><span class="period-chip" style="border:1px solid var(--line2);padding:6px 10px;border-radius:8px;font-size:11px;color:var(--muted)">Realizado por data</span></div><div class="prod-chart" id="productionDailyChart"></div></div>
@@ -4702,6 +4707,56 @@ function deleteTimesheet(id){
 }
 
 /* ===================== 8. CÁLCULOS DE NEGÓCIO ===================== */
+function saoPauloDateISO(offsetDays=0){
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const values=Object.fromEntries(parts.filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+  const base=new Date(Date.UTC(Number(values.year),Number(values.month)-1,Number(values.day)+offsetDays));
+  return `${base.getUTCFullYear()}-${String(base.getUTCMonth()+1).padStart(2,'0')}-${String(base.getUTCDate()).padStart(2,'0')}`;
+}
+async function generateMorningOperationImage(){
+  const date=saoPauloDateISO(-1),month=date.slice(0,7),day=Number(date.slice(8,10)),prods=dailyProduction();
+  const monthRows=prods.filter(row=>row.date.startsWith(month)&&row.date<=date),total=monthRows.reduce((s,row)=>s+row.prints,0);
+  const prior=previousMonth(month),priorTotal=prods.filter(row=>row.date.startsWith(prior)&&Number(row.date.slice(8,10))<=day).reduce((s,row)=>s+row.prints,0);
+  const elapsed=elapsedBusinessDays(month,new Date(`${date}T12:00:00`)),daysLeft=Math.max(0,businessDays(month)-elapsed),goal=Number(db.config.dailyPrintGoal)||750000;
+  const yesterday=new Date(`${date}T12:00:00Z`);yesterday.setUTCDate(yesterday.getUTCDate()-1);const yesterdayISO=yesterday.toISOString().slice(0,10);
+  const row=prods.find(p=>p.date===date)||{prints:0,objects:0},yRow=prods.find(p=>p.date===yesterdayISO)||{prints:0,objects:0};
+  const sla=Object.values(db.sla).filter(x=>String(x.deliveryDate||'').startsWith(month)&&String(x.deliveryDate||'')<=date),inside=sla.filter(x=>/DENTRO/i.test(x.sla)).length,outside=sla.filter(x=>/FORA/i.test(x.sla)).length,slaRate=inside+outside?inside/(inside+outside)*100:0;
+  const dev=db.developmentOrders||[],opened=dev.filter(x=>!x.cancelled&&String(x.openedAt||'').startsWith(month)&&x.openedAt<=date),delivered=dev.filter(x=>!x.cancelled&&String(x.deliveredAt||'').startsWith(month)&&x.deliveredAt<=date),overdue=dev.filter(x=>!x.cancelled&&x.openedAt&&x.openedAt<=date&&(!x.deliveredAt||x.deliveredAt>date)&&x.deadline&&x.deadline<date);
+  const onTime=delivered.filter(x=>!x.deadline||x.deliveredAt<=x.deadline).length,best=[...monthRows].filter(x=>x.prints>0).sort((a,b)=>b.prints-a.prints).slice(0,3),chart=monthRows.slice(-14);
+  const slaPrev=Object.values(db.sla).filter(x=>String(x.deliveryDate||'').startsWith(prior)&&Number(String(x.deliveryDate||'').slice(8,10))<=day),prevIn=slaPrev.filter(x=>/DENTRO/i.test(x.sla)).length,prevOut=slaPrev.filter(x=>/FORA/i.test(x.sla)).length;
+  const devMonths=[];let monthCursor=month;for(let i=0;i<6;i++){devMonths.unshift(monthCursor);monthCursor=previousMonth(monthCursor)}
+  const devMonthly=devMonths.map(m=>({month:m,count:dev.filter(x=>!x.cancelled&&String(x.openedAt||'').startsWith(m)&&x.openedAt<=date).length}));
+  const loss=lossMetrics(lossForMonth(month)),varPrint=variation(total,priorTotal),varSla=variation(Math.round(slaRate*100),Math.round((prevIn+prevOut?prevIn/(prevIn+prevOut)*100:0)*100));
+  const dateLabel=date.split('-').reverse().join('/'),oldLabel=yesterdayISO.split('-').reverse().join('/');
+  const canvas=document.createElement('canvas');canvas.width=1440;canvas.height=2320;const ctx=canvas.getContext('2d'),bg=ctx.createLinearGradient(0,0,1440,2320);
+  bg.addColorStop(0,'#071d18');bg.addColorStop(1,'#123f32');ctx.fillStyle=bg;ctx.fillRect(0,0,1440,2320);
+  const panel=(x,y,w,h)=>{ctx.fillStyle='rgba(255,255,255,.08)';ctx.beginPath();ctx.roundRect(x,y,w,h,22);ctx.fill()};
+  const text=(s,x,y,size=20,color='#d2e6dc',weight='700')=>{ctx.fillStyle=color;ctx.font=`${weight} ${size}px Arial`;ctx.fillText(String(s),x,y)};
+  text('GO ENTERPRISE  •  OPERA\u00c7\u00c3O',72,78,24,'#a6f3cc');text('DASHBOARD DA OPERA\u00c7\u00c3O',72,164,54,'#fff','800');text(`Resumo de ${dateLabel}  •  consolidado at\u00e9 essa data`,76,214,23,'#c4d8ce','400');
+  const kpis=[
+    ['IMPRESS\u00d5ES DO DIA',fmtNum(row.prints),dateLabel,'#4ce39a'],['OBJETOS DO DIA',fmtNum(row.objects),dateLabel,'#67c8ff'],
+    ['RITMO DA OPERA\u00c7\u00c3O',`${Math.round(elapsed?total/(elapsed*goal)*100:0)}%`,'frente \u00e0 meta acumulada','#ffc66b'],['PERDAS DE PAPEL DO M\u00caS',`${loss.defct>=0?'+':''}${loss.defct.toFixed(2).replace('.',',')} resmas`,'d\u00e9fice frente ao pago','#ff9d9d'],
+    ['IMPRESS\u00d5ES DO M\u00caS',fmtNum(total),`${varPrint.txt} vs m\u00eas passado`,'#a6f3cc'],['DIAS COM PRODU\u00c7\u00c3O',fmtNum(monthRows.length),'dias registrados no m\u00eas','#67c8ff'],
+    ['DIAS FALTANTES',fmtNum(daysLeft),'dias \u00fateis at\u00e9 o fechamento','#ffc66b'],['PRODU\u00c7\u00c3O DO DIA ANTERIOR',`${fmtNum(yRow.prints)} imp.  •  ${fmtNum(yRow.objects)} obj.`,oldLabel,'#c7b5ff']
+  ];
+  kpis.forEach((item,i)=>{const x=72+(i%2)*660,y=258+Math.floor(i/2)*154;panel(x,y,632,132);ctx.fillStyle=item[3];ctx.fillRect(x,y+20,7,92);text(item[0],x+25,y+39,18);text(item[1],x+25,y+82,34,'#fff','800');text(item[2],x+25,y+111,15,'#a5c3b4','400')});
+  panel(72,900,1296,370);text('EVOLU\u00c7\u00c3O DI\u00c1RIA DE IMPRESS\u00d5ES',100,943,23,'#fff');
+  const px=130,py=990,pw=1180,ph=220,max=Math.max(1,goal,...chart.map(x=>x.prints)),goalY=py+ph*(1-goal/max);
+  ctx.strokeStyle='rgba(143,245,184,.55)';ctx.lineWidth=3;ctx.setLineDash([10,8]);ctx.beginPath();ctx.moveTo(px,goalY);ctx.lineTo(px+pw,goalY);ctx.stroke();ctx.setLineDash([]);
+  if(chart.length){ctx.strokeStyle='#8ff5b8';ctx.lineWidth=5;ctx.beginPath();chart.forEach((x,i)=>{const xx=px+(chart.length>1?i/(chart.length-1)*pw:pw/2),yy=py+ph*(1-x.prints/max);i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy)});ctx.stroke();chart.forEach((x,i)=>{const xx=px+(chart.length>1?i/(chart.length-1)*pw:pw/2),yy=py+ph*(1-x.prints/max);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(xx,yy,5,0,Math.PI*2);ctx.fill();text(fmtNum(x.prints),xx-30,yy-12,13,'#fff');text(x.date.slice(8,10)+'/'+x.date.slice(5,7),xx-25,py+ph+25,13,'#c4d8ce','400')})}text(`Meta di\u00e1ria: ${fmtNum(goal)}`,100,1248,15,'#a6f3cc','400');
+  const boxes=[72,512,952];boxes.forEach(x=>panel(x,1292,416,540));text('SLA DO M\u00caS',96,1334,21,'#fff');text(pct(slaRate),96,1412,48,slaRate>=db.config.slaGoal?'#6fe6a0':'#ff9d9d','800');text(`Meta ${pct(db.config.slaGoal)}`,96,1445,15,'#c4d8ce','400');text(`${fmtNum(inside)} dentro do prazo`,96,1500,17,'#a6f3cc');text(`${fmtNum(outside)} fora do prazo`,96,1536,17,'#ffb0b0');text(`${varSla.txt} vs m\u00eas passado`,96,1580,14,'#c4d8ce','400');
+  text('MELHORES DIAS',536,1334,21,'#fff');const bestMax=Math.max(1,...best.map(x=>x.prints));best.forEach((x,i)=>{const y=1400+i*112;text(`${i+1}. ${x.date.split('-').reverse().join('/')}`,536,y,18);text(fmtNum(x.prints),536,y+28,19,'#fff');panel(536,y+41,350,9);ctx.fillStyle='#6fe6a0';ctx.beginPath();ctx.roundRect(536,y+41,350*x.prints/bestMax,9,5);ctx.fill()});if(!best.length)text('Sem dados suficientes',536,1410,16,'#c4d8ce','400');
+  text('OS DESENVOLVIMENTO',976,1334,20,'#fff');[['Abertas',opened.length],['Entregues',delivered.length],['Backlog vencido',overdue.length],['Entregues no prazo',delivered.length?pct(onTime/delivered.length*100):'—']].forEach((v,i)=>{const x=976+(i%2)*190,y=1390+Math.floor(i/2)*78;text(fmtNum(v[1]),x,y,22,'#fff','800');text(v[0],x,y+22,13,'#c4d8ce','400')});
+  text('OS abertas • últimos 6 meses',976,1575,14,'#c4d8ce','400');const maxDev=Math.max(1,...devMonthly.map(x=>x.count));devMonthly.forEach((x,i)=>{const xx=980+i*62,h=x.count/maxDev*105;ctx.fillStyle='#54d79a';ctx.beginPath();ctx.roundRect(xx,1745-h,34,h,5);ctx.fill();text(fmtNum(x.count),xx,1732-h,12,'#fff');text(monthLabel(x.month).slice(0,3),xx-2,1770,12,'#c4d8ce','400')});
+  const latestImport=dev.map(x=>x.importedAt).filter(Boolean).sort().pop();text(latestImport?`Base atualizada em ${new Date(latestImport).toLocaleDateString('pt-BR')}`:'Base ainda n\u00e3o importada',976,1805,12,'#a5c3b4','400');
+  const msgList=db.dailyMessages||[],ordinal=Math.floor((Date.UTC(Number(date.slice(0,4)),Number(date.slice(5,7))-1,Number(date.slice(8,10)))-Date.UTC(Number(date.slice(0,4)),0,0))/86400000),message=msgList.length?msgList[ordinal%msgList.length].text:'';
+  const messageLines=[];let remaining=message?`Mensagem do dia: ${message}`:'Matinal da opera\u00e7\u00e3o';while(remaining&&messageLines.length<3){let cut=remaining.length;while(cut>1&&ctx.measureText(remaining.slice(0,cut)).width>1280)cut=remaining.lastIndexOf(' ',cut-1);if(cut<1)cut=remaining.length;messageLines.push(remaining.slice(0,cut));remaining=remaining.slice(cut).trim()}messageLines.forEach((line,i)=>text(line,76,1920+i*32,20,'#a6f3cc','400'));text('GO ENTERPRISE  •  RESUMO OPERACIONAL  •  AMERICA/SAO_PAULO',76,2260,17,'#7fae98','400');
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+  if(!blob)throw new Error('Nao foi possivel gerar a imagem.');
+  const url=URL.createObjectURL(blob),filename=`matinal-operacao-${date}.png`,link=document.createElement('a');link.href=url;link.download=filename;link.click();
+  const preview=$('morningOperationPreview');preview.hidden=false;preview.innerHTML=`<div class="toolbar"><div><h2 style="margin:0">Imagem pronta para compartilhar</h2><p class="muted" style="margin:5px 0 0">Dashboard da opera&ccedil;&atilde;o • ${dateLabel} • ${filename}</p></div><a class="btn" href="${url}" download="${filename}">Baixar imagem</a></div><img src="${url}" alt="Dashboard da operação de ${dateLabel}" style="display:block;width:min(100%,540px);margin:16px auto;border-radius:12px">`;
+  preview.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function dailyProduction(){
   const out={};
   Object.values(db.sla).forEach(x=>{const date=excelDate(x.deliveryDate||x.delivered);if(!date)return;
