@@ -7,6 +7,7 @@ const snmp = require('net-snmp');
 
 const POLL_MS = 30_000;
 const DEFAULT_STATUS_OID = '1.3.6.1.2.1.25.3.5.1.1.1';
+const DEFAULT_COUNTER_OID = '1.3.6.1.2.1.43.10.2.1.4.1.1'; // Printer-MIB prtMarkerLifeCount, indices 1/1
 
 class LiveOperations {
   constructor(userDataPath, getConfig, getTelemetryPath) {
@@ -29,7 +30,7 @@ class LiveOperations {
 
   readConfig() { return this.readJson(this.configPath, { printers: {} }); }
   readTelemetry() { return this.readJson(this.getTelemetryPath(), { printers: {}, samples: [], collectorHost: null, updatedAt: null }); }
-  list() { return Object.values(this.config.printers || {}); }
+  list() { return Object.values(this.config.printers || {}).map(p => ({ ...p, counterOid: p.counterOid || DEFAULT_COUNTER_OID })); }
 
   saveConfig() {
     fs.mkdirSync(path.dirname(this.configPath), { recursive: true });
@@ -59,7 +60,7 @@ class LiveOperations {
         port: Math.max(1, Math.min(65535, Number(p.port) || 161)),
         community: String(p.community || previous[id]?.community || 'public').slice(0, 4096),
         statusOid: String(p.statusOid || DEFAULT_STATUS_OID).trim().slice(0, 128),
-        counterOid: String(p.counterOid || '').trim().slice(0, 128),
+        counterOid: String(p.counterOid || DEFAULT_COUNTER_OID).trim().slice(0, 128),
         capacityPpm: Math.max(0, Number(p.capacityPpm) || 0),
         enabled: p.enabled !== false
       };
@@ -210,7 +211,7 @@ class LiveOperations {
     const printers = Array.from(ids).map(id => {
       const cfg = this.config.printers[id] || {};
       const record = telemetryPrinters[id] || {};
-      return { id, name: cfg.name || record.name || 'Impressora', host: cfg.host || record.host || '', capacityPpm: cfg.capacityPpm || record.capacityPpm || 0, statusOid: cfg.statusOid || record.statusOid || DEFAULT_STATUS_OID, counterOid: cfg.counterOid || record.counterOid || '', enabled: cfg.enabled !== false, last: record.last || null };
+      return { id, name: cfg.name || record.name || 'Impressora', host: cfg.host || record.host || '', capacityPpm: cfg.capacityPpm || record.capacityPpm || 0, statusOid: cfg.statusOid || record.statusOid || DEFAULT_STATUS_OID, counterOid: cfg.counterOid || record.counterOid || DEFAULT_COUNTER_OID, enabled: cfg.enabled !== false, last: record.last || null };
     });
     let activeCollector = null;
     try {
@@ -231,4 +232,4 @@ class LiveOperations {
   }
 }
 
-module.exports = { LiveOperations, POLL_MS, DEFAULT_STATUS_OID };
+module.exports = { LiveOperations, POLL_MS, DEFAULT_STATUS_OID, DEFAULT_COUNTER_OID };

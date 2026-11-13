@@ -875,8 +875,13 @@ body.kiosk-mode .dash-var{font-size:13px}
 @keyframes paperFeed{0%{transform:translateY(-4px);opacity:.3}50%{opacity:1}100%{transform:translateY(5px);opacity:.3}}
 .live-state{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.live-note{font-size:12px;color:var(--muted)}
 .live-config{background:#fff;border:1px solid var(--line2);border-radius:14px;padding:16px;margin:16px 0}
+.liveops-capacity{grid-column:span 2;background:linear-gradient(125deg,#062d50,#087b64);color:#fff;border-radius:16px;padding:18px 20px;box-shadow:0 12px 30px rgba(3,46,85,.18)}
+.liveops-capacity small{display:block;color:#c5e7dc;font-weight:700}.liveops-capacity strong{font-size:26px}.liveops-capacity .capacity-track{height:9px;background:rgba(255,255,255,.18);border-radius:20px;overflow:hidden;margin:11px 0 7px}.liveops-capacity .capacity-fill{height:100%;background:linear-gradient(90deg,#4ee5a2,#b7f171);border-radius:20px;transition:width .6s ease}
+.live-chart{background:radial-gradient(ellipse at 15% 0%,#194e68 0,#0b2336 50%,#071728 100%);color:#e8f4f7;border-radius:18px;padding:18px 20px;box-shadow:0 15px 35px rgba(3,26,43,.2);overflow:hidden}
+.live-chart .chart-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.live-chart .range-btn{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#c8dbe4;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:800;cursor:pointer}.live-chart .range-btn.active{background:#31c48d;color:#062a26;border-color:#31c48d}
+.live-chart select{background:#102c40;color:#e8f4f7;border:1px solid rgba(255,255,255,.2);border-radius:9px;padding:8px 10px}.live-chart svg{display:block;width:100%;height:auto;min-height:210px}.live-chart .chart-caption{display:flex;justify-content:space-between;color:#92b0bf;font-size:11px;margin-top:4px}.live-printer .counter-box{display:flex;align-items:baseline;gap:6px;border-top:1px solid var(--line2);margin-top:8px;padding-top:7px}.live-printer .counter-value{font-size:20px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums}.live-printer .counter-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase}
 @media(max-width:900px){.liveops-layout{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:550px){.liveops-layout{grid-template-columns:1fr}}
+@media(max-width:550px){.liveops-layout{grid-template-columns:1fr}.liveops-capacity{grid-column:span 1}}
 </style>
 </head>
 <body>
@@ -961,16 +966,16 @@ body.kiosk-mode .dash-var{font-size:13px}
       <div class="liveops-layout" id="liveOpsStats"></div>
       <div class="toolbar"><h2 style="margin:0">Estado da operação</h2><span class="muted" id="liveOpsUpdated">Aguardando dados</span></div>
       <div class="liveops-board" id="liveOpsBoard"></div>
-      <div class="card" style="margin-top:16px"><div class="toolbar"><div><h2 style="margin:0">Atividade das últimas 24 horas</h2><span class="muted" style="font-size:12px">Cada bloco representa 30 minutos; impressoras fixas ficam verdes enquanto imprimem.</span></div></div><div id="liveOpsTimeline" style="overflow-x:auto"></div></div>
+      <div class="live-chart" style="margin-top:16px"><div class="toolbar" style="margin-bottom:8px"><div><h2 style="margin:0;color:#fff">Utilização da capacidade</h2><span style="font-size:12px;color:#a5bfca">Estimativa ao longo do período · pontos a cada 30 min</span></div><div class="chart-tools"><select id="liveChartPrinter" onchange="renderLiveOpsChart()"><option value="all">Toda a operação</option></select><button class="range-btn active" data-hours="6" onclick="setLiveChartRange(6,this)">6 h</button><button class="range-btn" data-hours="12" onclick="setLiveChartRange(12,this)">12 h</button><button class="range-btn" data-hours="24" onclick="setLiveChartRange(24,this)">24 h</button></div></div><div id="liveOpsTimeline"></div><div class="chart-caption"><span>Uso pela capacidade nominal das impressoras reportando “imprimindo”</span><span>Atualiza a cada 30 s</span></div></div>
       <div class="live-config" id="liveOpsConfig" style="display:none">
         <div class="toolbar"><div><h2 style="margin:0">Configuração do coletor</h2><p class="muted" style="margin:5px 0 0">Habilite em um único computador designado. Comunidades SNMP ficam protegidas pelo Windows neste computador.</p></div></div>
         <label style="display:flex;align-items:center;gap:9px;margin:14px 0"><input type="checkbox" id="liveCollectorEnabled" onchange="toggleLiveCollector(this.checked)"> Este computador é o coletor central (consulta a cada 30 s)</label>
         <div id="livePrinterForm" style="display:none;grid-template-columns:repeat(4,minmax(130px,1fr));gap:9px">
           <input id="lpName" placeholder="Nome da impressora"><input id="lpHost" placeholder="IP ou hostname"><input id="lpCommunity" placeholder="Comunidade SNMP (ex.: public)" type="password"><input id="lpPpm" type="number" min="0" placeholder="Capacidade nominal (ppm)">
-          <input id="lpStatusOid" placeholder="OID estado" value="1.3.6.1.2.1.25.3.5.1.1.1"><input id="lpCounterOid" placeholder="OID contador cumulativo (opcional)"><button class="btn primary" onclick="saveLivePrinter()">Salvar impressora</button><button class="btn" onclick="cancelLivePrinterEdit()">Cancelar</button>
+          <input id="lpStatusOid" placeholder="OID estado" value="1.3.6.1.2.1.25.3.5.1.1.1"><input id="lpCounterOid" placeholder="OID contador cumulativo" value="1.3.6.1.2.1.43.10.2.1.4.1.1"><button class="btn primary" onclick="saveLivePrinter()">Salvar impressora</button><button class="btn" onclick="cancelLivePrinterEdit()">Cancelar</button>
         </div>
         <div id="livePrinterAdminList" style="margin-top:12px"></div>
-        <p class="muted" style="font-size:11px;margin-bottom:0">Estado padrão HOST-RESOURCES-MIB: 3 = ociosa, 4 = imprimindo. Contador e capacidade são opcionais; capacidade é nominal. Offline e sem leitura são contabilizados separadamente.</p>
+        <p class="muted" style="font-size:11px;margin-bottom:0">Estado padrão HOST-RESOURCES-MIB: 3 = ociosa, 4 = imprimindo. O contador padrão usa prtMarkerLifeCount e pode ser ajustado para o índice/OID do fabricante. A utilização compara a capacidade nominal das impressoras que reportam impressão com a capacidade total cadastrada; o estado não mede a velocidade real da página.</p>
       </div>
     </section>
     <!-- HOME -->
@@ -4884,7 +4889,7 @@ function fillMonthSelect(id,months,keepEmpty){
 }
 
 let liveOpsSnapshot={printers:[],samples:[],collectorEnabled:false};
-let liveOpsTimer=null,editingLivePrinterId=null,livePrinterFormOpen=false;
+let liveOpsTimer=null,editingLivePrinterId=null,livePrinterFormOpen=false,liveChartHours=6;
 const printerSvg='<svg class="printer-drawing" viewBox="0 0 64 64" aria-hidden="true"><path d="M16 23V8h32v15M16 47H9a5 5 0 0 1-5-5V28a5 5 0 0 1 5-5h46a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5h-7" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M16 39h32v17H16z" fill="none" stroke="currentColor" stroke-width="3"/><path class="paper" d="M22 9h20v16H22z" fill="currentColor" opacity=".75"/><circle cx="52" cy="31" r="2" fill="currentColor"/></svg>';
 async function refreshLiveOps(){
   if(!window.goDesktop)return;
@@ -4893,27 +4898,27 @@ async function refreshLiveOps(){
 }
 function renderLiveOps(){
   const {printers=[],samples=[]}=liveOpsSnapshot;
-  const month=new Date();month.setDate(1);month.setHours(0,0,0,0);
   const localNow=new Date(),monthKey=localNow.getFullYear()+'-'+String(localNow.getMonth()+1).padStart(2,'0');
   const totals=liveOpsSnapshot.monthStats||{};
   let pages=0,minutes={printing:0,idle:0,offline:0,unknown:0};
   printers.forEach(p=>{const m=(totals[p.id]||{})[monthKey]||{};pages+=m.pages||0;minutes.printing+=m.printingMinutes||0;minutes.idle+=m.idleMinutes||0;minutes.offline+=m.offlineMinutes||0;minutes.unknown+=m.unknownMinutes||0});
   const online=printers.filter(p=>p.last&&['printing','idle','unknown'].includes(p.last.state)).length;
+  const totalCapacity=printers.reduce((sum,p)=>sum+(Number(p.capacityPpm)||0),0);
+  const usedCapacity=printers.filter(p=>p.last&&p.last.state==='printing').reduce((sum,p)=>sum+(Number(p.capacityPpm)||0),0);
+  const utilization=totalCapacity?Math.min(100,usedCapacity/totalCapacity*100):0;
   const stat=(label,value)=>'<div class="liveops-stat"><small>'+label+'</small><strong>'+value+'</strong></div>';
-  $('liveOpsStats').innerHTML=stat('Impressoras online',online+' / '+printers.length)+stat('Páginas no mês',Math.round(pages).toLocaleString('pt-BR'))+stat('Tempo imprimindo no mês',Math.round(minutes.printing||0)+' min')+stat('Tempo ocioso no mês',Math.round(minutes.idle||0)+' min')+stat('Tempo offline no mês',Math.round(minutes.offline||0)+' min')+stat('Sem leitura no mês',Math.round(minutes.unknown||0)+' min');
+  $('liveOpsStats').innerHTML='<div class="liveops-capacity"><small>CAPACIDADE NOMINAL DA OPERAÇÃO</small><strong>'+totalCapacity.toLocaleString('pt-BR')+' ppm</strong><div style="float:right;text-align:right"><small>EM USO AGORA</small><strong>'+Math.round(utilization)+'%</strong></div><div class="capacity-track"><div class="capacity-fill" style="width:'+utilization+'%"></div></div><small>'+usedCapacity.toLocaleString('pt-BR')+' ppm em impressoras imprimindo · '+Math.max(0,totalCapacity-usedCapacity).toLocaleString('pt-BR')+' ppm não ocupados pelo estado reportado</small></div>'+stat('Impressoras online',online+' / '+printers.length)+stat('Variação dos contadores no mês',Math.round(pages).toLocaleString('pt-BR'))+stat('Tempo imprimindo no mês',Math.round(minutes.printing||0)+' min')+stat('Tempo ocioso no mês',Math.round(minutes.idle||0)+' min')+stat('Tempo offline no mês',Math.round(minutes.offline||0)+' min')+stat('Sem leitura no mês',Math.round(minutes.unknown||0)+' min');
   const stateLabel={printing:'Imprimindo',idle:'Ociosa',offline:'Offline',unknown:'Sem leitura'};
   $('liveOpsBoard').innerHTML=printers.length?printers.map(p=>{
     const state=p.last?p.last.state:'unknown',sample=p.last,age=sample?Math.max(0,Math.round((Date.now()-Date.parse(sample.at))/1000)):null;
     const stateClass=['printing','idle','offline'].includes(state)?state:'unknown';
-    return '<article class="live-printer '+stateClass+'">'+printerSvg+'<div><b>'+escHtml(p.name)+'</b><div class="live-state">'+(stateLabel[state]||'Sem leitura')+'</div><div class="live-note">'+escHtml(p.host)+' · '+(p.capacityPpm?p.capacityPpm+' ppm nominal':'capacidade não informada')+'</div><div class="live-note">'+(sample&&sample.counter!=null?'Contador: '+Number(sample.counter).toLocaleString('pt-BR'):'Contador sem leitura')+(age!=null?' · '+age+' s atrás':'')+'</div></div></article>'
+    const counter=sample&&sample.counter!=null?Number(sample.counter).toLocaleString('pt-BR'):'—';
+    return '<article class="live-printer '+stateClass+'">'+printerSvg+'<div style="min-width:0;flex:1"><b>'+escHtml(p.name)+'</b><div class="live-state">'+(stateLabel[state]||'Sem leitura')+'</div><div class="live-note">'+escHtml(p.host)+' · '+(p.capacityPpm?p.capacityPpm+' ppm nominal':'capacidade não informada')+'</div><div class="counter-box"><span class="counter-label">Contador acumulado</span><strong class="counter-value">'+counter+'</strong></div><div class="live-note">'+(sample&&sample.counter!=null?'Leitura cumulativa · ':'Contador sem leitura · ')+(age!=null?age+' s atrás':'aguardando primeira coleta')+'</div></div></article>'
   }).join(''):'<div class="card">Nenhuma impressora cadastrada. Adicione os equipamentos para iniciar o painel.</div>';
-  const historyByPrinter=new Map();samples.forEach(s=>{if(!historyByPrinter.has(s.printerId))historyByPrinter.set(s.printerId,[]);historyByPrinter.get(s.printerId).push(s)});
-  const now=Date.now(),colors={printing:'#08a66a',idle:'#e6a700',offline:'#c53030',unknown:'#94a3b8'};
-  $('liveOpsTimeline').innerHTML=printers.length?'<div style="min-width:850px">'+printers.map(p=>{
-    const rows=(historyByPrinter.get(p.id)||[]).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at));
-    const tiles=Array.from({length:48},(_,i)=>{const t=now-(47-i)*30*60*1000;let closest=null;for(let j=rows.length-1;j>=0;j--){if(Date.parse(rows[j].at)<=t){closest=rows[j];break}}const state=closest&&t-Date.parse(closest.at)<45*60*1000?closest.state:'unknown';return '<span title="'+new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' · '+(stateLabel[state]||'Sem leitura')+'" style="display:block;height:18px;border-radius:3px;background:'+colors[state]+'"></span>'}).join('');
-    return '<div style="display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;margin:8px 0"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.name)+'</b><div style="display:grid;grid-template-columns:repeat(48,minmax(9px,1fr));gap:2px">'+tiles+'</div></div>'
-  }).join('')+'<div class="muted" style="display:flex;justify-content:space-between;padding-left:160px;font-size:11px"><span>24 h atrás</span><span>12 h atrás</span><span>Agora</span></div></div>':'<span class="muted">Cadastre impressoras para exibir a linha do tempo.</span>';
+  const chartSelect=$('liveChartPrinter'),selected=chartSelect.value||'all';
+  chartSelect.innerHTML='<option value="all">Toda a operação</option>'+printers.map(p=>'<option value="'+escHtml(p.id)+'">'+escHtml(p.name)+'</option>').join('');
+  chartSelect.value=printers.some(p=>p.id===selected)?selected:'all';
+  renderLiveOpsChart();
   $('liveOpsUpdated').textContent=liveOpsSnapshot.collectorEnabled?'Coletor ativo em '+(liveOpsSnapshot.collectorHost||'este computador')+' · leitura a cada 30 segundos · '+(liveOpsSnapshot.updatedAt?new Date(liveOpsSnapshot.updatedAt).toLocaleTimeString('pt-BR'):'iniciando'):'Coletor desativado neste computador'+(liveOpsSnapshot.collectorHost?' · dados do coletor '+liveOpsSnapshot.collectorHost:'');
   $('liveOpsConfig').style.display=currentRole==='gestor'?'block':'none';
   $('liveAddPrinterButton').style.display=liveOpsSnapshot.configurable?'':'none';
@@ -4921,7 +4926,27 @@ function renderLiveOps(){
   $('liveCollectorEnabled').checked=!!liveOpsSnapshot.collectorEnabled;
   $('livePrinterAdminList').innerHTML=(!liveOpsSnapshot.configurable?'<p class="muted">Impressoras em modo de consulta. Gerencie os equipamentos no computador coletor '+escHtml(liveOpsSnapshot.collectorHost||'')+'.</p>':'')+printers.map(p=>'<div style="display:flex;gap:12px;align-items:center;border-top:1px solid var(--line2);padding:8px 0"><b>'+escHtml(p.name)+'</b><span class="muted">'+escHtml(p.host)+'</span><span class="muted">'+(p.capacityPpm||'—')+' ppm</span>'+(liveOpsSnapshot.configurable?'<button class="btn" onclick="editLivePrinter(\''+escHtml(p.id)+'\')">Editar</button><button class="btn" onclick="deleteLivePrinter(\''+escHtml(p.id)+'\')">Excluir</button>':'')+'</div>').join('');
 }
-function openLivePrinterEditor(){editingLivePrinterId=null;livePrinterFormOpen=true;$('livePrinterForm').style.display='grid';$('lpName').value='';$('lpHost').value='';$('lpCommunity').value='';$('lpPpm').value='';$('lpStatusOid').value='1.3.6.1.2.1.25.3.5.1.1.1';$('lpCounterOid').value='';$('lpCommunity').placeholder='Comunidade SNMP (ex.: public)'}
+function setLiveChartRange(hours,button){liveChartHours=hours;document.querySelectorAll('.live-chart .range-btn').forEach(b=>b.classList.toggle('active',b===button));renderLiveOpsChart()}
+function renderLiveOpsChart(){
+  const root=$('liveOpsTimeline');if(!root)return;
+  const printers=liveOpsSnapshot.printers||[],samples=liveOpsSnapshot.samples||[],filter=$('liveChartPrinter')?.value||'all';
+  const devices=filter==='all'?printers:printers.filter(p=>p.id===filter),capacity=devices.reduce((sum,p)=>sum+(Number(p.capacityPpm)||0),0);
+  if(!devices.length||!capacity){root.innerHTML='<div style="padding:44px 12px;text-align:center;color:#a5bfca">Informe a capacidade nominal para exibir a utilização. A linha acompanha o estado das impressoras a cada 30 minutos.</div>';return}
+  const rows=new Map();samples.forEach(s=>{if(!rows.has(s.printerId))rows.set(s.printerId,[]);rows.get(s.printerId).push(s)});rows.forEach(a=>a.sort((x,y)=>Date.parse(x.at)-Date.parse(y.at)));
+  const count=liveChartHours*2,now=Date.now(),step=30*60*1000,points=[];
+  for(let i=0;i<count;i++){
+    const t=now-(count-1-i)*step;let inUse=0;const states=[];
+    devices.forEach(p=>{const list=rows.get(p.id)||[];let latest=null;for(let j=list.length-1;j>=0;j--)if(Date.parse(list[j].at)<=t){latest=list[j];break}const valid=latest&&t-Date.parse(latest.at)<=45*60*1000,state=valid?latest.state:'unknown';states.push(p.name+': '+(state==='printing'?'imprimindo':state==='idle'?'ociosa':state==='offline'?'offline':'sem leitura'));if(state==='printing')inUse+=Number(p.capacityPpm)||0});
+    points.push({t,pct:Math.min(100,inUse/capacity*100),inUse,states});
+  }
+  const W=1000,H=270,L=54,R=20,T=18,B=34,plotW=W-L-R,plotH=H-T-B,x=i=>L+(points.length<2?plotW/2:i*plotW/(points.length-1)),y=v=>T+(100-v)*plotH/100;
+  const grid=[0,25,50,75,100].map(v=>'<line x1="'+L+'" y1="'+y(v)+'" x2="'+(W-R)+'" y2="'+y(v)+'" stroke="rgba(193,221,231,.13)"/><text x="'+(L-12)+'" y="'+(y(v)+4)+'" text-anchor="end" fill="#90aeba" font-size="11">'+v+'%</text>').join('');
+  const line=points.map((p,i)=>(i?'L':'M')+x(i)+' '+y(p.pct)).join(' '),area=line+' L '+x(points.length-1)+' '+y(0)+' L '+x(0)+' '+y(0)+' Z';
+  const ticks=points.map((p,i)=>i%Math.max(1,Math.floor(points.length/6))===0||i===points.length-1?'<text x="'+x(i)+'" y="'+(H-8)+'" text-anchor="middle" fill="#90aeba" font-size="10">'+new Date(p.t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</text>':'').join('');
+  const dots=points.map((p,i)=>'<circle cx="'+x(i)+'" cy="'+y(p.pct)+'" r="'+(i===points.length-1?5:3.5)+'" fill="'+(i===points.length-1?'#b7f171':'#55dfad')+'" stroke="#0b2336" stroke-width="2"><title>'+new Date(p.t).toLocaleString('pt-BR')+' · '+Math.round(p.pct)+'% · '+p.inUse.toLocaleString('pt-BR')+'/'+capacity.toLocaleString('pt-BR')+' ppm&#10;'+escHtml(p.states.join(' | '))+'</title></circle>').join('');
+  root.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Gráfico interativo de utilização nominal da capacidade"><defs><linearGradient id="liveArea" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#55dfad" stop-opacity=".34"/><stop offset="100%" stop-color="#55dfad" stop-opacity=".01"/></linearGradient><filter id="liveGlow" x="-20%" y="-100%" width="140%" height="300%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>'+grid+'<path d="'+area+'" fill="url(#liveArea)"/><path d="'+line+'" fill="none" stroke="#55dfad" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#liveGlow)"/>'+dots+ticks+'</svg>';
+}
+function openLivePrinterEditor(){editingLivePrinterId=null;livePrinterFormOpen=true;$('livePrinterForm').style.display='grid';$('lpName').value='';$('lpHost').value='';$('lpCommunity').value='';$('lpPpm').value='';$('lpStatusOid').value='1.3.6.1.2.1.25.3.5.1.1.1';$('lpCounterOid').value='1.3.6.1.2.1.43.10.2.1.4.1.1';$('lpCommunity').placeholder='Comunidade SNMP (ex.: public)'}
 function cancelLivePrinterEdit(){livePrinterFormOpen=false;$('livePrinterForm').style.display='none';editingLivePrinterId=null}
 function editLivePrinter(id){const p=liveOpsSnapshot.printers.find(x=>x.id===id);if(!p)return;editingLivePrinterId=id;livePrinterFormOpen=true;$('livePrinterForm').style.display='grid';$('lpName').value=p.name;$('lpHost').value=p.host;$('lpCommunity').value='';$('lpCommunity').placeholder='Em branco mantém a comunidade atual';$('lpPpm').value=p.capacityPpm||'';$('lpStatusOid').value=p.statusOid;$('lpCounterOid').value=p.counterOid||''}
 async function saveLivePrinter(){
