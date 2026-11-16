@@ -21,6 +21,24 @@ aplicado por `initDesktopIntegration()`) e o `boot()` explicitamente evita recar
 de `.godb` quando `window.goDesktop` existe — ver o gotcha correspondente em
 [HISTORICO_E_DECISOES.md](HISTORICO_E_DECISOES.md).
 
+## Proteção corporativa opcional do JSON desktop
+
+O processo principal pode cifrar o arquivo compartilhado com AES-256-GCM quando a variável de
+ambiente `GO_ENTERPRISE_DATA_KEY_FILE` aponta para um arquivo local protegido pela TI. O conteúdo
+desse arquivo deve ser uma chave aleatória de 32 bytes, codificada em Base64 (44 caracteres) ou
+hexadecimal (64 caracteres). O segredo não deve ficar na pasta compartilhada, no Git ou no instalador.
+
+Sem a variável, o comportamento legado é mantido e arquivos existentes continuam em JSON. Com a
+variável configurada, arquivos JSON existentes ainda podem ser lidos; a próxima gravação migra o
+arquivo para o formato cifrado. Arquivos cifrados não podem ser lidos ou gravados se a chave estiver
+ausente ou incorreta; a aplicação falha fechada e preserva o arquivo.
+
+**Implantação:** atualize todos os computadores antes de configurar a chave em qualquer um deles.
+Clientes antigos não entendem o formato cifrado e poderiam exibir uma base vazia. A TI precisa
+provisionar a mesma chave com ACL restrita em cada computador e manter cópia de recuperação sob sua
+política de custódia. Não substitua/rotacione a chave sem um procedimento de migração validado; o
+aplicativo ainda não executa rotação automática.
+
 ## Fluxo de gravação (`save()`, app.html seção 4)
 
 ```

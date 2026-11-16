@@ -2747,7 +2747,7 @@ async function boot(){
       }catch(e){envelope=null}
     }
   }
-  if(envelope&&envelope.format==='GO-DB-ENC'){
+  if(envelope&&envelope.format==='GO-DB-ENC'&&!window.goDesktop){
     showPinGate(true,'');
     window.__pendingEnvelope=envelope;
     return;
@@ -2760,11 +2760,11 @@ async function boot(){
       if(remote&&remote.data){db=normalizeDb(remote.data);envelope=null}
     }catch(e){console.warn('Não foi possível ler os dados da pasta compartilhada, usando cópia local:',e)}
   }
-  if(envelope&&envelope.format==='GO-DB'){db=normalizeDb(envelope.data)}
+  if(envelope&&envelope.format==='GO-DB'&&!window.goDesktop){db=normalizeDb(envelope.data)}
   if(kioskMode){
     // banco não criptografado: a TV entra direto, sem pedir PIN — o PIN de gestor aqui
     // controla o acesso de edição dentro do app, não a exibição somente-leitura da TV.
-    currentRole='gestor';currentOperatorId=null;currentPin=null;
+    currentRole=window.goDesktop?'tv':'gestor';currentOperatorId=null;currentPin=null;
     await afterUnlock();
     return;
   }
@@ -2831,6 +2831,11 @@ async function submitPin(){
     const pin=$('pinInput').value.trim();
     if(!pin){$('pinError').textContent='Informe o PIN.';return}
     try{
+      if(window.goDesktop){
+        const result=await window.goDesktop.loginManager(pin);
+        db=normalizeDb(result.data);currentPin=pin;currentRole='gestor';currentOperatorId=null;window.__pendingEnvelope=null;
+        await afterUnlock();return;
+      }
       const data=await decryptPayload(window.__pendingEnvelope,pin);
       db=normalizeDb(data);currentPin=pin;currentRole='gestor';currentOperatorId=null;window.__pendingEnvelope=null;
       await afterUnlock();
@@ -2842,6 +2847,11 @@ async function submitPin(){
     // em vez de deixar qualquer pessoa entrar como gestor sem digitar nada.
     const master=$('pinInput').value;
     if(!master){$('pinError').textContent='Informe a senha mestre.';return}
+    if(window.goDesktop){
+      try{const result=await window.goDesktop.loginManager(master);db=normalizeDb(result.data);currentRole='gestor';currentOperatorId=null;currentPin=null;await afterUnlock()}
+      catch(e){$('pinError').textContent='Senha mestre incorreta.'}
+      return;
+    }
     const masterHash=await sha256Hex(MASTER_SALT+master);
     if(masterHash===MASTER_PASSWORD_HASH){currentRole='gestor';currentOperatorId=null;currentPin=null;await afterUnlock()}
     else{$('pinError').textContent='Senha mestre incorreta.'}
@@ -2849,14 +2859,27 @@ async function submitPin(){
   }
   const pin=$('pinInput').value.trim();
   if(!pin){$('pinError').textContent='Informe o PIN.';return}
+  if(window.goDesktop){
+    try{const result=await window.goDesktop.loginManager(pin);db=normalizeDb(result.data);currentPin=pin;currentRole='gestor';currentOperatorId=null;await afterUnlock()}
+    catch(e){$('pinError').textContent='PIN incorreto.'}
+    return;
+  }
   const sec=db.config.security;
   const hash=await sha256Hex(sec.salt+pin);
   if(hash===sec.pinHash){currentPin=pin;currentRole='gestor';currentOperatorId=null;await afterUnlock()}
   else{$('pinError').textContent='PIN incorreto.'}
 }
-function submitOperadorLogin(){
+async function submitOperadorLogin(){
   const reg=$('operadorRegInput').value.trim();
   if(!reg){$('operadorError').textContent='Informe a matrícula.';return}
+  if(window.goDesktop){
+    try{
+      const result=await window.goDesktop.loginOperator(reg);
+      db=normalizeDb(result.data);
+      currentOperatorId=db.employees[0]&&db.employees[0].id;
+      currentRole='operador';currentPin=null;await afterUnlock();return;
+    }catch(e){$('operadorError').textContent=e.message||'Matrícula não encontrada.';return}
+  }
   const match=(db.employees||[]).find(x=>x.reg&&norm(x.reg)===norm(reg));
   if(!match){$('operadorError').textContent='Matrícula não encontrada.';return}
   if(match.status==='Inativo'){$('operadorError').textContent='Este cadastro está inativo. Procure o gestor.';return}
@@ -2866,6 +2889,11 @@ function submitOperadorLogin(){
 async function submitTvLogin(){
   const pin=$('tvPinInput').value.trim();
   if(!pin){$('tvError').textContent='Informe o PIN da TV.';return}
+  if(window.goDesktop){
+    try{const result=await window.goDesktop.loginTv(pin);db=normalizeDb(result.data);currentRole='tv';currentOperatorId=null;currentPin=null;await afterUnlock()}
+    catch(e){$('tvError').textContent='PIN da TV incorreto.'}
+    return;
+  }
   const sec=db.config.security;
   const hash=await sha256Hex(sec.tvSalt+pin);
   if(sec.tvEnabled&&hash===sec.tvPinHash){currentRole='tv';currentOperatorId=null;currentPin=null;await afterUnlock()}
@@ -2924,7 +2952,7 @@ function applyRoleUI(){
     switchView(isOp?'operadorHome':'dashboardTv');
   }
 }
-function lockApp(){currentPin=null;currentRole=null;currentOperatorId=null;location.reload()}
+function lockApp(){if(window.goDesktop)window.goDesktop.logout();currentPin=null;currentRole=null;currentOperatorId=null;location.reload()}
 function switchProfile(){
   if(!confirm('Sair do perfil atual e voltar para a tela de acesso (Gestor/Operador)?'))return;
   lockApp();
@@ -6351,7 +6379,7 @@ async function installDesktopUpdate(){
   const info=window.__pendingUpdateInfo;
   if(!window.goDesktop||!info||!info.installerPath)return;
   if(!confirm('O aplicativo vai fechar para instalar a nova versão. Continuar?'))return;
-  try{await window.goDesktop.installUpdate(info.installerPath)}
+  try{await window.goDesktop.installUpdate(info.latestVersion)}
   catch(e){alert('Não foi possível iniciar a atualização: '+e.message)}
 }
 function showDesktopToast(msg){

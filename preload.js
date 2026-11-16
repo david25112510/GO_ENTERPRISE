@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('goDesktop', {
   // ---- versão / atualização ----
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
-  installUpdate: (installerPath) => ipcRenderer.invoke('update:install', installerPath),
+  installUpdate: (approvedVersion) => ipcRenderer.invoke('update:install', approvedVersion),
   onUpdateAvailable: (cb) => {
     const listener = (_e, info) => cb(info);
     ipcRenderer.on('update:available', listener);
@@ -26,6 +26,10 @@ contextBridge.exposeInMainWorld('goDesktop', {
   getDisplays: () => ipcRenderer.invoke('settings:getDisplays'),
 
   // ---- dados (arquivo compartilhado) ----
+  loginManager: (credential) => ipcRenderer.invoke('auth:loginManager', credential),
+  loginOperator: (registration) => ipcRenderer.invoke('auth:loginOperator', registration),
+  loginTv: (pin) => ipcRenderer.invoke('auth:loginTv', pin),
+  logout: () => ipcRenderer.invoke('auth:logout'),
   readData: () => ipcRenderer.invoke('data:read'),
   writeData: (db) => ipcRenderer.invoke('data:write', db),
   onDataChangedExternally: (cb) => {

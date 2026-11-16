@@ -1,3 +1,5 @@
+> **Atualizacao desktop:** os controles Electron atuais, as projecoes por perfil e as limitacoes de provisionamento estao documentados em [SEGURANCA_DESKTOP.md](SEGURANCA_DESKTOP.md). A descricao abaixo registra o comportamento historico do modo navegador.
+
 # Segurança e controle de acesso
 
 ## Três papéis (`currentRole`)

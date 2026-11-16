@@ -14,6 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { spawnSync } = require('child_process');
 const { shell } = require('electron');
 
 function parseVersion(v) {
@@ -31,6 +32,41 @@ function compareVersions(a, b) {
   return 0;
 }
 
+function resolveInstallerPath(updatesFolder, installerName) {
+  const name = String(installerName || '');
+  if (!name || name !== path.basename(name) || name !== path.win32.basename(name) ||
+      name === '.' || name === '..' || path.extname(name).toLowerCase() !== '.exe') return null;
+  const root = path.resolve(updatesFolder);
+  const candidate = path.resolve(root, name);
+  const relative = path.relative(root, candidate);
+  if (!relative || relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) return null;
+  return candidate;
+}
+
+function isRegularInstallerInsideFolder(updatesFolder, installerPath) {
+  try {
+    const realRoot = fs.realpathSync(updatesFolder);
+    const details = fs.lstatSync(installerPath);
+    if (!details.isFile() || details.isSymbolicLink()) return false;
+    const realInstaller = fs.realpathSync(installerPath);
+    const relative = path.relative(realRoot, realInstaller);
+    return !!relative && relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative);
+  } catch (_) {
+    return false;
+  }
+}
+
+function verifyInstallerSignature(installerPath) {
+  const expectedPublisher = String(process.env.GO_ENTERPRISE_UPDATE_PUBLISHER || '').trim();
+  if (process.platform !== 'win32' || !expectedPublisher) return false;
+  const script = "$s=Get-AuthenticodeSignature -LiteralPath $env:GO_UPDATE_FILE; if ($s.Status -ne 'Valid' -or -not $s.SignerCertificate) { exit 2 }; if ($s.SignerCertificate.Subject -cne $env:GO_UPDATE_PUBLISHER) { exit 3 }; exit 0";
+  const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+    encoding: 'utf8', timeout: 15000, windowsHide: true,
+    env: { ...process.env, GO_UPDATE_FILE: installerPath, GO_UPDATE_PUBLISHER: expectedPublisher }
+  });
+  return !result.error && result.status === 0;
+}
+
 function checkForUpdate(updatesFolder, currentVersion) {
   if (!updatesFolder) return { available: false, reason: 'sem-pasta-configurada' };
   const manifestPath = path.join(updatesFolder, 'version.json');
@@ -42,8 +78,9 @@ function checkForUpdate(updatesFolder, currentVersion) {
     return { available: false, reason: 'manifesto-invalido', error: e.message };
   }
   if (!manifest.version || !manifest.installer) return { available: false, reason: 'manifesto-incompleto' };
-  const installerPath = path.join(updatesFolder, manifest.installer);
-  const installerExists = fs.existsSync(installerPath);
+  const installerPath = resolveInstallerPath(updatesFolder, manifest.installer);
+  if (!installerPath) return { available: false, reason: 'caminho-do-instalador-invalido' };
+  const installerExists = isRegularInstallerInsideFolder(updatesFolder, installerPath);
   const isNewer = compareVersions(manifest.version, currentVersion) > 0;
   return {
     available: isNewer && installerExists,
@@ -59,17 +96,26 @@ function checkForUpdate(updatesFolder, currentVersion) {
 
 // copia o instalador para uma pasta temporária local (evita rodar o .exe direto de dentro da pasta
 // sincronizada, o que pode falhar se o cliente de nuvem ainda estiver "puxando" o arquivo) e o abre.
-async function downloadAndLaunchInstaller(installerPath) {
-  if (!installerPath || !fs.existsSync(installerPath)) {
+async function downloadAndLaunchInstaller(updatesFolder, installerPath) {
+  const root = path.resolve(updatesFolder || '.');
+  const resolvedPath = path.resolve(installerPath || '.');
+  const relative = path.relative(root, resolvedPath);
+  if (!relative || relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative) ||
+      path.basename(resolvedPath) !== path.win32.basename(resolvedPath) ||
+      path.extname(resolvedPath).toLowerCase() !== '.exe' ||
+      !isRegularInstallerInsideFolder(root, resolvedPath)) {
     throw new Error('Instalador não encontrado na pasta de atualizações.');
+  }
+  if (!verifyInstallerSignature(resolvedPath)) {
+    throw new Error('Atualizacao bloqueada: o instalador nao possui assinatura Authenticode valida do publicador aprovado pela TI.');
   }
   const tmpDir = path.join(os.tmpdir(), 'go-enterprise-update');
   fs.mkdirSync(tmpDir, { recursive: true });
-  const dest = path.join(tmpDir, path.basename(installerPath));
-  await fs.promises.copyFile(installerPath, dest);
+  const dest = path.join(tmpDir, path.basename(resolvedPath));
+  await fs.promises.copyFile(resolvedPath, dest);
   const result = await shell.openPath(dest);
   if (result) throw new Error('Não foi possível abrir o instalador: ' + result);
   return dest;
 }
 
-module.exports = { checkForUpdate, downloadAndLaunchInstaller, compareVersions };
+module.exports = { checkForUpdate, downloadAndLaunchInstaller, compareVersions, resolveInstallerPath, verifyInstallerSignature };

@@ -14,6 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const chokidar = require('chokidar');
 
 // coleções tratadas como arrays de registros com "id" (mescladas item a item)
@@ -39,13 +40,63 @@ function ensureDir(p) {
   fs.mkdirSync(path.dirname(p), { recursive: true });
 }
 
+function readEncryptionKey() {
+  const keyFile = process.env.GO_ENTERPRISE_DATA_KEY_FILE;
+  if (!keyFile) return null;
+  let encoded;
+  try { encoded = fs.readFileSync(keyFile, 'utf8').trim(); }
+  catch (_) { throw new Error('Não foi possível obter a chave corporativa de proteção dos dados.'); }
+  let key;
+  if (/^[0-9a-fA-F]{64}$/.test(encoded)) key = Buffer.from(encoded, 'hex');
+  else {
+    if (!/^[A-Za-z0-9+/]{43}=$/.test(encoded)) throw new Error('A chave corporativa de proteção dos dados está inválida.');
+    try { key = Buffer.from(encoded, 'base64'); }
+    catch (_) { throw new Error('A chave corporativa de proteção dos dados está inválida.'); }
+  }
+  if (key.length !== 32) throw new Error('A chave corporativa deve conter exatamente 256 bits.');
+  return key;
+}
+
+function protectEnvelope(envelope) {
+  const key = readEncryptionKey();
+  if (!key) return { ...envelope, formatVersion: 1 };
+  const nonce = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, nonce);
+  const ciphertext = Buffer.concat([cipher.update(JSON.stringify(envelope.data), 'utf8'), cipher.final()]);
+  return {
+    formatVersion: 2,
+    savedAt: envelope.savedAt,
+    savedBy: envelope.savedBy,
+    encryption: { algorithm: 'aes-256-gcm', nonce: nonce.toString('base64'), tag: cipher.getAuthTag().toString('base64') },
+    data: ciphertext.toString('base64')
+  };
+}
+
+function unprotectEnvelope(envelope) {
+  if (!envelope || envelope.formatVersion !== 2) return envelope;
+  const key = readEncryptionKey();
+  if (!key) throw new Error('A base está protegida e a chave corporativa não está disponível neste computador.');
+  try {
+    if (!envelope.encryption || envelope.encryption.algorithm !== 'aes-256-gcm') throw new Error('Formato inválido');
+    const nonce = Buffer.from(envelope.encryption.nonce, 'base64');
+    const tag = Buffer.from(envelope.encryption.tag, 'base64');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, nonce);
+    decipher.setAuthTag(tag);
+    const plaintext = Buffer.concat([decipher.update(Buffer.from(envelope.data, 'base64')), decipher.final()]).toString('utf8');
+    return { ...envelope, formatVersion: 1, data: JSON.parse(plaintext) };
+  } catch (_) {
+    throw new Error('Não foi possível autenticar ou descriptografar a base com a chave corporativa.');
+  }
+}
+
 function readEnvelope() {
   if (!filePath || !fs.existsSync(filePath)) return null;
   try {
     const raw = fs.readFileSync(filePath, 'utf-8');
     if (!raw.trim()) return null;
-    return JSON.parse(raw);
+    return unprotectEnvelope(JSON.parse(raw));
   } catch (e) {
+    if (/chave corporativa|descriptografar|autenticar/i.test(e.message)) throw e;
     console.warn('[dataStore] Falha ao ler/parsear arquivo de dados:', e.message);
     return null;
   }
@@ -140,13 +191,13 @@ function writeData(incomingDb) {
   }
   const savedAt = new Date().toISOString();
   const envelope = {
-    formatVersion: 1,
     savedAt,
     savedBy: os.hostname(),
     data: finalDb
   };
+  const protectedEnvelope = protectEnvelope(envelope);
   const tmpPath = filePath + '.tmp-' + process.pid;
-  fs.writeFileSync(tmpPath, JSON.stringify(envelope), 'utf-8');
+  fs.writeFileSync(tmpPath, JSON.stringify(protectedEnvelope), 'utf-8');
   fs.renameSync(tmpPath, filePath);
   lastSelfWriteMs = Date.now();
   baseSavedAt = savedAt;
@@ -167,7 +218,9 @@ function watch(onExternalChange) {
     // se a mudança aconteceu muito perto de uma escrita nossa, provavelmente somos nós mesmos —
     // ainda assim relê (é barato) mas não trata como "mudança externa" pra fins de aviso na tela
     const sinceSelfWrite = Date.now() - lastSelfWriteMs;
-    const env = readEnvelope();
+    let env;
+    try { env = readEnvelope(); }
+    catch (e) { console.warn('[dataStore] Alteração ignorada:', e.message); return; }
     if (!env) return;
     if (env.savedAt === baseSavedAt) return; // nada novo de fato
     baseSavedAt = env.savedAt;
@@ -180,4 +233,4 @@ function stopWatch() {
   if (watcher) { watcher.close(); watcher = null; }
 }
 
-module.exports = { setFilePath, readData, writeData, watch, stopWatch, mergeDb };
+module.exports = { setFilePath, readData, writeData, watch, stopWatch, mergeDb, readEncryptionKey, protectEnvelope, unprotectEnvelope };
