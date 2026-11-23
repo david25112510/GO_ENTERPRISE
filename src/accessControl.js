@@ -63,6 +63,10 @@ function projectOperatorData(data, employeeId) {
     timesheets: (Array.isArray(source.timesheets) ? source.timesheets : []).filter(belongsToEmployee),
     jornadaPeriods: (Array.isArray(source.jornadaPeriods) ? source.jornadaPeriods : []).map(projectPeriod).filter(p => p.employees.length),
     jornada180Windows: (Array.isArray(source.jornada180Windows) ? source.jornada180Windows : []).map(projectPeriod).filter(p => p.employees.length),
+    developmentOrders: Array.isArray(source.developmentOrders) ? source.developmentOrders.map(row => pick(row, [
+      'year', 'os', 'client', 'state', 'matrix', 'orderType', 'serviceType', 'documentType',
+      'openedAt', 'deadline', 'analyst', 'deliveredAt', 'cancelled', 'importedAt'
+    ])) : [],
     manuals: Array.isArray(source.manuals) ? source.manuals : [],
     news: Array.isArray(source.news) ? source.news : [],
     alerts: Array.isArray(source.alerts) ? source.alerts : [],
