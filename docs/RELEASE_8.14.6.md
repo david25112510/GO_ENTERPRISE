@@ -2,6 +2,8 @@
 
 Publicada em 23/11/2026.
 
+O manifesto `version.json` foi atualizado às `2026-11-23T14:08:32.1925836Z`.
+
 ## Importação de OS de Desenvolvimento
 
 - Operadores agora podem importar planilhas ODS pelo módulo OS de Desenvolvimento.

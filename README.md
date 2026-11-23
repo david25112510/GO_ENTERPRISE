@@ -98,7 +98,7 @@ Sem precisar de servidor próprio — usa a mesma pasta compartilhada:
      "version": "8.14.6",
      "installer": "GO-Enterprise-Setup-8.14.6.exe",
      "notes": "Resumo curto do que mudou nesta versão.",
-     "publishedAt": "2026-11-23T14:01:42.7468202Z"
+     "publishedAt": "2026-11-23T14:08:32.1925836Z"
    }
    ```
    Use o instante UTC real da publicação no campo `publishedAt` (o horário acima é ilustrativo).
