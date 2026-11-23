@@ -2,6 +2,8 @@
 
 Publicada em 23/11/2026.
 
+O manifesto `version.json` foi atualizado às `2026-11-23T14:01:42.7468202Z`.
+
 ## OS de Desenvolvimento
 
 - O perfil operador pode abrir e consultar o módulo, usar filtros e exportar o recorte CSV.
