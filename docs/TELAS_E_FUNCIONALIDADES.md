@@ -66,7 +66,7 @@ abas cujo nome contém `DESENVOLVIMENTO 20XX`, normaliza datas e substitui a bas
 - KPIs de volume, entregas, cumprimento do prazo, atrasos, cancelamentos e tempo médio.
 - Gráficos mensais, por estado, tipo de ordem e analista.
 - Tabela paginada com 100 registros por página e exportação CSV do recorte filtrado.
-- Operadores têm acesso de consulta, filtros e exportação; a importação da planilha ODS continua restrita ao gestor.
+- Operadores têm acesso de consulta, filtros, exportação e importação da planilha ODS.
 
 O prazo usa comparação entre `deliveredAt` e `deadline`; OS não entregues cujo prazo já venceu são
 classificadas como “Em atraso”. Linhas marcadas como canceladas/recolhidas não entram nas entregas.

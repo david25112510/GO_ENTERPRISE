@@ -64,7 +64,7 @@ function projectOperatorData(data, employeeId) {
     jornadaPeriods: (Array.isArray(source.jornadaPeriods) ? source.jornadaPeriods : []).map(projectPeriod).filter(p => p.employees.length),
     jornada180Windows: (Array.isArray(source.jornada180Windows) ? source.jornada180Windows : []).map(projectPeriod).filter(p => p.employees.length),
     developmentOrders: Array.isArray(source.developmentOrders) ? source.developmentOrders.map(row => pick(row, [
-      'year', 'os', 'client', 'state', 'matrix', 'orderType', 'serviceType', 'documentType',
+      'id', 'year', 'os', 'client', 'state', 'matrix', 'orderType', 'serviceType', 'documentType',
       'openedAt', 'deadline', 'analyst', 'deliveredAt', 'cancelled', 'importedAt'
     ])) : [],
     manuals: Array.isArray(source.manuals) ? source.manuals : [],
@@ -109,9 +109,25 @@ function sanitizeTvImport(entry) {
   if (!entry || typeof entry !== 'object') return null;
   return {
     at: String(entry.at || '').slice(0, 80), file: String(entry.file || '').slice(0, 160),
+    type: String(entry.type || '').slice(0, 80),
     total: Number(entry.total) || 0, added: Number(entry.added) || 0,
     updated: Number(entry.updated) || 0, same: Number(entry.same) || 0, errors: Number(entry.errors) || 0
   };
 }
 
-module.exports = { projectData, projectTvData, projectOperatorData, projectSla, sanitizeTvSla, sanitizeTvImport };
+function sanitizeDevelopmentOrders(orders) {
+  if (!Array.isArray(orders)) return [];
+  const fields = ['id', 'year', 'os', 'client', 'state', 'matrix', 'orderType', 'serviceType',
+    'documentType', 'openedAt', 'deadline', 'analyst', 'deliveredAt', 'cancelled', 'importedAt'];
+  const textLimits = { id: 160, year: 4, os: 80, client: 200, state: 80, matrix: 120,
+    orderType: 120, serviceType: 120, documentType: 120, openedAt: 32, deadline: 32,
+    analyst: 160, deliveredAt: 32, importedAt: 48 };
+  return orders.slice(0, 100000).filter(row => row && typeof row === 'object' && !Array.isArray(row)).map(row => {
+    const safe = pick(row, fields);
+    for (const [field, limit] of Object.entries(textLimits)) safe[field] = String(safe[field] || '').slice(0, limit);
+    safe.cancelled = !!safe.cancelled;
+    return safe;
+  });
+}
+
+module.exports = { projectData, projectTvData, projectOperatorData, projectSla, sanitizeTvSla, sanitizeTvImport, sanitizeDevelopmentOrders };

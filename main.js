@@ -414,15 +414,20 @@ ipcMain.handle('data:write', (e, db) => {
   if (!current.data) throw new Error('Base compartilhada indisponível.');
   const incoming = db && typeof db === 'object' ? db : {};
   const latestImport = accessControl.sanitizeTvImport(Array.isArray(incoming.imports) ? incoming.imports[0] : null);
+  const isDevelopmentImport = role === 'operador' && latestImport && latestImport.type === 'OS Desenvolvimento';
   const imports = Array.isArray(current.data.imports) ? [...current.data.imports] : [];
-  if (latestImport && !(imports[0] && imports[0].at === latestImport.at && imports[0].file === latestImport.file)) {
+  if (latestImport && !(imports[0] && imports[0].at === latestImport.at && imports[0].file === latestImport.file && imports[0].type === latestImport.type)) {
     latestImport.id = crypto.randomUUID();
     imports.unshift(latestImport);
   }
-  const saved = dataStore.writeData({
+  const nextData = {
     ...current.data,
     sla: accessControl.sanitizeTvSla(incoming.sla),
     imports: imports.slice(0, 500)
+  };
+  if (isDevelopmentImport) nextData.developmentOrders = accessControl.sanitizeDevelopmentOrders(incoming.developmentOrders);
+  const saved = dataStore.writeData({
+    ...nextData
   });
   return { savedAt: saved.savedAt, conflicts: saved.conflicts };
 });
