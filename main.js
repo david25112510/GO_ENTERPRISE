@@ -407,7 +407,7 @@ ipcMain.handle('data:read', e => {
   })();
 });
 ipcMain.handle('data:write', (e, db) => {
-  const role = requireRole(e, ['gestor', 'tv']);
+  const role = requireRole(e, ['gestor', 'tv', 'operador']);
   if (role === 'tv' && tvWindow && e.sender === tvWindow.webContents) throw new Error('O Dashboard TV é somente leitura.');
   if (role === 'gestor') return dataStore.writeData(db);
   const current = readFullData();
@@ -434,7 +434,7 @@ ipcMain.handle('tv:isSelf', (e) => {
   return !!(tvWindow && w && w.id === tvWindow.id);
 });
 
-ipcMain.handle('liveOps:get', e => { requireRole(e, ['gestor']); return liveOperations ? liveOperations.snapshot() : null; });
+ipcMain.handle('liveOps:get', e => { requireRole(e, ['gestor', 'operador']); return liveOperations ? liveOperations.snapshot() : null; });
 ipcMain.handle('liveOps:setPrinters', (e, printers) => {
   requireRole(e, ['gestor']);
   if (!liveOperations) throw new Error('Serviço Operação ao vivo indisponível.');

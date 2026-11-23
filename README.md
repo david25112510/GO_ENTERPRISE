@@ -1,7 +1,7 @@
 # GO Enterprise — app desktop (Windows)
 
-**Versão publicada: 8.14.3 (23/11/2026).** Documentação revisada em 23/11/2026.
-Veja o [estado atual](docs/ESTADO_ATUAL_8.14.3.md), as [notas da release](docs/RELEASE_8.14.3.md)
+**Versão publicada: 8.14.4 (23/11/2026).** Documentação revisada em 23/11/2026.
+Veja o [estado atual](docs/ESTADO_ATUAL_8.14.4.md), as [notas da release](docs/RELEASE_8.14.4.md)
 e o [guia de Jornada/HE](docs/JORNADA_HE_EDICAO.md).
 
 App desktop do GO Enterprise para a Selbetti (Correios MG), empacotado com Electron. Reaproveita
@@ -95,8 +95,8 @@ Sem precisar de servidor próprio — usa a mesma pasta compartilhada:
 3. Crie/atualize o arquivo `<pasta compartilhada>/atualizacoes/version.json`:
    ```json
    {
-     "version": "8.14.3",
-     "installer": "GO-Enterprise-Setup-8.14.3.exe",
+     "version": "8.14.4",
+     "installer": "GO-Enterprise-Setup-8.14.4.exe",
      "notes": "Resumo curto do que mudou nesta versão.",
      "publishedAt": "2026-11-23T13:31:55.2445368Z"
    }
@@ -145,7 +145,7 @@ npm start
 npm run dist
 ```
 
-O instalador atual fica em `dist/GO-Enterprise-Setup-8.14.3.exe`. Atualize a versão em
+O instalador atual fica em `dist/GO-Enterprise-Setup-8.14.4.exe`. Atualize a versão em
 `package.json` e `package-lock.json` antes de cada release. Copie também o `.blockmap`, confira os
 hashes e publique `version.json` por último.
 

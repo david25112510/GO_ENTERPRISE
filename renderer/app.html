@@ -942,7 +942,7 @@ body.kiosk-mode .dash-var{font-size:13px}
       <button data-view="jornadaHe" data-role="gestor">🕒 <span>Jornada/HE</span></button>
       <button data-view="manuais">📘 <span>Manuais</span></button>
       <button data-view="dashboardTv" data-role="gestor">📺 <span>Dashboard TV</span></button>
-      <button data-view="operacaoAoVivo" data-role="gestor">🖨️ <span>Operação ao vivo</span></button>
+      <button data-view="operacaoAoVivo">🖨️ <span>Operação ao vivo</span></button>
       <button data-view="noticias" data-role="gestor">📰 <span>Conteúdo TV</span></button>
       <button data-view="selbnews" data-role="gestor">📡 <span>SELBNEWS</span></button>
       <button data-view="fornecedores" data-role="gestor">🏢 <span>Fornecedores</span></button>
@@ -1052,7 +1052,7 @@ body.kiosk-mode .dash-var{font-size:13px}
         <div class="panel"><h2>Performance da competência</h2><div id="productionPerformance"></div></div>
       </div>
       <div class="analytics-grid" id="productionInsights"></div>
-      <div class="panel"><div class="toolbar"><label class="btn primary file gestor-only">⬆ Importar planilha de produção / SLA
+      <div class="panel"><div class="toolbar"><label class="btn primary file">⬆ Importar planilha de produção / SLA
         <input type="file" accept=".xlsx" onchange="importSLA(this.files[0])"></label>
         <button class="btn" onclick="exportCSV('sla')">Exportar base CSV</button></div>
         <div class="notice">A produção é formada automaticamente pelas Ordens de Serviço importadas. O Número da OS é a chave única: novos registros são incluídos e registros existentes são atualizados, sem duplicidade.</div>
@@ -2918,7 +2918,7 @@ async function afterUnlock(){
   if(kioskMode)enterKioskMode();
 }
 const NAV_VIEWS_BY_ROLE={
-  operador:['operadorHome','producao','manuais','dashboardTv'],
+  operador:['operadorHome','producao','manuais','dashboardTv','operacaoAoVivo'],
   tv:['dashboardTv','noticias','producao'],
   gestor:['home','producao','developmentOs','financeiro','rh','jornadaHe','manuais','dashboardTv','operacaoAoVivo','fornecedores','admin','noticias','selbnews']
 };
@@ -4898,7 +4898,7 @@ function switchView(v){
   if(typeof closeJhEmployeeDrawer==='function')closeJhEmployeeDrawer();
   if(currentRole==='operador'){
     if(v==='rh'){openEmployeeProfile(currentOperatorId);return}
-    if(!['operadorHome','producao','manuais','dashboardTv'].includes(v))v='operadorHome';
+    if(!['operadorHome','producao','manuais','dashboardTv','operacaoAoVivo'].includes(v))v='operadorHome';
   }
   if(currentRole==='tv'&&!['dashboardTv','noticias','producao'].includes(v))v='dashboardTv';
   if(v==='operacaoAoVivo')refreshLiveOps();
@@ -4942,14 +4942,14 @@ function renderLiveOps(){
     const stateClass=['printing','idle','offline'].includes(state)?state:'unknown';
     const counter=sample&&sample.counter!=null?Number(sample.counter).toLocaleString('pt-BR'):'—';
     return '<article class="live-printer '+stateClass+'">'+printerSvg+'<div style="min-width:0;flex:1"><b>'+escHtml(p.name)+'</b><div class="live-state">'+(stateLabel[state]||'Sem leitura')+'</div><div class="live-note">'+escHtml(p.host)+' · '+(p.capacityPpm?p.capacityPpm+' ppm nominal':'capacidade não informada')+'</div><div class="counter-box"><span class="counter-label">Contador acumulado</span><strong class="counter-value">'+counter+'</strong></div><div class="live-note">'+(sample&&sample.counter!=null?'Leitura cumulativa · ':'Contador sem leitura · ')+(age!=null?age+' s atrás':'aguardando primeira coleta')+'</div></div></article>'
-  }).join(''):'<div class="card">Nenhuma impressora cadastrada. Adicione os equipamentos para iniciar o painel.</div>';
+  }).join(''):currentRole==='operador'?'<div class="card">Nenhuma impressora cadastrada. Peça ao gestor para configurar os equipamentos neste painel.</div>':'<div class="card">Nenhuma impressora cadastrada. Adicione os equipamentos para iniciar o painel.</div>';
   const chartSelect=$('liveChartPrinter'),selected=chartSelect.value||'all';
   chartSelect.innerHTML='<option value="all">Toda a operação</option>'+printers.map(p=>'<option value="'+escHtml(p.id)+'">'+escHtml(p.name)+'</option>').join('');
   chartSelect.value=printers.some(p=>p.id===selected)?selected:'all';
   renderLiveOpsChart();
   $('liveOpsUpdated').textContent=liveOpsSnapshot.collectorEnabled?'Coletor ativo em '+(liveOpsSnapshot.collectorHost||'este computador')+' · leitura a cada 30 segundos · '+(liveOpsSnapshot.updatedAt?new Date(liveOpsSnapshot.updatedAt).toLocaleTimeString('pt-BR'):'iniciando'):'Coletor desativado neste computador'+(liveOpsSnapshot.collectorHost?' · dados do coletor '+liveOpsSnapshot.collectorHost:'');
   $('liveOpsConfig').style.display=currentRole==='gestor'?'block':'none';
-  $('liveAddPrinterButton').style.display=liveOpsSnapshot.configurable?'':'none';
+  $('liveAddPrinterButton').style.display=currentRole==='gestor'&&liveOpsSnapshot.configurable?'':'none';
   $('livePrinterForm').style.display=liveOpsSnapshot.configurable&&livePrinterFormOpen?'grid':'none';
   $('liveCollectorEnabled').checked=!!liveOpsSnapshot.collectorEnabled;
   $('livePrinterAdminList').innerHTML=(!liveOpsSnapshot.configurable?'<p class="muted">Impressoras em modo de consulta. Gerencie os equipamentos no computador coletor '+escHtml(liveOpsSnapshot.collectorHost||'')+'.</p>':'')+printers.map(p=>'<div style="display:flex;gap:12px;align-items:center;border-top:1px solid var(--line2);padding:8px 0"><b>'+escHtml(p.name)+'</b><span class="muted">'+escHtml(p.host)+'</span><span class="muted">'+(p.capacityPpm||'—')+' ppm</span>'+(liveOpsSnapshot.configurable?'<button class="btn" onclick="editLivePrinter(\''+escHtml(p.id)+'\')">Editar</button><button class="btn" onclick="deleteLivePrinter(\''+escHtml(p.id)+'\')">Excluir</button>':'')+'</div>').join('');

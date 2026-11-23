@@ -8,9 +8,11 @@ Este documento descreve os controles Electron atuais. A documentacao legada em
 - O processo principal autentica gestor por PIN ou senha mestre, operador por matricula e TV pelo PIN configurado.
 - Antes do login, o renderer recebe somente o estado necessario da tela de acesso; hashes de PIN e dados funcionais permanecem no processo principal.
 - O operador recebe apenas seu cadastro, registros pessoais associados e dados agregados de producao/SLA.
+- O operador pode consultar Operacao ao vivo e importar a planilha de producao; a gravacao do perfil fica restrita a campos de SLA e ao resumo da importacao.
 - TV recebe dados publicos/operacionais projetados, sem salarios, colecoes financeiras ou identificadores completos de colaboradores.
 - O kiosk nao exige PIN, mas recebe a mesma projecao restrita e opera em somente leitura.
-- A importacao de producao pelo perfil TV pode gravar apenas linhas SLA e o registro resumido dessa importacao.
+- A importacao de producao pelos perfis operador e TV pode gravar apenas linhas SLA e o registro resumido dessa importacao.
+- Cadastro de impressoras e ativacao do coletor em Operacao ao vivo continuam restritos ao gestor.
 - O processo principal aplica o perfil nos handlers IPC de dados, configuracoes, operacao ao vivo e midia. Builds instalados desativam DevTools.
 
 ## Chave corporativa do arquivo compartilhado
