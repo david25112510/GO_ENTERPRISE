@@ -2,6 +2,8 @@
 
 Publicada em 23/11/2026.
 
+O manifesto `version.json` foi atualizado às `2026-11-23T13:56:05.6612956Z`.
+
 ## Acesso de colaboradores
 
 - O perfil operador pode consultar o módulo Operação ao vivo.
